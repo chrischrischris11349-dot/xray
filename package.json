@@ -1,0 +1,21 @@
+{
+  "name": "xray",
+  "private": true,
+  "version": "0.1.0",
+  "description": "xray — a lightweight Discord client",
+  "type": "module",
+  "scripts": {
+    "core:build": "node core/build.mjs",
+    "core:watch": "node core/build.mjs --watch",
+    "typecheck": "tsc --noEmit -p core",
+    "test": "node core/test/run.mjs",
+    "tauri": "tauri",
+    "app:dev": "tauri dev",
+    "app:build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.3"
+  }
+}

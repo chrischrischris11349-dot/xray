@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "xray",
+  "version": "0.1.0",
+  "identifier": "app.xray.desktop",
+  "build": {
+    "beforeDevCommand": { "script": "npm run core:build", "wait": true },
+    "beforeBuildCommand": "npm run core:build -- --release",
+    "frontendDist": "../shell"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "category": "SocialNetworking",
+    "shortDescription": "A lightweight Discord client",
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "startMenuFolder": "xray"
+      }
+    }
+  }
+}

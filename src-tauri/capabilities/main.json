@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Discord runs as a remote page and gets no Tauri commands. Only add one if it's safe for any script on discord.com to call, since Discord's own code and anything injected into it could.",
+  "windows": ["main"],
+  "permissions": []
+}
