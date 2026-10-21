@@ -15,12 +15,23 @@
  * window was tried and dropped: with a transparent WebView2, Windows didn't
  * draw the backdrop, and the window turned see-through.)
  */
+const THEME_CONTAINERS = [".theme-dark", ".theme-darker", ".theme-midnight", ".theme-light"];
+
 const SCOPE = [
   "html.xray-obsidian",
-  "html.xray-obsidian .theme-dark",
-  "html.xray-obsidian .theme-darker",
-  "html.xray-obsidian .theme-midnight",
-  "html.xray-obsidian .theme-light",
+  // Tokens are re-declared on the main app layer so they pick up its glass palette below.
+  'html.xray-obsidian [class*="baseLayer_"]',
+  ...THEME_CONTAINERS.map((c) => `html.xray-obsidian ${c}`),
+].join(",\n");
+
+/**
+ * Glass only inside the main app layer. Everything Discord opens on top of it
+ * (Settings, modals, pop-outs) lives outside that layer and keeps the solid
+ * palette, so nothing behind them shows through.
+ */
+const GLASS_SCOPE = [
+  'html.xray-obsidian [class*="baseLayer_"]',
+  ...THEME_CONTAINERS.map((c) => `html.xray-obsidian [class*="baseLayer_"] ${c}`),
 ].join(",\n");
 
 /** Every token xray sets, and what to set it to. Values may use the --xr-* palette below. */
@@ -128,16 +139,12 @@ const TOKENS: Record<string, string> = {
   "--scrollbar-auto-scrollbar-color-track": "transparent",
 };
 
-/**
- * Discord nests its big containers (the app shell, the rail, a pane inside a
- * pane) and many share one token, so any tint stacks up. The base layers are
- * clear and the panes carry only a whisper of tint; the backdrop does the rest.
- */
+/** Solid surfaces: used everywhere except the main app layer (see GLASS_PALETTE). */
 const PALETTE = `
-  --xr-base: transparent;
-  --xr-rail: transparent;
-  --xr-side: rgba(255, 255, 255, 0.022);
-  --xr-chat: rgba(0, 0, 0, 0.24);
+  --xr-base: #08080a;
+  --xr-rail: #08080a;
+  --xr-side: #0e0e11;
+  --xr-chat: #0b0b0d;
   --xr-raised: #141417;
   --xr-raised-2: #19191d;
   --xr-raised-3: #202025;
@@ -153,11 +160,26 @@ const PALETTE = `
   --xr-accent: #f2f3f5;
   --xr-on-accent: #0b0b0d;`;
 
+/**
+ * Glass surfaces for the main app layer. Discord nests its big containers
+ * (the app shell, the rail, a pane inside a pane) and many share one token,
+ * so any tint stacks up: the base layers are clear, the panes carry only a
+ * whisper of tint, and the backdrop does the rest.
+ */
+const GLASS_PALETTE = `
+  --xr-base: transparent;
+  --xr-rail: transparent;
+  --xr-side: rgba(255, 255, 255, 0.022);
+  --xr-chat: rgba(0, 0, 0, 0.24);`;
+
 export const obsidianCss = `
 ${SCOPE} {${PALETTE}
 ${Object.entries(TOKENS)
   .map(([name, value]) => `  ${name}: ${value} !important;`)
   .join("\n")}
+}
+
+${GLASS_SCOPE} {${GLASS_PALETTE}
 }
 
 /* The backdrop behind the glass: near-black with a faint cool tint, fixed in place. */

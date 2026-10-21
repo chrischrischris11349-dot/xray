@@ -4,6 +4,7 @@ import { cleanContent, cleanUrl } from "../src/plugins/cleanLinks";
 import { filters, find, findByCode, hookWebpack, waitFor, webpackStats } from "../src/webpack";
 import { patch } from "../src/patcher";
 import fakeDeafen, { fakeVoice } from "../src/plugins/fakeDeafen";
+import { rank, score } from "../src/ui/search";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -136,6 +137,24 @@ check("turning off resends the real state", sentState(gateway, 4).self_deaf === 
 stops.reverse().forEach((stop) => stop());
 gateway.send(voice(false));
 check("stopping the plugin unpatches send", gateway.sent.length === 6);
+
+// ---- search ranking ----
+const entries = [
+  { title: "general", keywords: "Pixel Garage" },
+  { title: "general-chat", keywords: "Rust Devs" },
+  { title: "off-topic", keywords: "Pixel Garage" },
+  { title: "Mara", boost: 5 },
+  { title: "marathon-runners" },
+];
+const titles = (q: string) => rank(q, entries, 5).map((e) => e.title);
+check("exact match ranks first", titles("general")[0] === "general", titles("general"));
+check("prefix beats middle-of-word", titles("gen")[0] === "general", titles("gen"));
+check("word start matches", titles("topic").includes("off-topic"), titles("topic"));
+check("keywords match, weaker than titles", titles("pixel").join() === "general,off-topic", titles("pixel"));
+check("letters in order still match", titles("gnrl").includes("general"), titles("gnrl"));
+check("boost lifts a recent DM", titles("mara")[0] === "Mara", titles("mara"));
+check("no match, no result", titles("zzz").length === 0);
+check("accents are ignored", score("cafe", "Café") === 100);
 
 // ---- Clean Links ----
 const cases: [string, string][] = [

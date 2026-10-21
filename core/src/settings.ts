@@ -21,6 +21,8 @@ interface Saved {
   seenWelcome?: boolean;
   /** The Obsidian theme. On unless switched off. */
   theme?: boolean;
+  /** xray's UI features by id (quick reply, search). On unless switched off. */
+  features?: Record<string, boolean>;
 }
 
 const saved: Saved = read();
@@ -76,5 +78,14 @@ export function themeEnabled(): boolean {
 
 export function setThemeEnabled(on: boolean): void {
   saved.theme = on;
+  save();
+}
+
+export function featureEnabled(id: string): boolean {
+  return saved.features?.[id] !== false;
+}
+
+export function setFeatureEnabled(id: string, on: boolean): void {
+  (saved.features ??= {})[id] = on;
   save();
 }

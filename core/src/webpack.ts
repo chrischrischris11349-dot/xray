@@ -270,11 +270,20 @@ export const filters = {
       const source = Function.prototype.toString.call(c);
       return code.every((s) => source.includes(s));
     },
-  /** A Flux store by the name Discord registers it under, such as "UserStore". */
+  /**
+   * A Flux store by the name Discord registers it under, such as "UserStore".
+   * Checks with `in` before reading: some of Discord's exports are lazy
+   * proxies that invent a function for any property you read.
+   */
   byStoreName:
     (name: string): Filter =>
     (c) =>
-      typeof c?.getName === "function" && typeof c?.addChangeListener === "function" && c.getName() === name,
+      (typeof c === "object" || typeof c === "function") &&
+      c !== null &&
+      "getName" in c &&
+      "addChangeListener" in c &&
+      typeof c.getName === "function" &&
+      c.getName() === name,
 };
 
 export function webpackStats() {

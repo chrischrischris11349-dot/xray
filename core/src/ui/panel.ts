@@ -12,7 +12,8 @@ import { setThemeActive } from "../theme";
 import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotkeys, setHotkeys } from "../shell/hotkeys";
 import { webpackStats } from "../webpack";
 import { h } from "./dom";
-import { css } from "./styles";
+import { type Feature, features, isFeatureOn, onFeaturesChanged, setFeature } from "./features";
+import { onKey, onKeyUp, uiRoot } from "./root";
 
 const LOGO = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f2f3f5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" fill="none" stroke="#0b0b0d" stroke-width="2.2" stroke-linecap="round"/></svg>`;
 const CLOSE = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
@@ -56,18 +57,13 @@ let swallowMouseUp = false;
 
 export function mountUi(): void {
   if (root) return;
-  const host = document.createElement("xray-root");
-  root = host.attachShadow({ mode: "closed" });
-  const sheet = new CSSStyleSheet();
-  sheet.replaceSync(css);
-  root.adoptedStyleSheets = [sheet];
-  document.documentElement.append(host);
-
-  window.addEventListener("keydown", onKey, true);
-  window.addEventListener("keyup", onKeyUp, true);
+  root = uiRoot();
+  onKey(handleKey);
+  onKeyUp(handleKeyUp);
   window.addEventListener("mousedown", onMouseDown, true);
   window.addEventListener("mouseup", onMouseUp, true);
   onPluginsChanged(render);
+  onFeaturesChanged(render);
   fakeVoice.subscribe(render);
   if (!seenWelcome()) showWelcome();
 }
@@ -99,19 +95,22 @@ export function closePanel(): void {
   pendingModifier = null;
 }
 
-function onKey(event: KeyboardEvent): void {
+/** Returns true when the key was the panel's (see the keyboard router in root.ts). */
+function handleKey(event: KeyboardEvent): boolean {
   if (capturing) {
     captureKey(event);
-    return;
+    return true;
   }
   if (event.ctrlKey && event.shiftKey && !event.altKey && event.code === "KeyX") {
-    event.preventDefault();
-    event.stopPropagation();
     if (panel) closePanel();
     else openPanel();
-  } else if (event.key === "Escape" && panel) {
-    closePanel();
+    return true;
   }
+  if (event.key === "Escape" && panel) {
+    closePanel();
+    return true;
+  }
+  return false;
 }
 
 /** While capturing, every key goes to xray, not Discord. */
@@ -142,12 +141,12 @@ function captureKey(event: KeyboardEvent): void {
   }
 }
 
-function onKeyUp(event: KeyboardEvent): void {
-  if (!capturing) return;
-  swallow(event);
+function handleKeyUp(event: KeyboardEvent): boolean {
+  if (!capturing) return false;
   if (pendingModifier === event.keyCode) {
     assign(capturing, { key: event.keyCode, ctrl: false, shift: false, alt: false, label: MODIFIER_NAMES[event.keyCode] });
   }
+  return true;
 }
 
 function onMouseDown(event: MouseEvent): void {
@@ -210,6 +209,8 @@ function render(): void {
     header(),
     fakeVoice.available ? fakeDeafenCard() : null,
     themeCard(),
+    features().length ? h("div", { class: "section" }, h("span", { class: "label", text: "Features" })) : null,
+    features().length ? h("div", { class: "list" }, ...features().map(featureRow)) : null,
     h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
     hotkeyList(),
     h("div", {
@@ -253,6 +254,16 @@ function fakeDeafenCard(): HTMLElement {
     { class: on ? "card on" : "card" },
     h("div", { class: "card-text" }, h("div", { class: "card-title", text: "Fake deafen" }), h("div", { class: "card-sub", text: sub })),
     toggle(on, "Fake deafen", () => fakeVoice.set(!on)),
+  );
+}
+
+function featureRow(feature: Feature): HTMLElement {
+  const on = isFeatureOn(feature);
+  return h(
+    "div",
+    { class: "row" },
+    h("div", { class: "row-text" }, h("div", { class: "row-name", text: feature.name }), h("div", { class: "row-desc", text: feature.description })),
+    toggle(on, feature.name, () => setFeature(feature, !on)),
   );
 }
 
