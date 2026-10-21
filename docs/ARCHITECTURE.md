@@ -6,10 +6,12 @@ Discord's scripts.
 
 ## Rules that don't bend
 
-- **No code from Vencord, Equicord or Nightcord.** All three are GPL-3.0, and
-  xray ships to other people with private source. Every feature is our own
-  implementation. Ideas and behavior are fine to match. Code, even modified,
-  is not.
+- **Original implementations, GPL-3.0.** xray is licensed GPL-3.0-or-later
+  (see `LICENSE`) and its source is public. Features are still written from
+  scratch rather than lifted from Vencord, Equicord or Nightcord — matching
+  their ideas and behavior is fine, and now that xray is GPL-compatible their
+  code could be reused too, but staying original keeps attribution and history
+  clean.
 - **Performance first.** Nothing in xray runs per frame or loops forever. Idle
   cost should be zero, and every plugin carries an impact rating
   (`light` / `moderate` / `heavy`) with a one-line reason.
