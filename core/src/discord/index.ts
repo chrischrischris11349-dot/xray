@@ -73,7 +73,23 @@ export const stores = {
   get roles() { return store("GuildRoleStore"); },
   get streamerMode() { return store("StreamerModeStore"); },
   get permissions() { return store("PermissionStore"); },
+  get mediaEngine() { return store("MediaEngineStore"); },
 };
+
+/** Discord's own mute / deafen / camera actions, as its own voice buttons call them. */
+export function audioActions(): any {
+  return lookup("audio actions", () =>
+    find(
+      (c) =>
+        typeof c === "object" &&
+        c !== null &&
+        "toggleSelfMute" in c &&
+        "toggleSelfDeaf" in c &&
+        "setVideoEnabled" in c &&
+        String(c.toggleSelfMute).includes("toggleSelfMute"),
+    ),
+  );
+}
 
 /** Your account's id, once you're logged in. */
 export function myId(): string | undefined {

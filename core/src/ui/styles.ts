@@ -253,4 +253,13 @@ select.opt-input option { background: #18181c; color: var(--text); }
 .win-btn:hover { background: rgba(255,255,255,.07); color: var(--text); }
 .win-btn.close:hover { background: #c42b1c; color: #fff; }
 :host-context(html:not(.xray-obsidian)) .xray-drag { display: none; }
+
+/* Title-bar voice controls (plugins/voiceBar.ts), left of the window buttons. */
+.xray-vbar { position: fixed; top: 0; right: 128px; height: 46px; z-index: 2147482991; display: flex; align-items: center; gap: 2px; }
+.xray-vbar button { width: 36px; height: 30px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
+.xray-vbar button:hover { background: rgba(255,255,255,.07); color: var(--text); }
+.xray-vbar button[aria-pressed="true"] { background: rgba(255,90,90,.16); color: #ff6b5b; }
+.xray-vbar button.cam[aria-pressed="true"] { background: rgba(61,214,140,.16); color: #3dd68c; }
+.xray-vbar button[disabled] { opacity: .35; pointer-events: none; }
+:host-context(html:not(.xray-obsidian)) .xray-vbar { display: none; }
 `;

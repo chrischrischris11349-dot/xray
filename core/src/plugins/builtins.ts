@@ -18,6 +18,7 @@ import translate from "./translate";
 import { readingPlugins } from "./reading";
 import { toolPlugins } from "./tools";
 import type { Plugin } from "./types";
+import voiceBar from "./voiceBar";
 import { webMenuPlugins } from "./webMenus";
 import { utilityPlugins } from "./utility";
 
@@ -28,6 +29,7 @@ export const builtins: readonly Plugin<any>[] = [
   cleanLinks,
   translate,
   ...chatActionPlugins,
+  voiceBar,
   ...webMenuPlugins,
   ...toolPlugins,
   ...readingPlugins,

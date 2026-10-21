@@ -89,6 +89,8 @@ html.xray-obsidian {
     /* Reserve room at the right for xray's own window buttons (frame.ts). */
     padding-inline: 0 128px !important;
   }
+  /* When the title-bar voice controls are on, reserve room for them too. */
+  &[data-xray-vbar] [class*="base_"] > [class^="bar_"] { padding-inline-end: 248px !important; }
   [class*="base_"] > [class^="bar_"]::before {
     content: "xray";
     position: absolute;
