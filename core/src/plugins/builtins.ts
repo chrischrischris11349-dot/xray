@@ -12,6 +12,7 @@ import { peoplePlugins } from "./people";
 import { polishPlugins } from "./polish";
 import { serverPlugins } from "./servers";
 import translate from "./translate";
+import { readingPlugins } from "./reading";
 import { toolPlugins } from "./tools";
 import type { Plugin } from "./types";
 import { webMenuPlugins } from "./webMenus";
@@ -26,6 +27,7 @@ export const builtins: readonly Plugin<any>[] = [
   ...chatActionPlugins,
   ...webMenuPlugins,
   ...toolPlugins,
+  ...readingPlugins,
   ...chatTextPlugins,
   ...notificationPlugins,
   ...appearancePlugins,

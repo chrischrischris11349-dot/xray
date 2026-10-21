@@ -14,6 +14,7 @@ import { hexColor, sharperImage, textOn } from "../src/plugins/look";
 import { permissionNames } from "../src/plugins/servers";
 import { nameColor } from "../src/plugins/decorations";
 import { convertUnits, decodeBase64 } from "../src/plugins/tools";
+import { parseTable, toneTags } from "../src/plugins/reading";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -230,6 +231,13 @@ check("temperatures convert", convertUnits("it's 30°C").join() === "30 °C = 86
 check("plain numbers aren't units", convertUnits("I have 5 apples").length === 0);
 check("Base64 text decodes", decodeBase64("look: aGVsbG8gd29ybGQgZnJvbSB4cmF5").join() === "hello world from xray");
 check("non-text Base64 is skipped", decodeBase64("AAAAAAAAAAAAAAAAAAAAAAAA").length === 0);
+
+// ---- wave 5 ----
+const table = parseTable("scores:\n| name | pts |\n|---|---|\n| ana | 3 |\n| bo | 5 |\nthanks");
+check("markdown tables parse", JSON.stringify(table) === JSON.stringify([["name", "pts"], ["ana", "3"], ["bo", "5"]]), table);
+check("pipes without a divider aren't a table", parseTable("a | b\nc | d") === null);
+check("tone tags are spelled out", toneTags("ok fine /j lol /srs").join() === "/j joking,/srs serious", toneTags("ok fine /j lol /srs"));
+check("paths aren't tone tags", toneTags("see and/or https://x.com/j").length === 0);
 
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

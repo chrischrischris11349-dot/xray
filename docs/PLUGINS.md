@@ -2,8 +2,8 @@
 
 xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own code (their code is GPL and xray's source is private, so nothing is copied). This file tracks the merged catalog: 483 names after removing duplicates.
 
-- **Built:** 101 catalog plugins, covered by xray plugins (some xray plugins cover several).
-- **Planned:** 331.
+- **Built:** 108 catalog plugins, covered by xray plugins (some xray plugins cover several).
+- **Planned:** 324.
 - **Left out on purpose:** 30 (spam, account tokens, acting on other people, tracking people, faking conversations, cheating).
 - **Not applicable:** 21 (the other mods' own internals and duplicates).
 
@@ -23,6 +23,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | CollapsibleUI | Focus Mode (partly) |
 | CommandPalette | Search (Ctrl+K) |
 | ConsoleJanitor | Quiet Console |
+| ContentWarning | Content Warnings |
 | CopyEmojiMarkdown | Copy Emoji |
 | CopyFileContents | Copy File Contents |
 | CopyProfileId | Copy ID |
@@ -40,6 +41,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | FontLoader | Custom Font (installed fonts) |
 | FrequentQuickSwitcher | Search (Ctrl+K) |
 | FriendshipRanks | Friends Since (partly) |
+| GoogleThat | Search the Web |
 | HideChatButtons | Declutter (partly) |
 | HideMessages | Hide Messages |
 | HideServers | Hide Servers |
@@ -51,6 +53,8 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | KeepCurrentChannel | Reopen Last Channel |
 | KeyboardSounds | Keyboard Sounds |
 | KeywordNotify | Keyword Alerts |
+| MarkdownTables | Markdown Tables |
+| MediaPlaybackSpeed | Playback Speed |
 | MemberCount | Member Count |
 | MessageClickActions | Double-Click Messages |
 | MessageColors | Color Swatches |
@@ -77,6 +81,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | PolishWording | Auto Capitalize (partly) |
 | QuickMessages | Saved Replies |
 | QuickReply | Reply Keys |
+| QuickThemeSwitcher | Theme Key |
 | ReadAllNotificationsButton | Read All |
 | RecentDMSwitcher | Recent DM Switcher |
 | RelationshipNotifier | Removal Alerts |
@@ -94,11 +99,13 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | SilentMessageToggle | Silent Messages |
 | SilentTyping | Silent Typing |
 | SplitLargeMessages | Split Long Messages |
+| StickerBlocker | Hide Stickers |
 | StreamerModeOn | Streamer Mode When Sharing |
 | StreamerModeOnStream | Streamer Mode When Sharing |
 | TalkInReverse | Talk in Reverse |
 | TextReplace | Text Replace |
 | Timezones | Timezones |
+| ToneIndicators | Tone Tags |
 | Translate | Translate |
 | TypingIndicator | Typing in Channel List |
 | UncompressedImages | Sharper Images |
@@ -311,7 +318,6 @@ Roughly in the order they'll be built: most-used first.
 - ChannelTabs (equicord)
 - ClipsEnhancements (equicord)
 - ClickableRoles (equicord)
-- ContentWarning (equicord)
 - CursorBuddy (equicord)
 - CopyProfileColors (equicord)
 - CustomFolderIcons (equicord)
@@ -338,7 +344,6 @@ Roughly in the order they'll be built: most-used first.
 - GifMaker (equicord)
 - GifCollections (equicord)
 - GitHubRepos (equicord)
-- GoogleThat (equicord)
 - GlobalBadges (equicord)
 - GuildPickerDumper (equicord)
 - HomeTyping (equicord)
@@ -354,8 +359,6 @@ Roughly in the order they'll be built: most-used first.
 - KeyboardNavigation (equicord)
 - LimitlessScreenshare (equicord)
 - LastActive (equicord)
-- MarkdownTables (equicord)
-- MediaPlaybackSpeed (equicord)
 - MessageFetchTimer (equicord)
 - MessageLinkTooltip (equicord)
 - MessageLoggerEnhanced (equicord)
@@ -371,7 +374,6 @@ Roughly in the order they'll be built: most-used first.
 - ProfileSets (equicord)
 - Questify (equicord)
 - Quoter (equicord)
-- QuickThemeSwitcher (equicord)
 - RandomVoice (equicord)
 - ReactionTimestamps (equicord)
 - RemixRevived (equicord)
@@ -394,11 +396,9 @@ Roughly in the order they'll be built: most-used first.
 - SongSpotlight (equicord)
 - StatusPresets (equicord)
 - SteamStatusSync (equicord)
-- StickerBlocker (equicord)
 - Streaks (equicord)
 - TidalEmbeds (equicord)
 - ToastNotifications (equicord)
-- ToneIndicators (equicord)
 - UnreadCountBadge (equicord)
 - UrlHighlighter (equicord)
 - UserPFP (equicord)
