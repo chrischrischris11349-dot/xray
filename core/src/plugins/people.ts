@@ -4,12 +4,85 @@
  * without Developer Mode.
  */
 import { menu, type MenuTarget } from "../api/menus";
-import { http, stores } from "../discord";
+import { displayName, http, snowflakeDate, stores } from "../discord";
 import { pluginState, save } from "../settings";
 import { copyText, promptText, showDialog } from "../ui/dialog";
 import { definePlugin, type Plugin } from "./types";
 
 const FRIEND = 1;
+
+/** Discord's badge flags that show on a profile. */
+const BADGES: readonly [bit: number, name: string][] = [
+  [0, "Discord Staff"], [1, "Partner"], [2, "HypeSquad Events"], [3, "Bug Hunter"], [6, "HypeSquad Bravery"],
+  [7, "HypeSquad Brilliance"], [8, "HypeSquad Balance"], [9, "Early Supporter"], [14, "Bug Hunter Gold"],
+  [17, "Early Verified Bot Developer"], [18, "Moderator Programs Alumni"], [22, "Active Developer"],
+];
+
+function badgeNames(flags: number): string[] {
+  return BADGES.filter(([bit]) => flags & (1 << bit)).map(([, name]) => name);
+}
+
+/** "3 years, 2 months" from a date in the past. */
+function ageSince(date: Date): string {
+  const now = Date.now();
+  let months = Math.max(0, Math.floor((now - date.getTime()) / (30.44 * 864e5)));
+  const years = Math.floor(months / 12);
+  months -= years * 12;
+  const parts = [years && `${years} year${years === 1 ? "" : "s"}`, months && `${months} month${months === 1 ? "" : "s"}`].filter(Boolean);
+  return parts.join(", ") || "less than a month";
+}
+
+const accountDetails = definePlugin({
+  id: "accountDetails",
+  name: "Profile Details",
+  description: "Right-click someone for extra profile info Discord buries: account age, when they joined the server, mutuals and badges.",
+  category: "Friends",
+  impact: "light",
+  impactReason: "Only runs from the menu",
+  needsReload: false,
+  enabledByDefault: true,
+  start(ctx) {
+    ctx.menu("user-context", (items, { user, guildId }) => {
+      if (!user) return;
+      items.push(
+        menu.item({
+          id: "account-details",
+          label: "Profile details",
+          action: () => {
+            const created = snowflakeDate(user.id);
+            const facts: [string, string][] = [
+              ["Username", `@${user.username}${user.discriminator && user.discriminator !== "0" ? `#${user.discriminator}` : ""}`],
+              ["Account made", `${created.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })} · ${ageSince(created)} ago`],
+            ];
+            if (user.bot) facts.push(["Type", "Bot"]);
+            // Server-specific, when you opened this from a server.
+            const member = guildId ? stores.members?.getMember?.(guildId, user.id) : null;
+            if (member?.joinedAt) {
+              const joined = new Date(member.joinedAt);
+              facts.push(["Joined server", `${joined.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })} · ${ageSince(joined)} ago`]);
+              const roles = (member.roles ?? []).map((id: string) => stores.roles?.getRole?.(guildId!, id)?.name).filter(Boolean);
+              if (roles.length) facts.push(["Roles", roles.join(", ")]);
+            }
+            // Mutuals, if Discord has loaded this profile (opening the profile does that).
+            const profile = stores.profiles?.getUserProfile?.(user.id);
+            const mutualGuilds = stores.profiles?.getMutualGuilds?.(user.id);
+            const mutualFriends = stores.profiles?.getMutualFriendsCount?.(user.id);
+            if (Array.isArray(mutualGuilds)) facts.push(["Mutual servers", String(mutualGuilds.length)]);
+            if (typeof mutualFriends === "number") facts.push(["Mutual friends", String(mutualFriends)]);
+            const badges = badgeNames(user.publicFlags ?? profile?.flags ?? 0);
+            if (badges.length) facts.push(["Badges", badges.join(", ")]);
+            facts.push(["ID", user.id]);
+            showDialog({
+              title: displayName(user.id, guildId),
+              body: facts,
+              actions: [{ label: "Copy ID", run: () => (copyText(user.id), false) }, { label: "Close", primary: true }],
+            });
+          },
+        }),
+      );
+    });
+  },
+});
 
 /** When you became friends with someone, in ms, or null if you aren't friends. */
 export function friendsSince(userId: string): number | null {
@@ -216,4 +289,4 @@ const cancelFriendRequest = definePlugin({
   },
 });
 
-export const peoplePlugins: readonly Plugin<any>[] = [quickCopy, friendsSincePlugin, timezones, viewBanners, cancelFriendRequest];
+export const peoplePlugins: readonly Plugin<any>[] = [accountDetails, quickCopy, friendsSincePlugin, timezones, viewBanners, cancelFriendRequest];

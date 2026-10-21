@@ -66,7 +66,18 @@ export function mountUi(): void {
   onPluginsChanged(render);
   onFeaturesChanged(render);
   fakeVoice.subscribe(render);
+  mountLauncher();
   if (!seenWelcome()) showWelcome();
+}
+
+/** A clickable spot over the xray wordmark in the title bar, so the panel isn't shortcut-only. */
+function mountLauncher(): void {
+  const launcher = h("button", {
+    class: "xray-launch",
+    attrs: { type: "button", "aria-label": "Open xray panel", title: "xray — plugins & settings (Ctrl+Shift+X)" },
+    on: { click: () => (panel ? closePanel() : openPanel()) },
+  });
+  root!.append(launcher);
 }
 
 export function isPanelOpen(): boolean {

@@ -2,8 +2,8 @@
 
 xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own code (their code is GPL and xray's source is private, so nothing is copied). This file tracks the merged catalog: 483 names after removing duplicates.
 
-- **Built:** 121 catalog plugins, covered by xray plugins (some xray plugins cover several).
-- **Planned:** 311.
+- **Built:** 124 catalog plugins, covered by xray plugins (some xray plugins cover several).
+- **Planned:** 308.
 - **Left out on purpose:** 30 (spam, account tokens, acting on other people, tracking people, faking conversations, cheating).
 - **Not applicable:** 21 (the other mods' own internals and duplicates).
 
@@ -50,6 +50,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | HideServers | Hide Servers |
 | ImageFilename | Image File Names |
 | ImageZoom | Image Zoom |
+| ImplicitRelationships | Profile Details (partly) |
 | Ingtoninator | Ingtoninator |
 | IrcColors | Name Colors |
 | JumpTo | Jump to First Message |
@@ -66,6 +67,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | MessagePeek | Message Peek |
 | MessageTranslate | Translate (partly) |
 | MoreUserTags | Owner & Webhook Tags |
+| MutualGroupDMs | Profile Details (partly) |
 | NewGuildSettings | Quiet New Servers |
 | NoBlockedMessages | No Blocked Messages |
 | NoCaps | No Caps Lock |
@@ -100,6 +102,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | ServerInfo | Server Info |
 | ServerListIndicators | Friends Online |
 | ServerSearch | Search (Ctrl+K) |
+| ShowConnections | Profile Details (partly) |
 | ShowMeYourName | Show Usernames |
 | ShowRolesInChat | Roles in Chat |
 | Signature | Signature |
@@ -196,7 +199,6 @@ Roughly in the order they'll be built: most-used first.
 - GifPaste (vencord)
 - iLoveSpam (vencord)
 - ImageLink (vencord)
-- ImplicitRelationships (vencord)
 - LoadingQuotes (vencord)
 - MoreQuickReactions (vencord)
 - NoDevtoolsWarning (vencord)
@@ -259,7 +261,6 @@ Roughly in the order they'll be built: most-used first.
 - MessageLatency (vencord)
 - MessageLinkEmbeds (vencord)
 - MusicRichPresence (vencord)
-- MutualGroupDMs (vencord)
 - OverrideForumDefaults (vencord)
 - PauseInvitesForever (vencord)
 - PinDMs (vencord)
@@ -269,7 +270,6 @@ Roughly in the order they'll be built: most-used first.
 - ReviewDB (vencord)
 - RoleColorEverywhere (vencord)
 - ShikiCodeblocks (vencord)
-- ShowConnections (vencord)
 - ShowHiddenChannels (vencord)
 - ShowTimeoutDuration (vencord)
 - SortFriendRequests (vencord)

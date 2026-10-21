@@ -239,4 +239,10 @@ select.opt-input option { background: #18181c; color: var(--text); }
 .lock-input { height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2); background: rgba(255,255,255,.04); color: var(--text); font: inherit; letter-spacing: .2em; outline: none; text-align: center; }
 .lock-input:focus { border-color: rgba(255,255,255,.3); }
 .lock-status { min-height: 16px; font-size: 12.5px; color: var(--bad); text-align: center; }
+
+/* Panel launcher (panel.ts): a clickable spot over the xray wordmark, top-left. */
+.xray-launch { position: fixed; top: 0; left: 8px; z-index: 2147482985; width: 104px; height: 46px; padding: 0; border: 0; background: transparent; border-radius: 10px; cursor: pointer; transition: background-color 120ms ease; }
+.xray-launch:hover { background: rgba(255,255,255,.06); }
+.xray-launch:active { background: rgba(255,255,255,.1); }
+:host-context(html:not(.xray-obsidian)) .xray-launch { display: none; }
 `;

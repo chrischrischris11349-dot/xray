@@ -129,9 +129,13 @@ html.xray-obsidian {
     background: rgba(255, 255, 255, 0.028) !important;
     box-shadow: var(--xr-card-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
   }
-  nav[class*="guilds_"] [class*="listItem_"] { width: 64px !important; }
+  /* Center each icon in the narrowed dock (the pill stays pinned at the left edge). */
+  nav[class*="guilds_"] [class*="listItem_"],
+  nav[class*="guilds_"] [class*="folderGroup_"] { width: 64px !important; }
   nav[class*="guilds_"] [class*="listItem_"] > span,
-  nav[class*="guilds_"] [class*="folderHeader_"] { margin-left: -2px; }
+  nav[class*="guilds_"] [class*="folderHeader_"],
+  nav[class*="guilds_"] [class*="folderGroup_"] [class*="expandedFolderBackground_"],
+  nav[class*="guilds_"] [class*="folderGroup_"] > div { margin-inline: auto !important; }
   /* The selection pill becomes a short glowing tick. */
   nav[class*="guilds_"] [class*="wrapper_"][class*="overlay_"] [class*="item_"] {
     width: 4px !important;
@@ -240,24 +244,21 @@ html.xray-obsidian {
     font-size: 16px !important;
     font-weight: 650 !important;
   }
-  /* Message text in soft bubbles. */
-  [class*="messageListItem_"] [class*="messageContent_"]:not(:empty) {
+  /* Other people's messages stay flat and clean; only yours get a bubble. */
+  [class*="messageListItem_"] [class*="messageContent_"] { line-height: 1.5; }
+  /* Yours are an accent bubble, marked by ownMessages.ts. */
+  [data-xray-mine] [class*="messageContent_"]:not(:empty):not(:has([class*="emojiJumbo_"])) {
     display: inline-block;
     max-width: 100%;
-    margin: 2px 0 1px -12px;
-    padding: 6px 12px;
-    border-radius: 4px 16px 16px 16px;
-    background: rgba(255, 255, 255, 0.055);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.045);
-  }
-  [class*="messageListItem_"] [class*="messageContent_"]:has([class*="emojiJumbo_"]),
-  [class*="messageListItem_"] [class*="repliedTextContent_"] { margin-left: 0; padding: 0; background: none; box-shadow: none; }
-  /* Yours are white with dark text (rows marked by ownMessages.ts). */
-  [data-xray-mine] [class*="messageContent_"]:not(:empty):not(:has([class*="emojiJumbo_"])) {
+    margin: 1px 0;
+    padding: 5px 12px;
+    border-radius: 4px 14px 14px 14px;
     background: var(--xr-pill);
     box-shadow: none;
     color: var(--xr-on-pill) !important;
   }
+  [data-xray-mine] [class*="messageContent_"]:has([class*="emojiJumbo_"]),
+  [class*="messageListItem_"] [class*="repliedTextContent_"] { margin-left: 0; padding: 0; background: none; box-shadow: none; }
   [data-xray-mine] [class*="messageContent_"] a { color: #1f4fd1 !important; }
   [data-xray-mine] [class*="messageContent_"] code.inline,
   [data-xray-mine] [class*="messageContent_"] [class*="mention"] { background: rgba(11, 11, 13, 0.08) !important; color: var(--xr-on-pill) !important; }
