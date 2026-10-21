@@ -278,4 +278,45 @@ const typingIndicator = definePlugin({
   },
 });
 
-export const decorationPlugins: readonly Plugin<any>[] = [replyTimestamp, typingIndicator, showMeYourName, platformIndicators, userVoiceShow];
+/** A steady color per person, from their id: the same everywhere, different for everyone. */
+export function nameColor(userId: string, lightness: number): string {
+  let hash = 0;
+  for (const char of userId) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return `hsl(${hash % 360} 70% ${lightness}%)`;
+}
+
+const ircColors = definePlugin({
+  id: "ircColors",
+  name: "Name Colors",
+  description: "Gives everyone in chat their own steady name color, like IRC, so conversations are easier to follow.",
+  category: "Appearance",
+  impact: "light",
+  impactReason: "Colors each name once",
+  needsReload: false,
+  enabledByDefault: false,
+  options: {
+    everyone: { type: "boolean", label: "Also people with a role color", description: "Off keeps role colors as they are.", default: false },
+    lightness: { type: "number", label: "Lightness (%)", default: 72, min: 40, max: 90 },
+  },
+  start(ctx) {
+    const { everyone, lightness } = ctx.options;
+    const paint = (name: Element) => {
+      const el = name as HTMLElement;
+      if (el.dataset.xrayColor) return;
+      if (!everyone && el.style.color) return;
+      const message = rowMessage(el);
+      if (!message?.author?.id) return;
+      el.dataset.xrayColor = el.style.color || "none";
+      el.style.color = nameColor(message.author.id, lightness);
+    };
+    ctx.watch(`${HEADER} [class*="username_"]`, paint);
+    ctx.onStop(() =>
+      document.querySelectorAll<HTMLElement>("[data-xray-color]").forEach((el) => {
+        el.style.color = el.dataset.xrayColor === "none" ? "" : el.dataset.xrayColor!;
+        delete el.dataset.xrayColor;
+      }),
+    );
+  },
+});
+
+export const decorationPlugins: readonly Plugin<any>[] = [replyTimestamp, typingIndicator, showMeYourName, platformIndicators, userVoiceShow, ircColors];

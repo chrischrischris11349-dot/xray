@@ -6,7 +6,7 @@
 import { dispatch } from "../api/flux";
 import { menu } from "../api/menus";
 import { MESSAGE_PATH } from "../api/requests";
-import { currentChannelId, messageActions, myId, navigate, stores } from "../discord";
+import { currentChannelId, http, messageActions, myId, navigate, stores } from "../discord";
 import { confirmAction, copyText, promptText, showDialog } from "../ui/dialog";
 import { definePlugin, type Plugin } from "./types";
 
@@ -436,6 +436,38 @@ const messagePeek = definePlugin({
   },
 });
 
+const SUPPRESS_EMBEDS = 1 << 2;
+const MANAGE_MESSAGES = 1n << 13n;
+
+const unsuppressEmbeds = definePlugin({
+  id: "unsuppressEmbeds",
+  name: "Show Link Previews",
+  description: "Right-click a message whose link previews were removed to bring them back (your messages, or anyone's where you manage messages).",
+  category: "Chat",
+  impact: "light",
+  impactReason: "Only runs from the menu",
+  needsReload: false,
+  enabledByDefault: true,
+  start(ctx) {
+    ctx.menu("message", (items, { message }) => {
+      if (!message || !((message.flags ?? 0) & SUPPRESS_EMBEDS)) return;
+      const channel = stores.channels?.getChannel?.(message.channel_id);
+      const allowed = isMine(message) || (!!channel && stores.permissions?.can?.(MANAGE_MESSAGES, channel) === true);
+      if (!allowed) return;
+      items.push(
+        menu.item({
+          id: "unsuppress-embeds",
+          label: "Show link previews",
+          action: () =>
+            void http()
+              ?.patch?.({ url: `/channels/${message.channel_id}/messages/${message.id}`, body: { flags: message.flags & ~SUPPRESS_EMBEDS } })
+              ?.catch?.(() => {}),
+        }),
+      );
+    });
+  },
+});
+
 export const chatActionPlugins: readonly Plugin<any>[] = [
   silentEdit,
   silentTyping,
@@ -449,4 +481,5 @@ export const chatActionPlugins: readonly Plugin<any>[] = [
   jumpToFirst,
   revealSpoilers,
   messagePeek,
+  unsuppressEmbeds,
 ];

@@ -70,6 +70,7 @@ export const stores = {
   get memberCounts() { return store("GuildMemberCountStore"); },
   get profiles() { return store("UserProfileStore"); },
   get typing() { return store("TypingStore"); },
+  get roles() { return store("GuildRoleStore"); },
   get streamerMode() { return store("StreamerModeStore"); },
   get permissions() { return store("PermissionStore"); },
 };
@@ -116,6 +117,15 @@ export function messageLink(guildId: string | null | undefined, channelId: strin
 
 export function messageActions(): any {
   return lookup("message actions", () => find(hasRealMethod("sendMessage", "editMessage", "deleteMessage")));
+}
+
+/**
+ * Discord's own HTTP client: `get/post/put/patch/del({ url, body })`, with
+ * paths like "/channels/1/messages/2". It adds your login and handles rate
+ * limits, exactly as for Discord's own requests.
+ */
+export function http(): any {
+  return lookup("HTTP client", () => find(filters.byOwnMethods("get", "post", "put", "patch", "del")));
 }
 
 export function privateChannelActions(): any {

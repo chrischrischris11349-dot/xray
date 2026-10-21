@@ -160,4 +160,33 @@ const quickCopy = definePlugin({
   },
 });
 
-export const peoplePlugins: readonly Plugin<any>[] = [quickCopy, friendsSincePlugin, timezones];
+function bannerUrl(kind: "banners", id: string, hash: string | null | undefined): string | null {
+  if (!hash) return null;
+  return `https://cdn.discordapp.com/${kind}/${id}/${hash}.${hash.startsWith("a_") ? "gif" : "png"}?size=4096`;
+}
+
+const viewBanners = definePlugin({
+  id: "viewBanners",
+  name: "View Banners",
+  description: "Right-click someone or a server to open their banner full size.",
+  category: "Media",
+  impact: "light",
+  impactReason: "Only runs from the menu",
+  needsReload: false,
+  enabledByDefault: true,
+  start(ctx) {
+    ctx.menu("user-context", (items, { user }) => {
+      if (!user) return;
+      // The profile is only known once Discord has loaded it (opening their profile does that).
+      const url = bannerUrl("banners", user.id, stores.profiles?.getUserProfile?.(user.id)?.banner ?? user.banner);
+      if (url) items.push(menu.item({ id: "open-banner", label: "Open banner", action: () => window.open(url, "_blank", "noopener,noreferrer") }));
+    });
+    ctx.menu("guild-context", (items, { guild, guildId }) => {
+      const g = guild ?? (guildId ? stores.guilds?.getGuild?.(guildId) : null);
+      const url = g ? bannerUrl("banners", g.id, g.banner) : null;
+      if (url) items.push(menu.item({ id: "open-server-banner", label: "Open server banner", action: () => window.open(url, "_blank", "noopener,noreferrer") }));
+    });
+  },
+});
+
+export const peoplePlugins: readonly Plugin<any>[] = [quickCopy, friendsSincePlugin, timezones, viewBanners];

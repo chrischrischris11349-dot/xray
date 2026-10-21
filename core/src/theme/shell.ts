@@ -47,6 +47,9 @@ html.xray-obsidian {
   --xr-edge: rgba(255, 255, 255, 0.075);
   --xr-edge-hi: rgba(255, 255, 255, 0.11);
   --xr-tick: rgba(255, 255, 255, 0.2);
+  /* Selected rows and your own bubbles. The Accent Color plugin changes these two. */
+  --xr-pill: rgba(242, 243, 245, 0.94);
+  --xr-on-pill: #0b0b0d;
   --xr-mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
   --xr-card-shadow: inset 0 0 0 1px var(--xr-edge), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   /* Windows' own variable font instead of Discord's gg sans. */
@@ -193,10 +196,10 @@ html.xray-obsidian {
   /* The selected row turns white with dark text. */
   [class*="sidebarList_"] [class*="selected_"] > [class*="interactive_"],
   [class*="sidebarList_"] [class*="interactive_"][class*="selected_"],
-  [class*="sidebarList_"] [class*="modeSelected_"] [class*="link_"] { background: rgba(242, 243, 245, 0.94) !important; }
+  [class*="sidebarList_"] [class*="modeSelected_"] [class*="link_"] { background: var(--xr-pill) !important; }
   [class*="sidebarList_"] [class*="selected_"] > [class*="interactive_"] *,
   [class*="sidebarList_"] [class*="interactive_"][class*="selected_"] *,
-  [class*="sidebarList_"] [class*="modeSelected_"] [class*="link_"] * { color: #0b0b0d !important; fill: #0b0b0d; }
+  [class*="sidebarList_"] [class*="modeSelected_"] [class*="link_"] * { color: var(--xr-on-pill) !important; fill: var(--xr-on-pill); }
   [class*="privateChannelsHeaderContainer_"] {
     font: 500 10.5px var(--xr-mono) !important;
     letter-spacing: 0.16em !important;
@@ -251,13 +254,13 @@ html.xray-obsidian {
   [class*="messageListItem_"] [class*="repliedTextContent_"] { margin-left: 0; padding: 0; background: none; box-shadow: none; }
   /* Yours are white with dark text (rows marked by ownMessages.ts). */
   [data-xray-mine] [class*="messageContent_"]:not(:empty):not(:has([class*="emojiJumbo_"])) {
-    background: rgba(242, 243, 245, 0.95);
+    background: var(--xr-pill);
     box-shadow: none;
-    color: #0b0b0d !important;
+    color: var(--xr-on-pill) !important;
   }
   [data-xray-mine] [class*="messageContent_"] a { color: #1f4fd1 !important; }
   [data-xray-mine] [class*="messageContent_"] code.inline,
-  [data-xray-mine] [class*="messageContent_"] [class*="mention"] { background: rgba(11, 11, 13, 0.08) !important; color: #0b0b0d !important; }
+  [data-xray-mine] [class*="messageContent_"] [class*="mention"] { background: rgba(11, 11, 13, 0.08) !important; color: var(--xr-on-pill) !important; }
   [data-xray-mine] [class*="messageContent_"] [class*="edited_"] { color: rgba(11, 11, 13, 0.5) !important; }
   [class*="messageListItem_"] > [class*="message_"]:hover { background: transparent !important; }
   [class*="messageListItem_"] h3 [class*="username_"] { font-weight: 650 !important; }
@@ -332,9 +335,9 @@ html.xray-obsidian {
   }
   [class*="modal_"] nav[class*="nav_"] [class*="item_"] { border-radius: 10px !important; }
   /* Top-level sections (the ones with an icon) turn white when open; sub-pages keep a quiet tint. */
-  [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg) { background: rgba(242, 243, 245, 0.94) !important; }
+  [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg) { background: var(--xr-pill) !important; }
   [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg),
-  [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg) * { color: #0b0b0d !important; }
+  [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg) * { color: var(--xr-on-pill) !important; }
   [class*="modal_"] nav[class*="nav_"] h3[class*="label_"] {
     font: 500 10.5px var(--xr-mono) !important;
     letter-spacing: 0.16em !important;

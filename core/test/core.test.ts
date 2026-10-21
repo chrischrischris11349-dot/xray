@@ -10,6 +10,9 @@ import { splitText } from "../src/plugins/chatText";
 import { lensStyle, originalImage, searchUrls } from "../src/plugins/media";
 import { anonymousName } from "../src/plugins/utility";
 import { localTime } from "../src/plugins/people";
+import { hexColor, sharperImage, textOn } from "../src/plugins/look";
+import { permissionNames } from "../src/plugins/servers";
+import { nameColor } from "../src/plugins/decorations";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -208,6 +211,17 @@ check("the lens centres the point under the cursor", lens.size[0] === 200 && len
 check("search uses the original image", originalImage("https://media.discordapp.net/attachments/1/2/a.png?ex=1&width=300&height=200") === "https://media.discordapp.net/attachments/1/2/a.png?ex=1");
 check("every engine opens five searches", searchUrls("all", "https://x/a.png").length === 5);
 check("a timezone gives a local time", localTime("Asia/Tokyo") !== null && localTime("Not/AZone") === null);
+
+// ---- wave 3 ----
+check("short hex colors expand", hexColor("abc") === "#aabbcc" && hexColor("#7C5CFF") === "#7c5cff" && hexColor("nope") === null);
+check("dark text on light accents, light on dark", textOn("#f2f3f5") === "#0b0b0d" && textOn("#202060") === "#ffffff");
+const proxied = "https://media.discordapp.net/attachments/1/2/a.png?ex=1&is=2&hm=3&width=400&height=300&format=webp";
+check("lossless keeps the size", sharperImage(proxied, "lossless").includes("width=400") && sharperImage(proxied, "lossless").includes("quality=lossless"));
+check("original drops resizing and keeps the signature", sharperImage(proxied, "original") === "https://cdn.discordapp.com/attachments/1/2/a.png?ex=1&is=2&hm=3");
+check("other images are left alone", sharperImage("https://cdn.discordapp.com/avatars/1/a.png", "original") === "https://cdn.discordapp.com/avatars/1/a.png");
+check("administrator means everything", permissionNames(1n << 3n).length === 1);
+check("permission bits name the right things", permissionNames((1n << 11n) | (1n << 1n)).join() === "Kick Members,Send Messages", permissionNames((1n << 11n) | (1n << 1n)));
+check("name colors are steady per person", nameColor("123", 70) === nameColor("123", 70) && nameColor("123", 70) !== nameColor("124", 70));
 
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);
