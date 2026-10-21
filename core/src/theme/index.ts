@@ -1,10 +1,13 @@
 /**
- * Applies xray's look to Discord. The theme's CSS sits in one constructed
- * stylesheet adopted by the document, so Discord re-rendering its own DOM
- * can never drop it. Switching it off just removes a class from <html>.
+ * Applies xray's look to Discord. The theme's CSS (colors from obsidian.ts,
+ * layout from shell.ts) sits in one constructed stylesheet adopted by the
+ * document, so Discord re-rendering its own DOM can never drop it. Switching
+ * it off removes a class from <html> and stops the own-message marker.
  */
 import { themeEnabled } from "../settings";
 import { obsidianCss } from "./obsidian";
+import { startOwnMessages, stopOwnMessages } from "./ownMessages";
+import { shellCss } from "./shell";
 
 const CLASS = "xray-obsidian";
 
@@ -15,7 +18,7 @@ export function installTheme(): void {
   if (installed) return;
   installed = true;
   const sheet = new CSSStyleSheet();
-  sheet.replaceSync(obsidianCss);
+  sheet.replaceSync(obsidianCss + shellCss);
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
   active = themeEnabled();
   whenHtmlExists((html) => {
@@ -23,11 +26,20 @@ export function installTheme(): void {
     // Discord sets its own classes on <html>; if it ever replaces them wholesale, put ours back.
     new MutationObserver(() => syncClass(html)).observe(html, { attributes: true, attributeFilter: ["class"] });
   });
+  // The marker needs <body>, which doesn't exist at document start.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncMarker, { once: true });
+  else syncMarker();
 }
 
 export function setThemeActive(on: boolean): void {
   active = on;
   if (document.documentElement) syncClass(document.documentElement);
+  syncMarker();
+}
+
+function syncMarker(): void {
+  if (active) startOwnMessages();
+  else stopOwnMessages();
 }
 
 function syncClass(html: HTMLElement): void {

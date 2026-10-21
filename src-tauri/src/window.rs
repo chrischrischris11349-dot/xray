@@ -31,12 +31,13 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
         .background_color(Color(6, 6, 7, 255));
     // Debug builds only: XRAY_TEST_WINDOW=offscreen opens the window off-screen
     // and unfocused, so automated tests never pop up over whatever you're doing.
-    builder = if cfg!(debug_assertions) && std::env::var("XRAY_TEST_WINDOW").as_deref() == Ok("offscreen") {
-        builder.position(-4000.0, 0.0).focused(false).skip_taskbar(true)
+    let offscreen = cfg!(debug_assertions) && std::env::var("XRAY_TEST_WINDOW").as_deref() == Ok("offscreen");
+    builder = if offscreen {
+        builder.position(OFFSCREEN.0, OFFSCREEN.1).focused(false).skip_taskbar(true)
     } else {
         builder.center()
     };
-    builder
+    let window = builder
         .initialization_script(CORE)
         .additional_browser_args(BROWSER_ARGS)
         .on_navigation(move |url| {
@@ -56,8 +57,17 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
             NewWindowResponse::Deny
         })
         .build()?;
+    if offscreen {
+        // Windows ignores the builder's off-screen position and cascades the
+        // window onto the screen, so move it again now that it exists. This
+        // doesn't activate it or change its z-order.
+        window.set_position(tauri::PhysicalPosition::new(OFFSCREEN.0 as i32, OFFSCREEN.1 as i32))?;
+    }
     Ok(())
 }
+
+/// Far left of any monitor layout: where the test window lives.
+const OFFSCREEN: (f64, f64) = (-4000.0, 0.0);
 
 /// Brings the window back from the tray or the taskbar and focuses it.
 pub fn show<R: Runtime>(app: &AppHandle<R>) {

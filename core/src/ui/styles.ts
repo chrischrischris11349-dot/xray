@@ -1,7 +1,8 @@
 /**
  * The Obsidian look from the UI preview. Fonts: Discord's page only allows
- * fonts from a few hosts, so the panel uses Discord's own gg sans for text
- * and Windows' Cascadia Mono for data labels.
+ * fonts from a few hosts, so xray uses fonts Windows already has: Segoe UI
+ * Variable for text (the same as the shell around Discord) and Cascadia Mono
+ * for data labels.
  */
 export const css = `
 * { box-sizing: border-box; }
@@ -14,7 +15,7 @@ export const css = `
   --ok: #3dd68c; --warn: #f5b84a; --bad: #ff7a66; --switchOff: rgba(255,255,255,.16);
   --ease: cubic-bezier(.32,.72,0,1);
   color: var(--text);
-  font: 14px/1.4 "gg sans", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font: 14px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 .mono { font-family: "Cascadia Mono", Consolas, ui-monospace, monospace; }
@@ -68,7 +69,7 @@ export const css = `
 
 .reload { margin: 8px 2px 0; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; border-radius: 12px; background: var(--accentSoft); border: 1px solid var(--line); font-size: 13px; }
 .reload span { flex: 1; }
-.btn { height: 30px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--accent); color: var(--onAccent); font: 600 13px "gg sans", "Segoe UI", system-ui, sans-serif; cursor: pointer; transition: transform 120ms var(--ease); }
+.btn { height: 30px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--accent); color: var(--onAccent); font: 600 13px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; cursor: pointer; transition: transform 120ms var(--ease); }
 .btn:active, .switch:active, .icon-btn:active { transform: scale(.94); }
 
 .chip { min-width: 84px; height: 30px; flex: none; padding: 0 10px; border: 1px solid var(--line2); border-radius: 8px; background: var(--seg); color: var(--text); font: 500 12px "Cascadia Mono", Consolas, ui-monospace, monospace; cursor: pointer; transition: background-color 120ms ease; }
@@ -109,7 +110,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .badge {
   position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 5px;
   border-radius: 10px; border: 2px solid #0b0b0d; background: #d92d20; color: #fff;
-  font: 700 11px/16px "gg sans", "Segoe UI", system-ui, sans-serif; text-align: center;
+  font: 700 11px/16px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; text-align: center;
 }
 .qr {
   position: fixed; right: 20px; bottom: 152px; z-index: 2147482995;
@@ -130,7 +131,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .dm-name, .dm-preview { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dm-name { font-size: 14px; font-weight: 550; }
 .dm-preview { margin-top: 1px; font-size: 12.5px; color: var(--muted); }
-.count { flex: none; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--onAccent); font: 700 11px/18px "gg sans", system-ui, sans-serif; text-align: center; }
+.count { flex: none; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: var(--onAccent); font: 700 11px/18px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; text-align: center; }
 .msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
 .msg { align-self: flex-start; max-width: 78%; padding: 8px 12px; border-radius: 18px 18px 18px 6px; background: rgba(255,255,255,.08); font-size: 14px; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; }
 .msg.mine { align-self: flex-end; border-radius: 18px 18px 6px 18px; background: var(--accent); color: var(--onAccent); }
@@ -138,7 +139,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .reply { flex: none; padding: 10px 12px 12px; border-top: 1px solid var(--line); }
 .reply-field { display: flex; align-items: center; gap: 6px; height: 40px; padding: 0 4px 0 14px; border-radius: 20px; background: rgba(255,255,255,.05); border: 1px solid var(--line); }
 .reply-field:focus-within { border-color: rgba(255,255,255,.22); }
-.reply-field input, .pal-input input { flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; color: var(--text); font: 14px "gg sans", "Segoe UI", system-ui, sans-serif; outline: none; }
+.reply-field input, .pal-input input { flex: 1; min-width: 0; border: 0; padding: 0; background: transparent; color: var(--text); font: 14px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; outline: none; }
 .reply-field input::placeholder, .pal-input input::placeholder { color: var(--faint); }
 .send { width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; background: var(--accent); color: var(--onAccent); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 120ms var(--ease); }
 .send:active { transform: scale(.94); }
@@ -152,6 +153,20 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pal-input { flex: none; display: flex; align-items: center; gap: 12px; height: 58px; padding: 0 18px; border-bottom: 1px solid var(--line); }
 .pal-input input { font-size: 16px; }
 .pal-icon { display: flex; color: var(--muted); }
+
+/* The search bar in the command bar (palette.ts). Only with the Obsidian shell, which leaves room for it. */
+.cmdbar {
+  display: none; position: fixed; top: 8px; left: 50%; z-index: 2147482980; transform: translateX(-50%);
+  width: min(440px, 38vw); height: 30px; align-items: center; gap: 10px; padding: 0 6px 0 12px;
+  border: 0; border-radius: 10px; background: rgba(255,255,255,.05); box-shadow: inset 0 0 0 1px rgba(255,255,255,.09);
+  color: var(--faint); font: inherit; font-size: 13px; cursor: pointer; transition: background-color 120ms ease, color 120ms ease;
+}
+:host-context(html.xray-obsidian) .cmdbar { display: flex; }
+.cmdbar[hidden] { display: none !important; }
+.cmdbar:hover { background: rgba(255,255,255,.08); color: var(--muted); }
+.cmdbar .pal-icon { color: inherit; }
+.cmdbar .pal-icon svg { width: 15px; height: 15px; }
+.cmdbar-text { flex: 1; text-align: left; }
 .pal-list { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 8px 8px; scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
 .group { display: block; padding: 10px 10px 4px; }
 .result { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 10px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }

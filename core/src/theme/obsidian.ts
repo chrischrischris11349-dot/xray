@@ -8,12 +8,10 @@
  * so the overrides target those too, and use !important to beat Discord's
  * own declarations on the same element.
  *
- * The glass: the page paints a fixed, faintly tinted dark backdrop on <html>,
- * and Discord's big surfaces (server rail, sidebars, chat) are translucent
- * over it. Menus, popouts and modals stay solid so text on them stays crisp.
- * The backdrop never moves or animates, so it's painted once. (A real Mica
- * window was tried and dropped: with a transparent WebView2, Windows didn't
- * draw the backdrop, and the window turned see-through.)
+ * This file is the color layer. The layout (floating panes, the server dock,
+ * the backdrop they float over) is in shell.ts. Discord's big surfaces are
+ * translucent over that backdrop; menus, popouts and modals stay solid so
+ * text on them stays crisp.
  */
 const THEME_CONTAINERS = [".theme-dark", ".theme-darker", ".theme-midnight", ".theme-light"];
 
@@ -182,20 +180,6 @@ ${Object.entries(TOKENS)
 ${GLASS_SCOPE} {${GLASS_PALETTE}
 }
 
-/* The backdrop behind the glass: near-black with a faint cool tint, fixed in place. */
-html.xray-obsidian {
-  background:
-    radial-gradient(1200px 760px at 4% -12%, rgba(96, 110, 150, 0.26), transparent 62%),
-    radial-gradient(1000px 700px at 106% 112%, rgba(90, 74, 120, 0.2), transparent 60%),
-    radial-gradient(900px 600px at 58% 40%, rgba(44, 50, 66, 0.14), transparent 70%),
-    #060607 !important;
-  background-attachment: fixed !important;
-}
-html.xray-obsidian body,
-html.xray-obsidian #app-mount {
-  background: transparent !important;
-}
-
 /* Section labels as small uppercase mono, the data-label style from the preview. */
 html.xray-obsidian [class*="sectionTitle_"] > h2,
 html.xray-obsidian [class*="headerText_"],
@@ -213,49 +197,6 @@ html.xray-obsidian li[class*="containerDefault_"] h3 {
 /* "Add Friend" sits on the white button fill but hard-codes white text. */
 html.xray-obsidian [class*="addFriend_"]:not([class*="selected_"]) {
   color: var(--xr-on-accent) !important;
-}
-
-/*
- * Layout: the channel list and the main page float as rounded glass cards
- * over the backdrop. These match Discord's layout classes by name prefix
- * (the hashed suffix changes between builds); if Discord renames them,
- * the cards just stop floating and everything else keeps working.
- */
-html.xray-obsidian [class*="sidebarList_"],
-html.xray-obsidian [class*="sidebar_"] + [class*="page_"] {
-  border: 1px solid rgba(255, 255, 255, 0.07) !important;
-  border-radius: 16px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 12px 40px rgba(0, 0, 0, 0.35) !important;
-  overflow: hidden !important;
-}
-html.xray-obsidian [class*="sidebarList_"] {
-  margin: 0 0 8px 0 !important;
-  background: rgba(255, 255, 255, 0.025) !important;
-}
-html.xray-obsidian [class*="sidebar_"] + [class*="page_"] {
-  margin: 0 8px 8px 8px !important;
-  background: rgba(0, 0, 0, 0.22) !important;
-}
-
-/* The title bar: clear, with the xray mark on the left. */
-html.xray-obsidian [class*="base_"] > [class^="bar_"] {
-  position: relative !important;
-  background: transparent !important;
-}
-html.xray-obsidian [class*="base_"] > [class^="bar_"]::before {
-  content: "xray";
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 18px;
-  padding-left: 26px;
-  line-height: 18px;
-  font: 600 13px var(--font-primary);
-  letter-spacing: -0.01em;
-  color: var(--xr-strong);
-  background: no-repeat left center / 18px 18px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2' width='20' height='20' rx='6' fill='%23f2f3f5'/%3E%3Cpath d='M8.5 8.5l7 7M15.5 8.5l-7 7' fill='none' stroke='%230b0b0d' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
-  pointer-events: none;
 }
 
 html.xray-obsidian ::selection {

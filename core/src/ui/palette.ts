@@ -7,7 +7,7 @@
  * opens, so it costs nothing while closed. Picking a result goes through
  * Discord's own router (or its "open DM" action for a friend).
  */
-import { navigate, privateChannelActions, safeImage, stores, userView } from "../discord";
+import { loggedIn, navigate, onStoresChanged, privateChannelActions, safeImage, stores, userView, whenStore } from "../discord";
 import { h } from "./dom";
 import type { Feature } from "./features";
 import { onKey, uiRoot } from "./root";
@@ -40,18 +40,58 @@ let shown: PaletteResult[] = [];
 let selected = 0;
 let commands: () => PaletteResult[] = () => [];
 
+let pill: HTMLButtonElement | undefined;
+let stopPillWatch: (() => void) | undefined;
+
 export const palette: Feature = {
   id: "palette",
-  name: "Ctrl+K search",
-  description: "Search DMs, friends, channels, servers and xray commands. Replaces Discord's quick switcher.",
+  name: "Search",
+  description: "The search bar on top and Ctrl+K: DMs, friends, channels, servers and xray commands. Replaces Discord's quick switcher.",
   start: () => {
     enabled = true;
+    mountPill();
   },
   stop: () => {
     enabled = false;
     close();
+    unmountPill();
   },
 };
+
+/**
+ * The search bar in the middle of the command bar, so the palette is one
+ * click away and not only a shortcut. It only shows with the Obsidian
+ * theme (the shell makes room for it; see `.cmdbar` in styles.ts) and
+ * while you're logged in.
+ */
+function mountPill(): void {
+  if (pill) return;
+  pill = h(
+    "button",
+    { class: "cmdbar", attrs: { type: "button", "aria-label": "Search Discord (Ctrl+K)" }, on: { click: () => (scrim ? close() : open()) } },
+    h("span", { class: "pal-icon", trustedHtml: SEARCH }),
+    h("span", { class: "cmdbar-text", text: "Search everything" }),
+    h("span", { class: "kbd", text: "Ctrl K" }),
+  );
+  uiRoot().append(pill);
+  syncPill();
+  whenStore("UserStore", () => {
+    if (!pill || stopPillWatch) return;
+    stopPillWatch = onStoresChanged([stores.users], syncPill);
+    syncPill();
+  });
+}
+
+function unmountPill(): void {
+  stopPillWatch?.();
+  stopPillWatch = undefined;
+  pill?.remove();
+  pill = undefined;
+}
+
+function syncPill(): void {
+  if (pill) pill.hidden = !loggedIn();
+}
 
 /** xray's commands for the palette, supplied by whoever owns them (see index.ts). */
 export function setPaletteCommands(provider: () => PaletteResult[]): void {
