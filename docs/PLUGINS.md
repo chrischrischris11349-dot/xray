@@ -2,8 +2,8 @@
 
 xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own code (their code is GPL and xray's source is private, so nothing is copied). This file tracks the merged catalog: 483 names after removing duplicates.
 
-- **Built:** 108 catalog plugins, covered by xray plugins (some xray plugins cover several).
-- **Planned:** 324.
+- **Built:** 115 catalog plugins, covered by xray plugins (some xray plugins cover several).
+- **Planned:** 317.
 - **Left out on purpose:** 30 (spam, account tokens, acting on other people, tracking people, faking conversations, cheating).
 - **Not applicable:** 21 (the other mods' own internals and duplicates).
 
@@ -37,6 +37,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | EventLogs | Message Logger (partly) |
 | ExportMessages | Save Message |
 | FakeVoice | Fake Deafen |
+| FindReply | Find Replies |
 | FixImagesQuality | Sharper Images |
 | FontLoader | Custom Font (installed fonts) |
 | FrequentQuickSwitcher | Search (Ctrl+K) |
@@ -62,6 +63,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | MessageNotifier | Message Alerts |
 | MessagePeek | Message Peek |
 | MessageTranslate | Translate (partly) |
+| MoreUserTags | Owner & Webhook Tags |
 | NewGuildSettings | Quiet New Servers |
 | NoBlockedMessages | No Blocked Messages |
 | NoCaps | No Caps Lock |
@@ -82,18 +84,23 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | QuickMessages | Saved Replies |
 | QuickReply | Reply Keys |
 | QuickThemeSwitcher | Theme Key |
+| Quoter | Quote Image |
 | ReadAllNotificationsButton | Read All |
 | RecentDMSwitcher | Recent DM Switcher |
 | RelationshipNotifier | Removal Alerts |
+| RepeatMessages | Send Again |
 | ReplyTimestamp | Reply Timestamps |
 | RevealAllSpoilers | Reveal Spoilers |
 | ReverseImageSearch | Reverse Image Search |
+| ScheduledMessages | Scheduled Messages |
 | SendTimestamps | Timestamps |
 | ServerInfo | Server Info |
 | ServerListIndicators | Friends Online |
 | ServerSearch | Search (Ctrl+K) |
 | ShowMeYourName | Show Usernames |
+| ShowRolesInChat | Roles in Chat |
 | Signature | Signature |
+| SilenceUsers | Silence People |
 | SilentDelete | Silent Edit & Delete |
 | SilentEdit | Silent Edit & Delete |
 | SilentMessageToggle | Silent Messages |
@@ -293,7 +300,6 @@ Roughly in the order they'll be built: most-used first.
 - ReplyPingControl (equicord)
 - SedEnhanced (equicord)
 - ShowResourceChannels (equicord)
-- SilenceUsers (equicord)
 - StatusWhileActive (equicord)
 - StopAutoUnread (equicord)
 - StreamingCodecDisabler (equicord)
@@ -333,7 +339,6 @@ Roughly in the order they'll be built: most-used first.
 - ExitSounds (equicord)
 - FastDeleteChannels (equicord)
 - FileUpload (equicord)
-- FindReply (equicord)
 - FavoriteAnything (equicord)
 - FixFileExtensions (equicord)
 - FollowVoiceUser (equicord)
@@ -363,7 +368,6 @@ Roughly in the order they'll be built: most-used first.
 - MessageLinkTooltip (equicord)
 - MessageLoggerEnhanced (equicord)
 - MicLoopbackTester (equicord)
-- MoreUserTags (equicord)
 - MoreStickers (equicord)
 - NeverPausePreviews (equicord)
 - MusicControls (equicord)
@@ -373,23 +377,19 @@ Roughly in the order they'll be built: most-used first.
 - PingNotifications (equicord)
 - ProfileSets (equicord)
 - Questify (equicord)
-- Quoter (equicord)
 - RandomVoice (equicord)
 - ReactionTimestamps (equicord)
 - RemixRevived (equicord)
-- RepeatMessages (equicord)
 - RichPresence (equicord)
 - RichMagnetLinks (equicord)
 - RPCEditor (equicord)
 - SaveFavoriteGIFs (equicord)
 - ScreenRecorder (equicord)
-- ScheduledMessages (equicord)
 - SearchFix (equicord)
 - SekaiStickers (equicord)
 - ShowBadgesInChat (equicord)
 - ShowMessageEmbeds (equicord)
 - ShowSongName (equicord)
-- ShowRolesInChat (equicord)
 - SidebarChat (equicord)
 - Snowfall (equicord)
 - SongLink (equicord)

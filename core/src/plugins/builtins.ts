@@ -7,6 +7,7 @@ import fakeDeafen from "./fakeDeafen";
 import { lookPlugins } from "./look";
 import messageLogger from "./messageLogger";
 import { mediaPlugins } from "./media";
+import { messagingPlugins } from "./messaging";
 import { notificationPlugins } from "./notifications";
 import { peoplePlugins } from "./people";
 import { polishPlugins } from "./polish";
@@ -28,6 +29,7 @@ export const builtins: readonly Plugin<any>[] = [
   ...webMenuPlugins,
   ...toolPlugins,
   ...readingPlugins,
+  ...messagingPlugins,
   ...chatTextPlugins,
   ...notificationPlugins,
   ...appearancePlugins,

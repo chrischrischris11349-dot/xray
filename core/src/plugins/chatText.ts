@@ -235,7 +235,7 @@ const normalizeLinks = definePlugin({
 });
 
 /** "18:30", "6:30pm", "2026-12-24 18:00" → a Date, today's or the next one for a bare time. */
-function parseWhen(text: string, now: Date): Date | null {
+export function parseWhen(text: string, now: Date): Date | null {
   const t = text.trim().toLowerCase();
   const rel = /^in\s+(\d+(?:\.\d+)?)\s*(s|sec|secs|seconds?|m|min|mins|minutes?|h|hr|hrs|hours?|d|days?|w|weeks?)$/.exec(t);
   if (rel) {

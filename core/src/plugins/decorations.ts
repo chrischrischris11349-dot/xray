@@ -319,4 +319,66 @@ const ircColors = definePlugin({
   },
 });
 
-export const decorationPlugins: readonly Plugin<any>[] = [replyTimestamp, typingIndicator, showMeYourName, platformIndicators, userVoiceShow, ircColors];
+const CHIP_CSS = `
+  .xray-chip { margin-left: 6px; padding: 0 5px; border-radius: 4px; font: 600 10px "Cascadia Mono", Consolas, monospace;
+    letter-spacing: .06em; text-transform: uppercase; line-height: 16px; vertical-align: 1px; white-space: nowrap;
+    background: rgba(255,255,255,.07); color: var(--text-muted); }
+`;
+
+/** A role's color as CSS, or null for an uncolored role. */
+function roleColor(role: any): string | null {
+  const value = role?.colorString ?? (typeof role?.color === "number" && role.color ? `#${role.color.toString(16).padStart(6, "0")}` : null);
+  return typeof value === "string" && value ? value : null;
+}
+
+const showRolesInChat = definePlugin({
+  id: "showRolesInChat",
+  name: "Roles in Chat",
+  description: "Shows each person's highest role next to their name in server chats.",
+  category: "Servers",
+  impact: "light",
+  impactReason: "Adds one label per message header",
+  needsReload: false,
+  enabledByDefault: false,
+  start(ctx) {
+    ctx.css(CHIP_CSS);
+    decorateHeaders(ctx, "role", (message) => {
+      const guildId = stores.channels?.getChannel?.(message.channel_id)?.guild_id;
+      if (!guildId || !message.author?.id) return null;
+      const roles = (stores.members?.getMember?.(guildId, message.author.id)?.roles ?? [])
+        .map((id: string) => stores.roles?.getRole?.(guildId, id))
+        .filter((role: any) => role && !role.managed);
+      if (!roles.length) return null;
+      const top = roles.reduce((best: any, role: any) => ((role.position ?? 0) > (best.position ?? 0) ? role : best));
+      const chip = span("xray-chip", top.name);
+      const color = roleColor(top);
+      if (color) {
+        chip.style.color = color;
+        chip.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+      }
+      return chip;
+    });
+  },
+});
+
+const userTags = definePlugin({
+  id: "moreUserTags",
+  name: "Owner & Webhook Tags",
+  description: "Small tags in chat for the server's owner and for webhook messages.",
+  category: "Servers",
+  impact: "light",
+  impactReason: "Adds at most one label per message header",
+  needsReload: false,
+  enabledByDefault: true,
+  start(ctx) {
+    ctx.css(CHIP_CSS);
+    decorateHeaders(ctx, "tag", (message) => {
+      if (message.webhookId ?? message.webhook_id) return span("xray-chip", "Webhook");
+      const guildId = stores.channels?.getChannel?.(message.channel_id)?.guild_id;
+      const owner = guildId ? stores.guilds?.getGuild?.(guildId)?.ownerId : null;
+      return owner && owner === message.author?.id ? span("xray-chip", "Owner") : null;
+    });
+  },
+});
+
+export const decorationPlugins: readonly Plugin<any>[] = [replyTimestamp, typingIndicator, showMeYourName, platformIndicators, userVoiceShow, ircColors, showRolesInChat, userTags];
