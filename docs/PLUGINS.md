@@ -2,8 +2,8 @@
 
 xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own code (their code is GPL and xray's source is private, so nothing is copied). This file tracks the merged catalog: 483 names after removing duplicates.
 
-- **Built:** 66 catalog plugins, covered by xray plugins (some xray plugins cover several).
-- **Planned:** 366.
+- **Built:** 80 catalog plugins, covered by xray plugins (some xray plugins cover several).
+- **Planned:** 352.
 - **Left out on purpose:** 30 (spam, account tokens, acting on other people, tracking people, faking conversations, cheating).
 - **Not applicable:** 21 (the other mods' own internals and duplicates).
 
@@ -12,13 +12,16 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | Catalog plugin | In xray |
 |---|---|
 | Abbreviation | Abbreviations |
+| AlwaysTrust | Always Trust Links |
 | AnonymiseFileNames | Anonymous Uploads |
 | BlockKeywords | Block Keywords |
 | BlurNSFW | Blur NSFW |
 | CallTimer | Call Timer |
+| CharacterCounter | Character Counter |
 | ClearURLs | Clean Links |
 | CommandPalette | Search (Ctrl+K) |
 | ConsoleJanitor | Quiet Console |
+| CopyFileContents | Copy File Contents |
 | CopyProfileId | Copy ID |
 | CopyUserMention | Copy User Links |
 | CopyUserURLs | Copy User Links |
@@ -41,15 +44,20 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | MessageLogger | Message Logger |
 | MessageNotifier | Message Alerts |
 | MessagePeek | Message Peek |
+| MessageTranslate | Translate (partly) |
 | NewGuildSettings | Quiet New Servers |
 | NoBlockedMessages | No Blocked Messages |
 | NoCaps | No Caps Lock |
 | NoF1 | No F1 Help |
 | NoNitroUpsell | Declutter (partly) |
+| NoPendingCount | No Pending Counts |
 | NoReplyMention | No Reply Ping |
 | NoTrack | Block Tracking |
+| NoTypingAnimation | Still Typing Dots |
 | NormalizeMessageLinks | Normal Message Links |
+| NotificationVolume | Notification Volume |
 | PictureInPicture | Picture in Picture |
+| PlatformIndicators | Device Indicators |
 | PlatformSpoofer | Device Badge |
 | PolishWording | Auto Capitalize (partly) |
 | QuickMessages | Saved Replies |
@@ -57,11 +65,13 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | ReadAllNotificationsButton | Read All |
 | RecentDMSwitcher | Recent DM Switcher |
 | RelationshipNotifier | Removal Alerts |
+| ReplyTimestamp | Reply Timestamps |
 | RevealAllSpoilers | Reveal Spoilers |
 | ReverseImageSearch | Reverse Image Search |
 | SendTimestamps | Timestamps |
 | ServerInfo | Server Info |
 | ServerSearch | Search (Ctrl+K) |
+| ShowMeYourName | Show Usernames |
 | Signature | Signature |
 | SilentDelete | Silent Edit & Delete |
 | SilentEdit | Silent Edit & Delete |
@@ -73,9 +83,13 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | TalkInReverse | Talk in Reverse |
 | TextReplace | Text Replace |
 | Timezones | Timezones |
+| Translate | Translate |
+| TypingIndicator | Typing in Channel List |
 | Unindent | Unindent Code |
+| UserVoiceShow | In Voice Badge |
 | VcNarrator | Voice Narrator |
 | ViewRaw | View Raw |
+| VoiceDownload | Save Voice Messages |
 | WriteUpperCase | Auto Capitalize |
 
 ## Left out on purpose
@@ -121,7 +135,6 @@ Roughly in the order they'll be built: most-used first.
 
 - AlwaysAnimate (vencord)
 - AlwaysExpandRoles (vencord)
-- AlwaysTrust (vencord)
 - AutoDNDWhilePlaying (vencord)
 - BetterGifAltText (vencord)
 - BetterGifPicker (vencord)
@@ -151,12 +164,9 @@ Roughly in the order they'll be built: most-used first.
 - NoMosaic (vencord)
 - NoOnboardingDelay (vencord)
 - NoProfileThemes (vencord)
-- NoPendingCount (vencord)
 - NoServerEmojis (vencord)
 - NoSystemBadge (vencord)
-- NoTypingAnimation (vencord)
 - NoUnblockToJump (vencord)
-- NotificationVolume (vencord)
 - OnePingPerDM (vencord)
 - oneko (vencord)
 - OpenInApp (vencord)
@@ -189,10 +199,8 @@ Roughly in the order they'll be built: most-used first.
 - BetterSessions (vencord)
 - BetterSettings (vencord)
 - BiggerStreamPreview (vencord)
-- CharacterCounter (vencord)
 - ClientTheme (vencord)
 - CopyEmojiMarkdown (vencord)
-- CopyFileContents (vencord)
 - CopyStickerLinks (vencord)
 - CustomRPC (vencord)
 - Dearrow (vencord)
@@ -221,10 +229,8 @@ Roughly in the order they'll be built: most-used first.
 - PauseInvitesForever (vencord)
 - PermissionsViewer (vencord)
 - PinDMs (vencord)
-- PlatformIndicators (vencord)
 - PreviewMessage (vencord)
 - QuickMention (vencord)
-- ReplyTimestamp (vencord)
 - ReplaceGoogleSearch (vencord)
 - ReviewDB (vencord)
 - RoleColorEverywhere (vencord)
@@ -232,20 +238,15 @@ Roughly in the order they'll be built: most-used first.
 - ShikiCodeblocks (vencord)
 - ShowConnections (vencord)
 - ShowHiddenChannels (vencord)
-- ShowMeYourName (vencord)
 - ShowTimeoutDuration (vencord)
 - SortFriendRequests (vencord)
 - SpotifyControls (vencord)
 - StartupTimings (vencord)
-- Translate (vencord)
-- TypingIndicator (vencord)
 - TypingTweaks (vencord)
 - UnsuppressEmbeds (vencord)
-- UserVoiceShow (vencord)
 - USRBG (vencord)
 - ValidUser (vencord)
 - ViewIcons (vencord)
-- VoiceDownload (vencord)
 - VoiceMessages (vencord)
 - WebPWA (vencord)
 - WebScreenShare (vencord)
@@ -355,7 +356,6 @@ Roughly in the order they'll be built: most-used first.
 - MessageFetchTimer (equicord)
 - MessageLinkTooltip (equicord)
 - MessageLoggerEnhanced (equicord)
-- MessageTranslate (equicord)
 - MicLoopbackTester (equicord)
 - MoreUserTags (equicord)
 - MoreStickers (equicord)

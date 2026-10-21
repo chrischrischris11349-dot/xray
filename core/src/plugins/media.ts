@@ -4,6 +4,7 @@
  * work on the <img> elements Discord already renders.
  */
 import { menu } from "../api/menus";
+import { copyText } from "../ui/dialog";
 import { h } from "../ui/dom";
 import { uiRoot } from "../ui/root";
 import { definePlugin, type Plugin } from "./types";
@@ -167,4 +168,59 @@ const reverseImageSearch = definePlugin({
   },
 });
 
-export const mediaPlugins: readonly Plugin<any>[] = [imageZoom, reverseImageSearch];
+/** Attachments worth reading as text. */
+const TEXT_FILE = /\.(txt|log|md|json|ya?ml|toml|ini|cfg|csv|xml|html?|css|s?css|js|mjs|cjs|ts|tsx|jsx|py|rs|go|java|kt|c|h|cpp|hpp|cs|rb|php|lua|sh|ps1|bat|sql|diff|patch)$/i;
+const MAX_TEXT_BYTES = 2_000_000;
+
+const copyFileContents = definePlugin({
+  id: "copyFileContents",
+  name: "Copy File Contents",
+  description: "Right-click a message with a text or code file to copy what's in it, without downloading.",
+  category: "Media",
+  impact: "light",
+  impactReason: "Only runs from the menu",
+  needsReload: false,
+  enabledByDefault: true,
+  start(ctx) {
+    ctx.menu("message", (items, { message }) => {
+      const files = (message?.attachments ?? []).filter((a: any) => TEXT_FILE.test(a?.filename ?? "") && (a.size ?? 0) <= MAX_TEXT_BYTES && typeof a.url === "string");
+      for (const file of files.slice(0, 3)) {
+        items.push(
+          menu.item({
+            id: `copy-file-${file.id}`,
+            label: files.length > 1 ? `Copy ${file.filename}` : "Copy file contents",
+            action: async () => {
+              try {
+                const response = await fetch(file.url);
+                if (response.ok) copyText(await response.text());
+              } catch {
+                // offline or the file's gone: nothing to copy
+              }
+            },
+          }),
+        );
+      }
+    });
+  },
+});
+
+const voiceDownload = definePlugin({
+  id: "voiceDownload",
+  name: "Save Voice Messages",
+  description: "Right-click a voice message to save it.",
+  category: "Media",
+  impact: "light",
+  impactReason: "Only runs from the menu",
+  needsReload: false,
+  enabledByDefault: true,
+  start(ctx) {
+    ctx.menu("message", (items, { message }) => {
+      const audio = (message?.attachments ?? []).find((a: any) => a?.waveform || /^audio\//.test(a?.content_type ?? a?.contentType ?? ""));
+      if (!audio?.url) return;
+      // Opens in your browser, which plays or saves it.
+      items.push(menu.item({ id: "save-voice", label: "Save voice message", action: () => window.open(audio.url, "_blank", "noopener,noreferrer") }));
+    });
+  },
+});
+
+export const mediaPlugins: readonly Plugin<any>[] = [imageZoom, reverseImageSearch, copyFileContents, voiceDownload];

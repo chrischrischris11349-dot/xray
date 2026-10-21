@@ -7,6 +7,7 @@ mod hotkeys;
 mod notify;
 mod report;
 mod settings;
+mod translate;
 mod tray;
 mod window;
 
@@ -30,7 +31,7 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_opener::init())
         // Every command Discord's page may call (see capabilities/main.json).
-        .invoke_handler(tauri::generate_handler![notify::notify, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events])
+        .invoke_handler(tauri::generate_handler![notify::notify, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, translate::translate])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
