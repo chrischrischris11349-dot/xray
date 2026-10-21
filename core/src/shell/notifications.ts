@@ -13,6 +13,12 @@ const MAX_TRACKED = 50;
 
 const live = new Map<number, XrayNotification>();
 let nextId = 1;
+/** While true (xray is locked), toasts say only that something arrived, not what. */
+let hideContent = false;
+
+export function setNotificationsPrivate(on: boolean): void {
+  hideContent = on;
+}
 
 type Handler = ((this: XrayNotification, event: Event) => unknown) | null;
 
@@ -53,7 +59,8 @@ class XrayNotification extends EventTarget {
 
     live.set(this.#id, this);
     if (live.size > MAX_TRACKED) live.delete(live.keys().next().value!);
-    invoke("notify", { id: this.#id, title: this.title, body: this.body })
+    const shown = hideContent ? { title: "xray", body: "New notification" } : { title: this.title, body: this.body };
+    invoke("notify", { id: this.#id, ...shown })
       .then(() => this.fire("show"))
       .catch((err) => {
         warn("couldn't show a notification", err);

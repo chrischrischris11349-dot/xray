@@ -2,8 +2,8 @@
 
 xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own code (their code is GPL and xray's source is private, so nothing is copied). This file tracks the merged catalog: 483 names after removing duplicates.
 
-- **Built:** 115 catalog plugins, covered by xray plugins (some xray plugins cover several).
-- **Planned:** 317.
+- **Built:** 121 catalog plugins, covered by xray plugins (some xray plugins cover several).
+- **Planned:** 311.
 - **Left out on purpose:** 30 (spam, account tokens, acting on other people, tracking people, faking conversations, cheating).
 - **Not applicable:** 21 (the other mods' own internals and duplicates).
 
@@ -17,6 +17,8 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | BlockKeywords | Block Keywords |
 | BlurNSFW | Blur NSFW |
 | CallTimer | Call Timer |
+| CancelFriendRequest | Cancel Friend Request |
+| ChannelBadges | Channel Badges |
 | CharacterCounter | Character Counter |
 | ClearURLs | Clean Links |
 | ClientTheme | Accent Color |
@@ -75,6 +77,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | NoTypingAnimation | Still Typing Dots |
 | NormalizeMessageLinks | Normal Message Links |
 | NotificationVolume | Notification Volume |
+| PasscodeLock | Passcode Lock |
 | PermissionsViewer | Permissions Viewer |
 | PictureInPicture | Picture in Picture |
 | PinIcon | Pin Marks |
@@ -115,14 +118,17 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | ToneIndicators | Tone Tags |
 | Translate | Translate |
 | TypingIndicator | Typing in Channel List |
+| UI Optimisations | Calm Mode (partly) |
 | UncompressedImages | Sharper Images |
 | Unindent | Unindent Code |
 | UnitConverter | Unit Converter |
+| UnreadCountBadge | Unread Counts |
 | UnsuppressEmbeds | Show Link Previews |
 | UserVoiceShow | In Voice Badge |
 | VcNarrator | Voice Narrator |
 | ViewIcons | View Banners + Copy User Links |
 | ViewRaw | View Raw |
+| VoiceChannelSearch | Search (voice channels in Ctrl+K) |
 | VoiceDownload | Save Voice Messages |
 | WebContextMenus | Copy & Open |
 | WriteUpperCase | Auto Capitalize |
@@ -317,7 +323,6 @@ Roughly in the order they'll be built: most-used first.
 - BetterForwards (equicord)
 - BetterImageEditor (equicord)
 - BetterInvites (equicord)
-- ChannelBadges (equicord)
 - BypassStatus (equicord)
 - ClientSideBlock (equicord)
 - ClipUpload (equicord)
@@ -373,7 +378,6 @@ Roughly in the order they'll be built: most-used first.
 - MusicControls (equicord)
 - NotificationTitle (equicord)
 - OrbolayBridge (equicord)
-- CancelFriendRequest (equicord)
 - PingNotifications (equicord)
 - ProfileSets (equicord)
 - Questify (equicord)
@@ -399,7 +403,6 @@ Roughly in the order they'll be built: most-used first.
 - Streaks (equicord)
 - TidalEmbeds (equicord)
 - ToastNotifications (equicord)
-- UnreadCountBadge (equicord)
 - UrlHighlighter (equicord)
 - UserPFP (equicord)
 - VoiceButtons (equicord)
@@ -454,8 +457,6 @@ Roughly in the order they'll be built: most-used first.
 - MuteAllServers (nightcord)
 - NightcordAI (nightcord)
 - NoDMWhileStreaming (nightcord)
-- UI Optimisations (nightcord)
-- PasscodeLock (nightcord)
 - PreviewHTML (nightcord)
 - QuickDM (nightcord)
 - ProfileDrawing (nightcord)
@@ -481,7 +482,6 @@ Roughly in the order they'll be built: most-used first.
 - StreamProof (nightcord)
 - SoundCordPlayer (nightcord)
 - TotpManager (nightcord)
-- VoiceChannelSearch (nightcord)
 - VoiceDictation (nightcord)
 - VoiceIsolator (nightcord)
 - youtubePlayer (nightcord)

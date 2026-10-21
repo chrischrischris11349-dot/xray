@@ -231,4 +231,12 @@ select.opt-input option { background: #18181c; color: var(--text); }
 
 /* Image Zoom (plugins/media.ts) */
 .zoom-lens { position: fixed; z-index: 2147483002; border-radius: 50%; pointer-events: none; background-repeat: no-repeat; background-color: #0b0b0d; box-shadow: 0 18px 50px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.85), inset 0 0 0 1px rgba(0,0,0,.4); }
+
+/* Passcode Lock (plugins/comfort.ts): above everything, including the panel. */
+.lock { position: fixed; inset: 0; z-index: 2147483600; display: flex; align-items: center; justify-content: center; background: rgba(4,4,5,.86); backdrop-filter: blur(28px) saturate(140%); }
+.lock-card { width: 300px; display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 18px; background: rgba(22,22,26,.9); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09); }
+.lock-title { font-size: 16px; font-weight: 650; text-align: center; }
+.lock-input { height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2); background: rgba(255,255,255,.04); color: var(--text); font: inherit; letter-spacing: .2em; outline: none; text-align: center; }
+.lock-input:focus { border-color: rgba(255,255,255,.3); }
+.lock-status { min-height: 16px; font-size: 12.5px; color: var(--bad); text-align: center; }
 `;

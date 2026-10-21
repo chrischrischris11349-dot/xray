@@ -1,7 +1,9 @@
 import { appearancePlugins } from "./appearance";
 import { chatActionPlugins } from "./chatActions";
 import { chatTextPlugins } from "./chatText";
+import { channelListPlugins } from "./channelList";
 import cleanLinks from "./cleanLinks";
+import { comfortPlugins } from "./comfort";
 import { decorationPlugins } from "./decorations";
 import fakeDeafen from "./fakeDeafen";
 import { lookPlugins } from "./look";
@@ -30,6 +32,8 @@ export const builtins: readonly Plugin<any>[] = [
   ...toolPlugins,
   ...readingPlugins,
   ...messagingPlugins,
+  ...channelListPlugins,
+  ...comfortPlugins,
   ...chatTextPlugins,
   ...notificationPlugins,
   ...appearancePlugins,

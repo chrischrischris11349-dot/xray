@@ -4,7 +4,7 @@
  * without Developer Mode.
  */
 import { menu, type MenuTarget } from "../api/menus";
-import { stores } from "../discord";
+import { http, stores } from "../discord";
 import { pluginState, save } from "../settings";
 import { copyText, promptText, showDialog } from "../ui/dialog";
 import { definePlugin, type Plugin } from "./types";
@@ -189,4 +189,31 @@ const viewBanners = definePlugin({
   },
 });
 
-export const peoplePlugins: readonly Plugin<any>[] = [quickCopy, friendsSincePlugin, timezones, viewBanners];
+/** Discord's relationship type for a friend request you sent that's still waiting. */
+const OUTGOING_REQUEST = 4;
+
+const cancelFriendRequest = definePlugin({
+  id: "cancelFriendRequest",
+  name: "Cancel Friend Request",
+  description: "Right-click someone you've sent a friend request to and take it back.",
+  category: "Friends",
+  impact: "light",
+  impactReason: "Only runs from the menu",
+  needsReload: false,
+  enabledByDefault: true,
+  start(ctx) {
+    ctx.menu("user-context", (items, { user }) => {
+      if (!user || stores.relationships?.getRelationshipType?.(user.id) !== OUTGOING_REQUEST) return;
+      items.push(
+        menu.item({
+          id: "cancel-friend-request",
+          label: "Cancel friend request",
+          color: "danger",
+          action: () => void http()?.del?.({ url: `/users/@me/relationships/${user.id}` })?.catch?.(() => {}),
+        }),
+      );
+    });
+  },
+});
+
+export const peoplePlugins: readonly Plugin<any>[] = [quickCopy, friendsSincePlugin, timezones, viewBanners, cancelFriendRequest];

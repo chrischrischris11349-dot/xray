@@ -1,13 +1,15 @@
 /**
- * Ctrl+K search: one box for your DMs, friends, channels, servers and xray's
- * own commands. While it's switched on it takes Ctrl+K from Discord's quick
- * switcher; switched off, Ctrl+K is Discord's again.
+ * Ctrl+K search: one box for your DMs, friends, channels (picking a voice
+ * channel joins it), servers and xray's own commands. While it's switched on
+ * it takes Ctrl+K from Discord's quick switcher; switched off, Ctrl+K is
+ * Discord's again.
  *
  * Everything comes from Discord's stores and is gathered when the palette
  * opens, so it costs nothing while closed. Picking a result goes through
  * Discord's own router (or its "open DM" action for a friend).
  */
 import { loggedIn, navigate, onStoresChanged, privateChannelActions, safeImage, stores, userView, whenStore } from "../discord";
+import { find } from "../webpack";
 import { h } from "./dom";
 import type { Feature } from "./features";
 import { onKey, uiRoot } from "./root";
@@ -281,8 +283,29 @@ function gather(): PaletteResult[] {
         run: () => navigate(`/channels/${guild.id}/${channel.id}`),
       });
     }
+    // Voice channels: picking one joins it, like clicking it in the channel list.
+    const vocal: any[] = safely(() => stores.guildChannels?.getChannels?.(guild.id)?.VOCAL ?? []);
+    for (const entry of vocal) {
+      const channel = entry?.channel;
+      if (!channel?.name) continue;
+      results.push({
+        kind: "Channel",
+        title: channel.name,
+        keywords: `${guild.name} voice`,
+        subtitle: `Voice · ${guild.name}`,
+        image: null,
+        glyph: "♪",
+        round: false,
+        run: () => (voiceActions()?.selectVoiceChannel ? voiceActions().selectVoiceChannel(channel.id) : navigate(`/channels/${guild.id}/${channel.id}`)),
+      });
+    }
   }
   return results;
+}
+
+/** Discord's own voice actions (`selectVoiceChannel` joins a channel). */
+function voiceActions(): any {
+  return find((c) => typeof c === "object" && c !== null && "selectVoiceChannel" in c && "disconnect" in c && String(c.selectVoiceChannel).includes("selectVoiceChannel("));
 }
 
 function safely<T>(read: () => T): T {
