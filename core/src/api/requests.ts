@@ -48,18 +48,20 @@ function rewriteJson(method: string, path: string, json: string): string {
   } catch {
     return json;
   }
-  let changed = false;
+  // Serialized once before and once after, however many rules match.
+  let before: string | undefined;
   for (const rule of rules) {
     if (!rule.methods.includes(method) || !rule.path.test(path)) continue;
-    const before = JSON.stringify(body);
+    before ??= JSON.stringify(body);
     try {
       rule.rewrite({ method, path, body });
     } catch (err) {
       warn("a request rewrite failed", err);
     }
-    if (!changed && JSON.stringify(body) !== before) changed = true;
   }
-  return changed ? JSON.stringify(body) : json;
+  if (before === undefined) return json;
+  const after = JSON.stringify(body);
+  return after !== before ? after : json;
 }
 
 function rewriteBody(method: string, url: string, body: unknown): unknown {

@@ -119,12 +119,13 @@ export default definePlugin({
         return true;
       }
       if (deletes && action.type === "MESSAGE_DELETE_BULK" && Array.isArray(action.ids)) {
-        const keep = action.ids.filter((id: string) => !ignored(stores.messages?.getMessage?.(action.channelId, id)));
-        keep.forEach((id: string) => {
+        const keep = new Set<string>(action.ids.filter((id: string) => !ignored(stores.messages?.getMessage?.(action.channelId, id))));
+        keep.forEach((id) => {
           deleted.add(id);
           redraw(id);
         });
-        action.ids = action.ids.filter((id: string) => !keep.includes(id));
+        while (deleted.size > MAX_TRACKED) deleted.delete(deleted.values().next().value!);
+        action.ids = action.ids.filter((id: string) => !keep.has(id));
         return action.ids.length === 0;
       }
       if (edits && action.type === "MESSAGE_UPDATE") {

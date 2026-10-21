@@ -132,12 +132,25 @@ function wrapFactory(id: PropertyKey, factory: Factory): Factory {
   return wrapped;
 }
 
+/** Modules adopted while still running; offered to waiters once they finish. */
+const unsettled = new Set<Module & { loaded?: boolean }>();
+
 /** `settle` is false for a module that's still running: its exports aren't there yet. */
 function record(id: PropertyKey, module: Module, require: WebpackRequire, settle = true): void {
   if (recorded.has(module)) return;
   recorded.add(module);
   loaded.push({ id, module, require });
-  if (settle && waiters.size) settleWaiters(module.exports);
+  if (!settle) {
+    unsettled.add(module);
+    return;
+  }
+  if (!waiters.size) return;
+  settleWaiters(module.exports);
+  for (const early of unsettled) {
+    if (early.loaded === false) continue;
+    unsettled.delete(early);
+    settleWaiters(early.exports);
+  }
 }
 
 /**

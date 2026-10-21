@@ -246,13 +246,11 @@ select.opt-input option { background: #181818; color: var(--text); }
 .xray-launch:active { background: rgba(255,255,255,.1); }
 :host-context(html:not(.xray-obsidian)) .xray-launch { display: none; }
 
-/* Window frame (frame.ts): drag strip + window buttons for the frameless window. */
-.xray-drag { position: fixed; top: 0; left: 120px; right: 206px; height: 44px; z-index: 2147482970; }
+/* Window frame (frame.ts): window buttons for the frameless window. Dragging needs no element. */
 .win-btns { position: fixed; top: 0; right: 0; height: 46px; z-index: 2147482992; display: flex; align-items: center; padding-right: 4px; gap: 2px; }
 .win-btn { width: 38px; height: 30px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
 .win-btn:hover { background: rgba(255,255,255,.07); color: var(--text); }
 .win-btn.close:hover { background: #c42b1c; color: #fff; }
-:host-context(html:not(.xray-obsidian)) .xray-drag { display: none; }
 
 /* Title-bar voice controls (plugins/voiceBar.ts), left of the window buttons. */
 .xray-vbar { position: fixed; top: 0; right: 128px; height: 46px; z-index: 2147482991; display: flex; align-items: center; gap: 2px; }

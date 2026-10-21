@@ -25,17 +25,26 @@ function call(command: string): void {
   });
 }
 
+const TOP_BAR = '[class*="base_"] > [class^="bar_"]';
+const TOP_BAR_HEIGHT = 46;
+const INTERACTIVE = 'button, a, input, textarea, select, [role="button"], [role="link"], [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+
 export function mountFrame(): void {
   const root = uiRoot();
 
-  // The draggable strip. It sits below xray's own top-bar controls (launcher,
-  // search) and below Discord's right-hand icons, so only the empty top
-  // drags the window. Discord's own title text under it is not interactive.
-  const drag = h("div", { class: "xray-drag", attrs: { "aria-hidden": "true" } });
-  drag.addEventListener("mousedown", (event) => {
-    if (event.button === 0) call("start_dragging");
-  });
-  drag.addEventListener("dblclick", () => call("toggle_maximize"));
+  // Dragging: a press on an empty part of Discord's top bar moves the window.
+  // No overlay, so Discord's own top-bar icons (inbox, help) keep their
+  // clicks wherever they sit. xray's own controls live in its shadow root,
+  // so their events reach here retargeted to the host, outside the bar.
+  const onBar = (event: MouseEvent) => {
+    if (event.button !== 0 || event.clientY > TOP_BAR_HEIGHT || !(event.target instanceof Element)) return false;
+    const bar = document.querySelector(TOP_BAR);
+    // Before the app mounts (loading, login) the whole top edge drags.
+    if (bar ? !bar.contains(event.target) : event.target !== document.documentElement && event.target !== document.body && !event.target.closest("#app-mount")) return false;
+    return !event.target.closest(INTERACTIVE);
+  };
+  window.addEventListener("mousedown", (event) => onBar(event) && call("start_dragging"), true);
+  window.addEventListener("dblclick", (event) => onBar(event) && call("toggle_maximize"), true);
 
   const maxBtn = h("button", {
     class: "win-btn",
@@ -64,5 +73,5 @@ export function mountFrame(): void {
   window.addEventListener("resize", () => window.setTimeout(syncMax, 100));
   void syncMax();
 
-  root.append(drag, buttons);
+  root.append(buttons);
 }

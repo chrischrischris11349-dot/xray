@@ -37,11 +37,14 @@ export function installTheme(): void {
  * mounts. xray's glass would otherwise cover it, so the backdrop only takes
  * over once the app's first real layer appears, marked by `data-xray-loaded`.
  */
+/** The logged-in app, or the login page. Discord's loading screen sits in a plain `app_` wrapper, so that can't count. */
+const READY = '[class*="baseLayer_"], [class*="authBox_"]';
+
 function markLoadedWhenReady(): void {
   const mark = () => document.documentElement?.setAttribute("data-xray-loaded", "");
-  if (document.querySelector('[class*="baseLayer_"], [class*="app_"]')) return mark();
+  if (document.querySelector(READY)) return mark();
   const observer = new MutationObserver(() => {
-    if (document.querySelector('[class*="baseLayer_"], [class*="app_"]')) {
+    if (document.querySelector(READY)) {
       observer.disconnect();
       mark();
     }

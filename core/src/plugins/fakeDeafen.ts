@@ -293,8 +293,8 @@ function installVoicePanelButton(ctx: { css(c: string): void; watch(sel: string,
     button.setAttribute("aria-pressed", String(on));
     button.title = on ? "Fake Deafen is on — others see you deafened" : "Enable Fake Deafen";
   };
-  const buttons = new Set<HTMLElement>();
-  const unsub = fakeVoice.subscribe(() => buttons.forEach(update));
+  // Read from the page each time: Discord rebuilds the panel, and old buttons go with it.
+  const unsub = fakeVoice.subscribe(() => document.querySelectorAll<HTMLElement>(".xray-fd").forEach(update));
   ctx.watch('section[class*="panels_"] [class*="buttons_"]', (bar) => {
     if (bar.querySelector(".xray-fd")) return;
     const button = document.createElement("button");
@@ -304,13 +304,11 @@ function installVoicePanelButton(ctx: { css(c: string): void; watch(sel: string,
     button.innerHTML = MASK_ICON;
     button.addEventListener("click", () => fakeVoice.set(!faking));
     bar.insertBefore(button, bar.firstChild);
-    buttons.add(button);
     update(button);
   });
   ctx.onStop(() => {
     unsub();
     document.querySelectorAll(".xray-fd").forEach((el) => el.remove());
-    buttons.clear();
   });
 }
 

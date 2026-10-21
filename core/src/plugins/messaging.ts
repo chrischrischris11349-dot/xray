@@ -5,7 +5,7 @@
  */
 import { menu } from "../api/menus";
 import { desktopNotify } from "../api/notify";
-import { currentChannelId, displayName, messageActions, navigate, stores } from "../discord";
+import { currentChannelId, displayName, loggedIn, messageActions, navigate, stores } from "../discord";
 import { pluginState, save } from "../settings";
 import { promptText, showDialog } from "../ui/dialog";
 import { parseWhen } from "./chatText";
@@ -113,6 +113,11 @@ const scheduledMessages = definePlugin({
     const fire = (item: Scheduled) => {
       timers.delete(item);
       if (item.at > Date.now() + 1000) return arm(item);
+      // Overdue at startup fires before Discord has connected; wait for it rather than lose the message.
+      if (!loggedIn() || !messageActions()?.sendMessage) {
+        timers.set(item, window.setTimeout(() => fire(item), 5000));
+        return;
+      }
       setQueue(queue().filter((q) => !(q.at === item.at && q.content === item.content && q.channelId === item.channelId)));
       send(item.channelId, item.content);
     };

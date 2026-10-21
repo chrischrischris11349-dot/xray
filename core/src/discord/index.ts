@@ -91,6 +91,13 @@ export function audioActions(): any {
   );
 }
 
+/** Discord's own voice actions: `selectVoiceChannel` joins a channel, as clicking it does. */
+export function voiceActions(): any {
+  return lookup("voice actions", () =>
+    find((c) => typeof c === "object" && c !== null && "selectVoiceChannel" in c && "disconnect" in c && String(c.selectVoiceChannel).includes("selectVoiceChannel(")),
+  );
+}
+
 /** Your account's id, once you're logged in. */
 export function myId(): string | undefined {
   try {

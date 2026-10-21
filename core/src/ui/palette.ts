@@ -8,8 +8,7 @@
  * opens, so it costs nothing while closed. Picking a result goes through
  * Discord's own router (or its "open DM" action for a friend).
  */
-import { loggedIn, navigate, onStoresChanged, privateChannelActions, safeImage, stores, userView, whenStore } from "../discord";
-import { find } from "../webpack";
+import { loggedIn, navigate, onStoresChanged, privateChannelActions, safeImage, stores, userView, voiceActions, whenStore } from "../discord";
 import { h } from "./dom";
 import { icon } from "./icons";
 import type { Feature } from "./features";
@@ -297,16 +296,15 @@ function gather(): PaletteResult[] {
         image: null,
         glyph: "♪",
         round: false,
-        run: () => (voiceActions()?.selectVoiceChannel ? voiceActions().selectVoiceChannel(channel.id) : navigate(`/channels/${guild.id}/${channel.id}`)),
+        run: () => {
+          const voice = voiceActions();
+          if (voice?.selectVoiceChannel) voice.selectVoiceChannel(channel.id);
+          else navigate(`/channels/${guild.id}/${channel.id}`);
+        },
       });
     }
   }
   return results;
-}
-
-/** Discord's own voice actions (`selectVoiceChannel` joins a channel). */
-function voiceActions(): any {
-  return find((c) => typeof c === "object" && c !== null && "selectVoiceChannel" in c && "disconnect" in c && String(c.selectVoiceChannel).includes("selectVoiceChannel("));
 }
 
 function safely<T>(read: () => T): T {

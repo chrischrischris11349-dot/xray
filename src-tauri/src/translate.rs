@@ -42,13 +42,13 @@ fn request(text: &str, to: &str) -> Result<Translation, String> {
     let body: Value = ureq::AgentBuilder::new()
         .timeout(std::time::Duration::from_secs(TIMEOUT_SECS))
         .build()
-        .get(ENDPOINT)
+        .post(ENDPOINT)
         .query("client", "gtx")
         .query("sl", "auto")
         .query("tl", to)
         .query("dt", "t")
-        .query("q", text)
-        .call()
+        // In the body, not the URL: 5000 characters percent-encoded would overflow a URL.
+        .send_form(&[("q", text)])
         .map_err(|err| err.to_string())?
         .into_json()
         .map_err(|err| err.to_string())?;
