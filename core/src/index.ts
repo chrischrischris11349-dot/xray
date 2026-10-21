@@ -5,6 +5,7 @@
  */
 import { log } from "./env";
 import { isRunning, plugins, startPlugins } from "./plugins/manager";
+import { handleHotkey, lastHotkeyFired } from "./shell/hotkeys";
 import { installNotifications, notificationClicked } from "./shell/notifications";
 import { isPanelOpen, mountUi, openPanel } from "./ui/panel";
 import { hookWebpack, webpackStats } from "./webpack";
@@ -22,18 +23,20 @@ function boot(): void {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountUi, { once: true });
   else mountUi();
 
-  // A small read-only handle: the Rust side calls openPanel and notificationClicked,
-  // and diagnostics help testing.
+  // A small read-only handle: the Rust side calls openPanel, notificationClicked
+  // and hotkey, and diagnostics help testing.
   Object.defineProperty(window, "__xray", {
     value: Object.freeze({
       version: __XRAY_VERSION__,
       openPanel,
       notificationClicked,
+      hotkey: handleHotkey,
       diagnostics: () => ({
         version: __XRAY_VERSION__,
         webpack: webpackStats(),
         plugins: plugins.map((p) => ({ id: p.id, running: isRunning(p.id) })),
         panelOpen: isPanelOpen(),
+        lastHotkey: lastHotkeyFired(),
       }),
     }),
   });

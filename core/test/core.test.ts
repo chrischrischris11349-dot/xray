@@ -27,8 +27,9 @@ let waited: any;
 waitFor(filters.byStoreName("UserStore"), (store) => { waited = store; });
 
 // A trimmed copy of webpack 5's runtime: module table, require, JSONP callback.
-// Discord runs two of these on the same chunk array, so the test does too.
+// Discord runs several of these on the same chunk array, so the test runs two.
 const chunksSeen: Record<string, number[]> = { main: [], wasm: [] };
+const runtimes: Record<string, { require: (id: string) => any; cache: Record<string, any> }> = {};
 function runtime(name: "main" | "wasm") {
   const modules: Record<string, Function> = {};
   const cache: Record<string, any> = {};
@@ -37,6 +38,16 @@ function runtime(name: "main" | "wasm") {
     const module = (cache[id] = { exports: {} });
     modules[id].call(module.exports, module, module.exports, require);
     return module.exports;
+  }
+  require.m = modules;
+  require.c = cache;
+  runtimes[name] = { require, cache };
+  if (name === "main") {
+    // Modules bundled into the runtime's own script, like Discord's main one:
+    // one ran before xray saw this runtime, one hasn't run yet.
+    modules["1"] = (module: any) => { module.exports = { getName: () => "MediaEngineStore", addChangeListener() {}, getMediaEngine: () => "engine" }; };
+    modules["2"] = (module: any) => { module.exports = { builtIn: "later" }; };
+    require("1");
   }
   const installed: Record<string, number> = {};
   const jsonp = (parent: Function, data: any[]) => {
@@ -69,14 +80,24 @@ w.webpackChunkdiscord_app.push([
 ]);
 
 const stats = webpackStats();
-check("require captured", stats.require, stats);
-check("two modules loaded, three factories seen", stats.loaded === 2 && stats.factories === 3, stats);
+check("the main runtime was seen", stats.runtimes === 1, stats);
+check("pushed and built-in modules are all known", stats.loaded === 3 && stats.factories === 5, stats);
+check("a built-in module that ran before xray saw it is found", find(filters.byStoreName("MediaEngineStore"))?.getMediaEngine() === "engine");
+runtimes.main.require("2");
+check("a built-in module that runs later is recorded", find(filters.byProps("builtIn"))?.builtIn === "later");
 check("chunk array still holds both chunks", w.webpackChunkdiscord_app.length === 2, w.webpackChunkdiscord_app.length);
 check("both runtimes received the later chunk", chunksSeen.main.includes(2) && chunksSeen.wasm.includes(2), chunksSeen);
 check("find byProps", typeof find(filters.byProps("sendMessage", "editMessage"))?.sendMessage === "function");
 check("waitFor resolved a store exported under a mangled key", waited?.getName?.() === "UserStore");
 check("findByCode loads an unloaded module", findByCode("needle-xyz")?.() === "needle-xyz");
+check("it loads through the main runtime", "30" in runtimes.main.cache && !("30" in runtimes.wasm.cache));
 check("factory toString still shows Discord's source", String(w.webpackChunkdiscord_app[1][1][30]).includes("needle-xyz"));
+
+// A second runtime runs its own copy of a module the main one already ran.
+runtimes.wasm.require("10");
+const twoRuntimes = webpackStats();
+check("both copies are kept", twoRuntimes.runtimes === 2 && twoRuntimes.loaded === 6, twoRuntimes);
+check("find returns the main runtime's copy", find(filters.byProps("sendMessage", "editMessage")) === runtimes.main.cache["10"].exports);
 
 // ---- patcher ----
 const target = { add(a: number, b: number) { return a + b; } };

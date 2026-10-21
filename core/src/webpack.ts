@@ -5,15 +5,32 @@
  * `window.webpackChunkdiscord_app`. xray traps that array as it's created and
  * wraps each module factory before webpack stores it. A wrapped factory
  * records its module after it has run, and that record is what `find` and
- * `waitFor` search. The first factory call also hands over
- * `__webpack_require__`, which `findByCode` uses to load modules on demand.
+ * `waitFor` search. Factory calls also hand over `__webpack_require__`, which
+ * `findByCode` uses to load modules on demand.
+ *
+ * Discord runs four webpack runtimes on the same chunk array, and each keeps
+ * its own copy of any module it runs. So module ids repeat across runtimes,
+ * and every instance is kept. Loading on demand goes through the main runtime
+ * (the one with the most modules), which is the one Discord's UI uses.
+ *
+ * A runtime's own script also carries modules that never pass through the
+ * chunk array (in Discord's main script that's thousands, MediaEngineStore
+ * among them). The first time xray meets a runtime, it adopts those: ones
+ * that already ran are recorded from the runtime's module cache, and the
+ * rest are wrapped like any other.
  */
 import { warn } from "./env";
 
 type Module = { exports: any };
 type Factory = (this: unknown, module: Module, exports: unknown, require: WebpackRequire) => void;
-export type WebpackRequire = (id: PropertyKey) => any;
+export type WebpackRequire = ((id: PropertyKey) => any) & { m?: Record<PropertyKey, unknown>; c?: Record<PropertyKey, Module> };
 export type Filter = (candidate: any) => boolean;
+
+interface Loaded {
+  id: PropertyKey;
+  module: Module;
+  require: WebpackRequire;
+}
 
 interface Waiter {
   filter: Filter;
@@ -25,11 +42,16 @@ const WRAPPED = Symbol("xray.wrapped");
 /** Most modules export a few names. Scanning huge export bags would slow every module load. */
 const MAX_SCANNED_KEYS = 64;
 
-const loaded = new Map<PropertyKey, Module>();
+/** Every module instance that has run, in load order. */
+const loaded: Loaded[] = [];
+const recorded = new WeakSet<Module>();
 const factories = new Map<PropertyKey, Factory>();
 const waiters = new Set<Waiter>();
 const instrumented = new WeakSet<object>();
-let wreq: WebpackRequire | undefined;
+const runtimes = new Set<WebpackRequire>();
+let lastRequire: WebpackRequire | undefined;
+let mainRuntime: WebpackRequire | undefined;
+let mainRuntimeChecked = 0;
 let hooked = false;
 
 export function hookWebpack(): void {
@@ -95,15 +117,43 @@ function wrapChunk(chunk: unknown): void {
 function wrapFactory(id: PropertyKey, factory: Factory): Factory {
   factories.set(id, factory);
   const wrapped = function (this: unknown, module: Module, exports: unknown, require: WebpackRequire) {
-    wreq ??= require;
+    if (require !== lastRequire) {
+      lastRequire = require;
+      if (!runtimes.has(require)) adopt(require);
+    }
     factory.call(this, module, exports, require);
-    loaded.set(id, module);
-    if (waiters.size) settleWaiters(module.exports);
+    record(id, module, require);
   } as Factory & { [WRAPPED]?: true };
   wrapped[WRAPPED] = true;
   // Code searches (and Discord's own error reports) read factory source.
   wrapped.toString = () => Function.prototype.toString.call(factory);
   return wrapped;
+}
+
+function record(id: PropertyKey, module: Module, require: WebpackRequire): void {
+  if (recorded.has(module)) return;
+  recorded.add(module);
+  loaded.push({ id, module, require });
+  if (waiters.size) settleWaiters(module.exports);
+}
+
+/** Takes in a runtime's own modules: see the note at the top of this file. */
+function adopt(runtime: WebpackRequire): void {
+  runtimes.add(runtime);
+  const table = runtime.m as Record<PropertyKey, (Factory & { [WRAPPED]?: true }) | undefined> | undefined;
+  if (table) {
+    for (const id in table) {
+      const factory = table[id];
+      if (typeof factory === "function" && !factory[WRAPPED]) table[id] = wrapFactory(id, factory);
+    }
+  }
+  const cache = runtime.c;
+  if (cache) {
+    for (const id in cache) {
+      const module = cache[id];
+      if (module && typeof module === "object") record(id, module, runtime);
+    }
+  }
 }
 
 function settleWaiters(exports: unknown): void {
@@ -153,11 +203,27 @@ function test(filter: Filter, candidate: unknown): boolean {
 
 /** The first loaded export that passes `filter`, or undefined. */
 export function find(filter: Filter): any {
-  for (const module of loaded.values()) {
+  for (const { module } of loaded) {
     const match = firstMatch(module.exports, filter);
     if (match !== undefined) return match;
   }
   return undefined;
+}
+
+/** The runtime with the most modules. Rechecked only when a new runtime has appeared. */
+function main(): WebpackRequire | undefined {
+  if (runtimes.size !== mainRuntimeChecked) {
+    mainRuntimeChecked = runtimes.size;
+    let most = -1;
+    for (const runtime of runtimes) {
+      const size = runtime.m ? Object.keys(runtime.m).length : 0;
+      if (size > most) {
+        most = size;
+        mainRuntime = runtime;
+      }
+    }
+  }
+  return mainRuntime;
 }
 
 /**
@@ -182,8 +248,10 @@ export function findByCode(...code: string[]): any {
   for (const [id, factory] of factories) {
     const source = Function.prototype.toString.call(factory);
     if (!code.every((c) => source.includes(c))) continue;
-    const module = loaded.get(id);
-    return module ? module.exports : wreq?.(id);
+    const runtime = main();
+    const instances = loaded.filter((entry) => entry.id === id);
+    const instance = instances.find((entry) => entry.require === runtime) ?? instances[0];
+    return instance ? instance.module.exports : runtime?.(id);
   }
   return undefined;
 }
@@ -210,5 +278,5 @@ export const filters = {
 };
 
 export function webpackStats() {
-  return { hooked, require: wreq !== undefined, factories: factories.size, loaded: loaded.size, waiting: waiters.size };
+  return { hooked, runtimes: runtimes.size, factories: factories.size, loaded: loaded.length, waiting: waiters.size };
 }

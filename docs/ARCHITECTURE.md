@@ -31,7 +31,8 @@ The web client lacks some desktop-app features. xray adds them from the Rust sid
 - [x] Desktop notifications as Windows toasts under xray's name; clicking opens the chat
 - [x] Tray icon, close to tray, launch at login, single instance
 - [x] Unread mention badge on the tray icon and taskbar, plus a taskbar flash on new mentions
-- [ ] Global push-to-talk, mute and deafen hotkeys (the web client's only work while focused)
+- [x] Global push-to-talk, mute, deafen and fake-deafen hotkeys that work in games
+      (`hotkeys.rs` watches keys system-wide; `shell/voice.ts` calls Discord's own controls)
 - [ ] Screen share with system audio, and a proper window/screen picker
 - [ ] Game activity ("Playing …") detection
 - [ ] Rich presence from other apps (games and Spotify talk to Discord's local IPC pipe)
@@ -90,6 +91,10 @@ shell/                placeholder page Tauri needs to bundle; never shown
   aren't fetched, so CSP doesn't block them.
 - **Discord deletes `window.localStorage`** after it boots. `env.ts` keeps the
   reference grabbed at document start.
+- **Discord runs four webpack runtimes**, and its main script carries about
+  5,700 modules that never pass through the chunk array (MediaEngineStore
+  and the audio actions among them). `webpack.ts` adopts each runtime's own
+  modules when it first meets the runtime, and keeps every module instance.
 - **Webpack ES module exports are read-only getters.** Patch the object or
   prototype a function lives on, or use a source patch.
 

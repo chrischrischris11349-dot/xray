@@ -71,6 +71,14 @@ export const css = `
 .btn { height: 30px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--accent); color: var(--onAccent); font: 600 13px "gg sans", "Segoe UI", system-ui, sans-serif; cursor: pointer; transition: transform 120ms var(--ease); }
 .btn:active, .switch:active, .icon-btn:active { transform: scale(.94); }
 
+.chip { min-width: 84px; height: 30px; flex: none; padding: 0 10px; border: 1px solid var(--line2); border-radius: 8px; background: var(--seg); color: var(--text); font: 500 12px "Cascadia Mono", Consolas, ui-monospace, monospace; cursor: pointer; transition: background-color 120ms ease; }
+.chip:hover { background: var(--hover); }
+.chip.empty { color: var(--faint); }
+.chip.capturing { background: var(--accent); border-color: var(--accent); color: var(--onAccent); }
+.icon-btn.small { width: 26px; height: 26px; margin-left: -8px; }
+.note { margin: 8px 12px 0; font-size: 12px; color: var(--faint); }
+.note.error { color: var(--bad); }
+
 .foot { display: flex; justify-content: space-between; padding: 12px 10px 6px; }
 button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 

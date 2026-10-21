@@ -8,6 +8,7 @@ import { fakeVoice } from "../plugins/fakeDeafen";
 import { isEnabled, onPluginsChanged, pendingReload, plugins, setEnabled } from "../plugins/manager";
 import type { Impact, Plugin } from "../plugins/types";
 import { markWelcomeSeen, seenWelcome } from "../settings";
+import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotkeys, setHotkeys } from "../shell/hotkeys";
 import { webpackStats } from "../webpack";
 import { h } from "./dom";
 import { css } from "./styles";
@@ -22,8 +23,35 @@ const RATING: Record<Impact, { label: string; color: string; level: number }> = 
   heavy: { label: "Heavy", color: "var(--bad)", level: 3 },
 };
 
+const HOTKEY_HINTS: Partial<Record<HotkeyAction, string>> = {
+  pushToTalk: "Set Discord's Input Mode to Push to Talk. This key works in every app, so ignore Discord's “Limited” note.",
+  toggleFakeDeafen: "Plays a short chime, so you can tell in-game.",
+};
+const MODIFIER_NAMES: Record<number, string> = { 16: "Shift", 17: "Ctrl", 18: "Alt" };
+/** Browser mouse button → Windows virtual-key code and name. Left and right click can't be hotkeys. */
+const MOUSE_BUTTONS: Record<number, { key: number; name: string }> = {
+  1: { key: 0x04, name: "Middle click" },
+  3: { key: 0x05, name: "Mouse 4" },
+  4: { key: 0x06, name: "Mouse 5" },
+};
+const KEY_NAMES: Record<string, string> = {
+  Space: "Space", Backquote: "`", Minus: "-", Equal: "=", BracketLeft: "[", BracketRight: "]", Backslash: "\\",
+  Semicolon: ";", Quote: "'", Comma: ",", Period: ".", Slash: "/", CapsLock: "Caps Lock", Enter: "Enter", Tab: "Tab",
+  ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→", PageUp: "Page Up", PageDown: "Page Down",
+  ScrollLock: "Scroll Lock", PrintScreen: "Print Screen", NumLock: "Num Lock", ContextMenu: "Menu",
+};
+
 let root: ShadowRoot | undefined;
 let panel: HTMLElement | undefined;
+/** Saved bindings, loaded from the Rust side when the panel opens. */
+let hotkeys: Hotkeys | null = null;
+let hotkeyError = "";
+/** The action waiting for its new key, while you're setting one. */
+let capturing: HotkeyAction | null = null;
+/** A modifier pressed on its own while capturing; it becomes the binding if released with nothing else. */
+let pendingModifier: number | null = null;
+/** Mouse 4 and 5 also mean back and forward; the click that sets one mustn't navigate. */
+let swallowMouseUp = false;
 
 export function mountUi(): void {
   if (root) return;
@@ -35,6 +63,9 @@ export function mountUi(): void {
   document.documentElement.append(host);
 
   window.addEventListener("keydown", onKey, true);
+  window.addEventListener("keyup", onKeyUp, true);
+  window.addEventListener("mousedown", onMouseDown, true);
+  window.addEventListener("mouseup", onMouseUp, true);
   onPluginsChanged(render);
   fakeVoice.subscribe(render);
   if (!seenWelcome()) showWelcome();
@@ -49,14 +80,29 @@ export function openPanel(): void {
   panel = h("div", { class: "panel", attrs: { role: "dialog", "aria-label": "xray" } });
   root.append(panel);
   render();
+  getHotkeys()
+    .then((saved) => {
+      hotkeys = saved;
+      render();
+    })
+    .catch(() => {
+      hotkeyError = "Hotkeys only work in the xray app.";
+      render();
+    });
 }
 
 export function closePanel(): void {
   panel?.remove();
   panel = undefined;
+  capturing = null;
+  pendingModifier = null;
 }
 
 function onKey(event: KeyboardEvent): void {
+  if (capturing) {
+    captureKey(event);
+    return;
+  }
   if (event.ctrlKey && event.shiftKey && !event.altKey && event.code === "KeyX") {
     event.preventDefault();
     event.stopPropagation();
@@ -67,6 +113,94 @@ function onKey(event: KeyboardEvent): void {
   }
 }
 
+/** While capturing, every key goes to xray, not Discord. */
+function swallow(event: Event): void {
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+function captureKey(event: KeyboardEvent): void {
+  swallow(event);
+  if (event.repeat) return;
+  if (event.key === "Escape") {
+    capturing = pendingModifier = null;
+    render();
+  } else if (event.key === "Backspace" || event.key === "Delete") {
+    assign(capturing!, null);
+  } else if (MODIFIER_NAMES[event.keyCode]) {
+    pendingModifier = event.keyCode;
+  } else {
+    const modifiers = [event.ctrlKey && "Ctrl", event.shiftKey && "Shift", event.altKey && "Alt"].filter(Boolean);
+    assign(capturing!, {
+      key: event.keyCode,
+      ctrl: event.ctrlKey,
+      shift: event.shiftKey,
+      alt: event.altKey,
+      label: [...modifiers, keyName(event)].join("+"),
+    });
+  }
+}
+
+function onKeyUp(event: KeyboardEvent): void {
+  if (!capturing) return;
+  swallow(event);
+  if (pendingModifier === event.keyCode) {
+    assign(capturing, { key: event.keyCode, ctrl: false, shift: false, alt: false, label: MODIFIER_NAMES[event.keyCode] });
+  }
+}
+
+function onMouseDown(event: MouseEvent): void {
+  const button = MOUSE_BUTTONS[event.button];
+  if (!capturing || !button) return;
+  swallow(event);
+  swallowMouseUp = true;
+  const modifiers = [event.ctrlKey && "Ctrl", event.shiftKey && "Shift", event.altKey && "Alt"].filter(Boolean);
+  assign(capturing, {
+    key: button.key,
+    ctrl: event.ctrlKey,
+    shift: event.shiftKey,
+    alt: event.altKey,
+    label: [...modifiers, button.name].join("+"),
+  });
+}
+
+function onMouseUp(event: MouseEvent): void {
+  if (!swallowMouseUp) return;
+  swallowMouseUp = false;
+  swallow(event);
+}
+
+function keyName(event: KeyboardEvent): string {
+  const { code, key } = event;
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  if (code.startsWith("Numpad")) return `Num ${code.slice(6)}`;
+  return KEY_NAMES[code] ?? (key.length === 1 ? key.toUpperCase() : key || code);
+}
+
+function sameBinding(a: Binding | null, b: Binding): boolean {
+  return !!a && a.key === b.key && a.ctrl === b.ctrl && a.shift === b.shift && a.alt === b.alt;
+}
+
+/** Saves a new binding (or clears one). A key can only do one thing, so it's taken off any other action. */
+function assign(action: HotkeyAction, binding: Binding | null): void {
+  capturing = pendingModifier = null;
+  if (!hotkeys) return;
+  const previous = hotkeys;
+  const next: Hotkeys = { ...hotkeys, [action]: binding };
+  if (binding) {
+    for (const { id } of HOTKEY_ACTIONS) if (id !== action && sameBinding(next[id], binding)) next[id] = null;
+  }
+  hotkeys = next;
+  hotkeyError = "";
+  render();
+  setHotkeys(next).catch((err) => {
+    hotkeys = previous;
+    hotkeyError = String(err);
+    render();
+  });
+}
+
 function render(): void {
   if (!panel) return;
   const enabled = plugins.filter(isEnabled);
@@ -74,6 +208,13 @@ function render(): void {
   const parts = [
     header(),
     fakeVoice.available ? fakeDeafenCard() : null,
+    h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
+    hotkeyList(),
+    h("div", {
+      class: "note",
+      text: "Mouse buttons make xray watch the mouse too, which costs a little CPU. Games running as administrator hide their keys from xray.",
+    }),
+    hotkeyError ? h("div", { class: "note error", text: hotkeyError }) : null,
     h("div", { class: "section" }, h("span", { class: "label", text: `Plugins · ${enabled.length} on` }), impactSummary(combineImpact(enabled))),
     h("div", { class: "list" }, ...plugins.map(pluginRow)),
     pending.length ? reloadBar(pending.length) : null,
@@ -110,6 +251,42 @@ function fakeDeafenCard(): HTMLElement {
     { class: on ? "card on" : "card" },
     h("div", { class: "card-text" }, h("div", { class: "card-title", text: "Fake deafen" }), h("div", { class: "card-sub", text: sub })),
     toggle(on, "Fake deafen", () => fakeVoice.set(!on)),
+  );
+}
+
+function hotkeyList(): HTMLElement {
+  if (!hotkeys) return h("div", { class: "list" }, h("div", { class: "row" }, h("span", { class: "row-desc", text: hotkeyError ? "Unavailable" : "Loading…" })));
+  const saved = hotkeys;
+  return h(
+    "div",
+    { class: "list" },
+    ...HOTKEY_ACTIONS.map(({ id, name }) => {
+      const binding = saved[id];
+      const waiting = capturing === id;
+      const hint = HOTKEY_HINTS[id];
+      const chip = h("button", {
+        class: waiting ? "chip capturing" : binding ? "chip" : "chip empty",
+        attrs: { type: "button", "aria-label": `Set the ${name} hotkey` },
+        text: waiting ? "Press a key…" : binding ? binding.label : "Not set",
+        on: {
+          click: () => {
+            capturing = waiting ? null : id;
+            pendingModifier = null;
+            render();
+          },
+        },
+      });
+      const clear = binding && !waiting
+        ? h("button", { class: "icon-btn small", attrs: { type: "button", "aria-label": `Clear the ${name} hotkey` }, trustedHtml: CLOSE, on: { click: () => assign(id, null) } })
+        : null;
+      return h(
+        "div",
+        { class: "row" },
+        h("div", { class: "row-text" }, h("div", { class: "row-name", text: name }), hint ? h("div", { class: "row-desc", text: hint }) : null),
+        chip,
+        clear,
+      );
+    }),
   );
 }
 

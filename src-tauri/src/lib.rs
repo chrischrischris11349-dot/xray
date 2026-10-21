@@ -3,6 +3,7 @@
 //! badge, the tray, single-instance handling and launch at login.
 
 mod badge;
+mod hotkeys;
 mod notify;
 mod settings;
 mod tray;
@@ -27,8 +28,8 @@ pub fn run() {
             Some(vec![window::AUTOSTART_ARG]),
         ))
         .plugin(tauri_plugin_opener::init())
-        // The only command Discord's page may call (see capabilities/main.json).
-        .invoke_handler(tauri::generate_handler![notify::notify])
+        // Every command Discord's page may call (see capabilities/main.json).
+        .invoke_handler(tauri::generate_handler![notify::notify, hotkeys::get_hotkeys, hotkeys::set_hotkeys])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
@@ -36,7 +37,9 @@ pub fn run() {
             notify::register(handle);
             let at_login = std::env::args().any(|arg| arg == window::AUTOSTART_ARG);
             window::create(handle, !(at_login && shell.start_minimized))?;
+            let bindings = shell.hotkeys.clone();
             app.manage(Shell(Mutex::new(shell)));
+            hotkeys::start(handle, bindings);
             tray::build(handle)?;
             Ok(())
         })

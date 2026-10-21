@@ -4893,6 +4893,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-plugin-single-instance",
  "tauri-winrt-notification",
+ "windows 0.62.2",
  "winreg",
 ]
 

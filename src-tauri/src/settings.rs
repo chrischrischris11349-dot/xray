@@ -7,6 +7,8 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
 
+use crate::hotkeys::Hotkeys;
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ShellSettings {
@@ -16,6 +18,8 @@ pub struct ShellSettings {
     pub start_minimized: bool,
     /// Set once launch at login has been switched on by default, so turning it off sticks.
     pub autostart_initialized: bool,
+    /// Global hotkeys (see hotkeys.rs).
+    pub hotkeys: Hotkeys,
 }
 
 impl Default for ShellSettings {
@@ -24,6 +28,7 @@ impl Default for ShellSettings {
             close_to_tray: true,
             start_minimized: false,
             autostart_initialized: false,
+            hotkeys: Hotkeys::default(),
         }
     }
 }
