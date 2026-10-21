@@ -7,8 +7,10 @@
  * survives Discord clearing its storage on logout.
  */
 import { storage, warn } from "./env";
+import { pullConfig, pushConfig } from "./shell/sync";
 
 const KEY = "xray.settings";
+const SYNC_NS = "xray";
 const SAVE_DELAY_MS = 250;
 
 export interface PluginState {
@@ -55,6 +57,9 @@ function flush(): void {
   } catch (err) {
     warn("couldn't save settings", err);
   }
+  // With sync on, the same blob follows you to your server. Fails soft: no
+  // server, or unreachable, and the local copy above still stands.
+  if (saved.syncConfig === true) void pushConfig(SYNC_NS, saved);
 }
 
 export function save(): void {
@@ -103,6 +108,22 @@ export function syncEnabled(): boolean {
 export function setSyncEnabled(on: boolean): void {
   saved.syncConfig = on;
   save();
+}
+
+/**
+ * Pulls your settings from the server (when sync is on) and merges them into
+ * the in-memory copy, then saves locally. Called once at boot. Plugins that
+ * have already read their settings keep this session's local values; the
+ * merged copy is in place from the start on the next launch.
+ */
+export async function initSync(): Promise<void> {
+  if (!syncEnabled()) return;
+  const reply = await pullConfig(SYNC_NS);
+  const remote = reply?.value as Saved | undefined;
+  if (remote && typeof remote === "object" && remote.plugins && typeof remote.plugins === "object") {
+    Object.assign(saved, remote);
+    flush();
+  }
 }
 
 export function featureEnabled(id: string): boolean {
