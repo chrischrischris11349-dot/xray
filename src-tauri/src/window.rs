@@ -39,6 +39,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
             open_in_browser(&nav_app, url);
             false
         })
+        .on_document_title_changed(|window, title| crate::badge::update(&window, &title))
         .on_new_window(move |url, _features| {
             // Discord's pop-out windows start as about:blank and the page writes into them.
             if url.as_str() == "about:blank" {

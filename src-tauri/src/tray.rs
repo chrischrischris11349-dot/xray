@@ -11,6 +11,7 @@ use tauri_plugin_autostart::ManagerExt;
 
 use crate::{settings, window, Shell};
 
+pub const ID: &str = "xray";
 const SHOW: &str = "show";
 const PANEL: &str = "panel";
 const AT_LOGIN: &str = "at-login";
@@ -40,7 +41,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         ],
     )?;
 
-    let mut tray = TrayIconBuilder::with_id("xray")
+    let mut tray = TrayIconBuilder::with_id(ID)
         .tooltip("xray")
         .menu(&menu)
         .show_menu_on_left_click(false)

@@ -1,7 +1,9 @@
 //! xray's Rust shell: one window running Discord's web app with xray's mod
-//! core injected at document start, plus the tray, single-instance handling
-//! and launch at login.
+//! core injected at document start, plus desktop notifications, the unread
+//! badge, the tray, single-instance handling and launch at login.
 
+mod badge;
+mod notify;
 mod settings;
 mod tray;
 mod window;
@@ -25,10 +27,13 @@ pub fn run() {
             Some(vec![window::AUTOSTART_ARG]),
         ))
         .plugin(tauri_plugin_opener::init())
+        // The only command Discord's page may call (see capabilities/main.json).
+        .invoke_handler(tauri::generate_handler![notify::notify])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
             sync_autostart(handle, &mut shell);
+            notify::register(handle);
             let at_login = std::env::args().any(|arg| arg == window::AUTOSTART_ARG);
             window::create(handle, !(at_login && shell.start_minimized))?;
             app.manage(Shell(Mutex::new(shell)));

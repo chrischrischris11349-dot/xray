@@ -1,7 +1,10 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "Discord runs as a remote page and gets no Tauri commands. Only add one if it's safe for any script on discord.com to call, since Discord's own code and anything injected into it could.",
+  "description": "Discord's page gets exactly one command: notify, which shows a desktop notification. Anything granted here can be called by any script on discord.com, Discord's own included, so keep this list as small as it is. notify caps text length and drops bursts.",
   "windows": ["main"],
-  "permissions": []
+  "remote": {
+    "urls": ["https://discord.com/*", "https://*.discord.com/*"]
+  },
+  "permissions": ["allow-notify"]
 }
