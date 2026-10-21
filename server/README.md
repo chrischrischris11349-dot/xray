@@ -40,6 +40,17 @@ The address and token live only there, on the Rust side — Discord's page never
 sees them. Then turn on **Send logs to my server** in the xray panel. With no
 endpoint set, logging does nothing.
 
+To sync your own settings instead (plugins, theme, switches — never messages or
+anyone else's data), set the server's base URL and a token:
+
+```json
+{ "sync_endpoint": "https://logs.example.com", "sync_token": "a token" }
+```
+
+It can be the same server as the logs (xray calls its `/config` endpoint) or a
+different one. Then turn on **Sync settings to my server** in the xray panel.
+With no `sync_endpoint` set, sync does nothing and your settings stay local.
+
 ## Read the logs
 
 - **In xray:** the panel toggle; a reader view in xray can show the server's
@@ -61,10 +72,11 @@ All require `Authorization: Bearer <token>`.
 | `GET /config?ns=<plugin>` | A plugin's own saved settings: `{ value, updatedAt }`. |
 | `PUT /config?ns=<plugin>` | Body `{ value }`. Stores the plugin's settings; newest write wins. |
 
-Config is a plugin's own settings only (e.g. Text Replace rules) — your data,
-not anyone else's. It has no retention; it's overwritten, not appended, and
-isn't touched by `/clear`. Turn it on in xray with "Sync settings to my
-server", which reuses this same server and token.
+Config is your own settings only (plugin config like Text Replace rules, your
+theme and feature switches) — your data, not anyone else's. It has no
+retention; it's overwritten, not appended, and isn't touched by `/clear`. Turn
+it on in xray with "Sync settings to my server" after setting `sync_endpoint`
+and `sync_token` in `shell.json` (above).
 
 An event is `{ kind, at, source, text, detail }`: `kind` is `error`, `voice`
 or `plugin`; `at` is a millisecond timestamp; `source` and `text` are xray's

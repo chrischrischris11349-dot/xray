@@ -24,6 +24,11 @@ pub struct ShellSettings {
     pub log_endpoint: String,
     /// The bearer token your log server checks. Empty means logs are never sent.
     pub log_token: String,
+    /// Your server's base URL for settings sync (sync.rs), e.g.
+    /// `https://xray.example.com`. Empty means settings sync is off.
+    pub sync_endpoint: String,
+    /// The bearer token for settings sync. Empty means settings sync is off.
+    pub sync_token: String,
 }
 
 impl Default for ShellSettings {
@@ -35,6 +40,8 @@ impl Default for ShellSettings {
             hotkeys: Hotkeys::default(),
             log_endpoint: String::new(),
             log_token: String::new(),
+            sync_endpoint: String::new(),
+            sync_token: String::new(),
         }
     }
 }

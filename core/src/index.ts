@@ -6,7 +6,7 @@
 import { log } from "./env";
 import { fakeVoice } from "./plugins/fakeDeafen";
 import { isRunning, pluginCommands, plugins, startPlugins } from "./plugins/manager";
-import { setThemeEnabled, themeEnabled } from "./settings";
+import { initSync, setThemeEnabled, themeEnabled } from "./settings";
 import { handleHotkey, lastHotkeyFired } from "./shell/hotkeys";
 import { installNotifications, notificationClicked } from "./shell/notifications";
 import { installReporting } from "./shell/report";
@@ -30,6 +30,8 @@ function boot(): void {
   installReporting();
   hookWebpack();
   startPlugins();
+  // Pull your settings from your server if sync is on (fails soft otherwise).
+  void initSync();
   // Before Discord paints anything, so it never flashes its own colors first.
   installTheme();
   // The UI needs a document to attach to; at document start there isn't one yet.

@@ -7,7 +7,7 @@ import { combineImpact, type OverallImpact } from "../plugins/impact";
 import { fakeVoice } from "../plugins/fakeDeafen";
 import { isEnabled, onPluginsChanged, pendingReload, plugins } from "../plugins/manager";
 import type { Impact } from "../plugins/types";
-import { loggingEnabled, markWelcomeSeen, seenWelcome, setLoggingEnabled, setThemeEnabled, themeEnabled } from "../settings";
+import { loggingEnabled, markWelcomeSeen, seenWelcome, setLoggingEnabled, setSyncEnabled, setThemeEnabled, syncEnabled, themeEnabled } from "../settings";
 import { setThemeActive } from "../theme";
 import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotkeys, setHotkeys } from "../shell/hotkeys";
 import { webpackStats } from "../webpack";
@@ -224,6 +224,7 @@ function render(): void {
     fakeVoice.available ? fakeDeafenCard() : null,
     themeCard(),
     loggingCard(),
+    syncCard(),
     features().length ? h("div", { class: "section" }, h("span", { class: "label", text: "Features" })) : null,
     features().length ? h("div", { class: "list" }, ...features().map(featureRow)) : null,
     h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
@@ -296,6 +297,25 @@ function loggingCard(): HTMLElement {
     ),
     toggle(on, "Send logs to my server", () => {
       setLoggingEnabled(!on);
+      render();
+    }),
+  );
+}
+
+/** Settings sync reuses the same server (see server/README.md); off until its address is in shell.json. */
+function syncCard(): HTMLElement {
+  const on = syncEnabled();
+  return h(
+    "div",
+    { class: "card" },
+    h(
+      "div",
+      { class: "card-text" },
+      h("div", { class: "card-title", text: "Sync settings to my server" }),
+      h("div", { class: "card-sub", text: on ? "Your plugins, theme and switches follow you between machines." : "Off. Needs your server's address in shell.json." }),
+    ),
+    toggle(on, "Sync settings to my server", () => {
+      setSyncEnabled(!on);
       render();
     }),
   );
