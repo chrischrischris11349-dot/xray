@@ -1,8 +1,9 @@
 /**
  * Clean Links: strips tracking parameters from links in messages you send or
- * edit. It works on the outgoing request, so it doesn't depend on Discord's
- * internal module names. Code blocks are left alone.
+ * edit. It works on the outgoing request (see api/requests.ts), so it doesn't
+ * depend on Discord's internal module names. Code blocks are left alone.
  */
+import { MESSAGE_PATH } from "../api/requests";
 import { definePlugin } from "./types";
 
 /** Tracking parameters removed from every link. */
@@ -33,7 +34,6 @@ const URL_PATTERN = /https?:\/\/[^\s<>"]+/g;
 const CODE_PATTERN = /(```[\s\S]*?```|`[^`\n]*`)/;
 /** Punctuation at the end of a link usually belongs to the sentence. */
 const TRAILING = /[.,!?;:'")\]]+$/;
-const MESSAGE_PATH = /^\/api\/v\d+\/channels\/\d+\/messages(?:\/\d+)?$/;
 
 function siteParams(host: string): readonly string[] {
   return BY_SITE.filter(([site]) => (site.endsWith(".") ? host.includes(site) : host === site || host.endsWith("." + site))).flatMap(
@@ -69,41 +69,6 @@ export function cleanContent(content: string): string {
     .join("");
 }
 
-function cleanJson(json: string): string {
-  try {
-    const data = JSON.parse(json);
-    if (data && typeof data.content === "string") {
-      const cleaned = cleanContent(data.content);
-      if (cleaned !== data.content) return JSON.stringify({ ...data, content: cleaned });
-    }
-  } catch {
-    // not JSON: leave it alone
-  }
-  return json;
-}
-
-function cleanBody(body: unknown): unknown {
-  if (typeof body === "string") return cleanJson(body);
-  if (body instanceof FormData) {
-    // Messages with attachments carry their JSON in a form field.
-    const payload = body.get("payload_json");
-    if (typeof payload === "string") body.set("payload_json", cleanJson(payload));
-  }
-  return body;
-}
-
-function isMessageRequest(method: string, url: string): boolean {
-  if (method !== "POST" && method !== "PATCH") return false;
-  try {
-    const parsed = new URL(url, location.href);
-    return parsed.hostname === location.hostname && MESSAGE_PATH.test(parsed.pathname);
-  } catch {
-    return false;
-  }
-}
-
-const openedRequests = new WeakMap<XMLHttpRequest, { method: string; url: string }>();
-
 export default definePlugin({
   id: "cleanLinks",
   name: "Clean Links",
@@ -114,25 +79,8 @@ export default definePlugin({
   needsReload: false,
   enabledByDefault: true,
   start(ctx) {
-    ctx.patch(XMLHttpRequest.prototype, "open", {
-      before(xhr: XMLHttpRequest, args) {
-        openedRequests.set(xhr, { method: String(args[0]).toUpperCase(), url: String(args[1]) });
-      },
-    });
-    ctx.patch(XMLHttpRequest.prototype, "send", {
-      before(xhr: XMLHttpRequest, args) {
-        const request = openedRequests.get(xhr);
-        if (request && isMessageRequest(request.method, request.url)) args[0] = cleanBody(args[0]);
-      },
-    });
-    ctx.patch(window, "fetch", {
-      before(_self, args) {
-        const [input, init] = args as [RequestInfo | URL, RequestInit | undefined];
-        if (!init || init.body == null) return;
-        const method = (init.method ?? "GET").toUpperCase();
-        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-        if (isMessageRequest(method, url)) args[1] = { ...init, body: cleanBody(init.body) as BodyInit };
-      },
+    ctx.onApiRequest(["POST", "PATCH"], MESSAGE_PATH, ({ body }) => {
+      if (typeof body?.content === "string") body.content = cleanContent(body.content);
     });
   },
 });

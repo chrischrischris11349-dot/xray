@@ -5,7 +5,7 @@
  */
 import { log } from "./env";
 import { fakeVoice } from "./plugins/fakeDeafen";
-import { isRunning, plugins, startPlugins } from "./plugins/manager";
+import { isRunning, pluginCommands, plugins, startPlugins } from "./plugins/manager";
 import { setThemeEnabled, themeEnabled } from "./settings";
 import { handleHotkey, lastHotkeyFired } from "./shell/hotkeys";
 import { installNotifications, notificationClicked } from "./shell/notifications";
@@ -66,6 +66,7 @@ function startUi(): void {
       setThemeEnabled(!themeEnabled());
       setThemeActive(themeEnabled());
     }),
+    ...pluginCommands().map((c) => command(c.title, c.subtitle, c.run)),
   ]);
   registerFeature(quickReply);
   registerFeature(palette);

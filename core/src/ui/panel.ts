@@ -5,14 +5,15 @@
  */
 import { combineImpact, type OverallImpact } from "../plugins/impact";
 import { fakeVoice } from "../plugins/fakeDeafen";
-import { isEnabled, onPluginsChanged, pendingReload, plugins, setEnabled } from "../plugins/manager";
-import type { Impact, Plugin } from "../plugins/types";
+import { isEnabled, onPluginsChanged, pendingReload, plugins } from "../plugins/manager";
+import type { Impact } from "../plugins/types";
 import { markWelcomeSeen, seenWelcome, setThemeEnabled, themeEnabled } from "../settings";
 import { setThemeActive } from "../theme";
 import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotkeys, setHotkeys } from "../shell/hotkeys";
 import { webpackStats } from "../webpack";
 import { h } from "./dom";
 import { type Feature, features, isFeatureOn, onFeaturesChanged, setFeature } from "./features";
+import { pluginSection } from "./pluginList";
 import { onKey, onKeyUp, uiRoot } from "./root";
 
 const LOGO = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f2f3f5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" fill="none" stroke="#0b0b0d" stroke-width="2.2" stroke-linecap="round"/></svg>`;
@@ -219,7 +220,7 @@ function render(): void {
     }),
     hotkeyError ? h("div", { class: "note error", text: hotkeyError }) : null,
     h("div", { class: "section" }, h("span", { class: "label", text: `Plugins · ${enabled.length} on` }), impactSummary(combineImpact(enabled))),
-    h("div", { class: "list" }, ...plugins.map(pluginRow)),
+    pluginSection(),
     pending.length ? reloadBar(pending.length) : null,
     h(
       "div",
@@ -334,32 +335,6 @@ function impactSummary(overall: OverallImpact): HTMLElement {
   const label = h("span", { text: `Impact: ${rating.label}` });
   label.style.color = rating.color;
   return h("span", { class: "impact" }, label, meter);
-}
-
-function pluginRow(plugin: Plugin): HTMLElement {
-  const on = isEnabled(plugin);
-  const rating = RATING[plugin.impact];
-  const dot = h("span", { class: "dot" });
-  dot.style.background = rating.color;
-  const ratingEl = h("span", { class: "rating" }, dot, rating.label);
-  ratingEl.style.color = rating.color;
-  return h(
-    "div",
-    { class: "row" },
-    h(
-      "div",
-      { class: "row-text" },
-      h("div", { class: "row-name" }, plugin.name, h("span", { class: "tag", text: plugin.category })),
-      h("div", { class: "row-desc", text: plugin.description }),
-      h(
-        "div",
-        { class: "row-meta" },
-        ratingEl,
-        h("span", { text: `${plugin.impactReason} · ${plugin.needsReload ? "needs a reload" : "applies instantly"}` }),
-      ),
-    ),
-    toggle(on, plugin.name, () => setEnabled(plugin, !on)),
-  );
 }
 
 function toggle(on: boolean, label: string, onClick: () => void): HTMLElement {

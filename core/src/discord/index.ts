@@ -63,7 +63,55 @@ export const stores = {
   get messages() { return store("MessageStore"); },
   get relationships() { return store("RelationshipStore"); },
   get presences() { return store("PresenceStore"); },
+  get selectedChannel() { return store("SelectedChannelStore"); },
+  get selectedGuild() { return store("SelectedGuildStore"); },
+  get voiceStates() { return store("VoiceStateStore"); },
+  get members() { return store("GuildMemberStore"); },
+  get memberCounts() { return store("GuildMemberCountStore"); },
+  get profiles() { return store("UserProfileStore"); },
+  get typing() { return store("TypingStore"); },
+  get streamerMode() { return store("StreamerModeStore"); },
 };
+
+/** Your account's id, once you're logged in. */
+export function myId(): string | undefined {
+  try {
+    return stores.users?.getCurrentUser?.()?.id;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The channel you're looking at, if any. */
+export function currentChannelId(): string | undefined {
+  try {
+    return stores.selectedChannel?.getChannelId?.() ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The name people see for a user: their server nickname when there's a server, else their display name. */
+export function displayName(userId: string, guildId?: string | null): string {
+  try {
+    const nick = guildId ? stores.members?.getNick?.(guildId, userId) : null;
+    if (nick) return nick;
+    const user = stores.users?.getUser?.(userId);
+    return user?.globalName || user?.username || "Someone";
+  } catch {
+    return "Someone";
+  }
+}
+
+/** When a Discord id (a "snowflake") was created: its top bits are milliseconds since 2015. */
+export function snowflakeDate(id: string): Date {
+  return new Date(Number(BigInt(id) >> 22n) + 1420070400000);
+}
+
+/** A link that opens a message in Discord. */
+export function messageLink(guildId: string | null | undefined, channelId: string, messageId: string): string {
+  return `https://discord.com/channels/${guildId ?? "@me"}/${channelId}/${messageId}`;
+}
 
 export function messageActions(): any {
   return lookup("message actions", () => find(hasRealMethod("sendMessage", "editMessage", "deleteMessage")));

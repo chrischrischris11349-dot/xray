@@ -23,7 +23,7 @@ export const css = `
 
 .panel {
   position: fixed; top: 52px; right: 16px; z-index: 2147483000;
-  width: 380px; max-height: calc(100vh - 72px); overflow-y: auto; padding: 8px;
+  width: 420px; max-height: calc(100vh - 72px); overflow-y: auto; padding: 8px;
   border-radius: 18px; background: rgba(22,22,26,.74);
   backdrop-filter: saturate(180%) blur(24px);
   box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.07);
@@ -179,4 +179,53 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .result-sub { font-size: 12px; color: var(--muted); }
 .kind { flex: none; font: 10px "Cascadia Mono", Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 .pal-foot { flex: none; display: flex; gap: 18px; padding: 10px 18px; border-top: 1px solid var(--line); }
+
+/* Dialogs (dialog.ts) */
+.dialog-scrim { align-items: center; padding: 24px; }
+.dialog { width: min(500px, 100%); max-height: 80vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 18px; background: rgba(22,22,26,.94); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.07); animation: pop 200ms var(--ease); scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+.dialog-title { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
+.dialog-text { font-size: 13.5px; color: var(--muted); white-space: pre-wrap; }
+.dialog-facts { display: grid; grid-template-columns: auto 1fr; gap: 9px 18px; margin: 0; }
+.dialog-facts dt { align-self: center; }
+.dialog-facts dd { margin: 0; font-size: 13.5px; overflow-wrap: anywhere; }
+.dialog-code { margin: 0; max-height: 50vh; overflow: auto; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.035); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.dialog-input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line2); background: rgba(255,255,255,.04); color: var(--text); font: inherit; outline: none; resize: vertical; }
+.dialog-input:focus { border-color: rgba(255,255,255,.3); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.btn.ghost { background: rgba(255,255,255,.07); color: var(--text); }
+.btn.danger { background: #d92d20; color: #fff; }
+
+/* Plugin list (pluginList.ts) */
+.plugin-tools { display: flex; flex-direction: column; gap: 8px; margin: 0 2px 8px; }
+.plugin-search { height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2); background: rgba(255,255,255,.04); color: var(--text); font: inherit; font-size: 13.5px; outline: none; }
+.plugin-search:focus { border-color: rgba(255,255,255,.28); }
+.plugin-search::placeholder { color: var(--faint); }
+.plugin-search::-webkit-search-cancel-button { display: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-filter { height: 26px; padding: 0 10px; border: 0; border-radius: 13px; background: var(--seg); color: var(--muted); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
+.chip-filter:hover { color: var(--text); }
+.chip-filter.on { background: var(--accent); color: var(--onAccent); }
+.settings-toggle { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; margin-left: auto; border: 0; border-radius: 6px; background: var(--seg); color: var(--muted); font-family: inherit; font-size: 11.5px; font-weight: 500; cursor: pointer; }
+.settings-toggle:hover { color: var(--text); }
+.settings-toggle .chev { display: flex; transition: transform 160ms var(--ease); }
+.settings-toggle.open .chev { transform: rotate(90deg); }
+.row-group + .row, .row + .row-group, .row-group + .row-group { border-top: 1px solid var(--line); }
+.options { display: flex; flex-direction: column; gap: 12px; padding: 4px 14px 14px; }
+.opt { display: flex; align-items: center; gap: 12px; }
+.opt.stacked { flex-direction: column; align-items: stretch; gap: 6px; }
+.opt-text { flex: 1; min-width: 0; }
+.opt-name { font-size: 13px; font-weight: 600; }
+.opt-input { min-width: 0; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line2); background: rgba(255,255,255,.04); color: var(--text); font: inherit; font-size: 13px; outline: none; }
+.opt-input:focus { border-color: rgba(255,255,255,.28); }
+.opt-input.num { width: 84px; }
+.opt-input.wide { width: 100%; resize: vertical; }
+select.opt-input { max-width: 180px; }
+select.opt-input option { background: #18181c; color: var(--text); }
+.switch.small { width: 36px; height: 22px; }
+.switch.small span { width: 18px; height: 18px; }
+
+/* Call Timer (plugins/appearance.ts) */
+.calltimer { position: fixed; top: 4px; right: 96px; z-index: 2147482980; height: 24px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border-radius: 12px; background: rgba(61,214,140,.1); box-shadow: inset 0 0 0 1px rgba(61,214,140,.28); color: #8cf0c0; font-size: 12px; pointer-events: none; }
+:host-context(html.xray-obsidian) .calltimer { top: 10px; height: 26px; }
+.calltimer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 `;

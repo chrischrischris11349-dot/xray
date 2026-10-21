@@ -37,21 +37,31 @@ export function fromXray(event: Event): boolean {
   return !!host && event.composedPath().includes(host);
 }
 
-/** Registers a key handler. Return true to claim the key: Discord won't see it and its default is cancelled. */
-export function onKey(handler: KeyHandler): void {
+/**
+ * Registers a key handler. Return true to claim the key: Discord won't see it
+ * and its default is cancelled. Returns a function that removes the handler.
+ */
+export function onKey(handler: KeyHandler): () => void {
   keyHandlers.push(handler);
+  return () => remove(keyHandlers, handler);
 }
 
 /** Like `onKey`, for key releases. */
-export function onKeyUp(handler: KeyHandler): void {
+export function onKeyUp(handler: KeyHandler): () => void {
   keyUpHandlers.push(handler);
+  return () => remove(keyUpHandlers, handler);
+}
+
+function remove(list: KeyHandler[], handler: KeyHandler): void {
+  const i = list.indexOf(handler);
+  if (i !== -1) list.splice(i, 1);
 }
 
 export function installKeyRouter(): void {
   window.addEventListener(
     "keydown",
     (event) => {
-      for (const handler of keyHandlers) {
+      for (const handler of keyHandlers.slice()) {
         if (handler(event)) {
           event.preventDefault();
           event.stopImmediatePropagation();
@@ -65,7 +75,7 @@ export function installKeyRouter(): void {
   window.addEventListener(
     "keyup",
     (event) => {
-      for (const handler of keyUpHandlers) {
+      for (const handler of keyUpHandlers.slice()) {
         if (handler(event)) {
           event.preventDefault();
           event.stopImmediatePropagation();

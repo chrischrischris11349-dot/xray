@@ -5,6 +5,8 @@ import { filters, find, findByCode, hookWebpack, waitFor, webpackStats } from ".
 import { patch } from "../src/patcher";
 import fakeDeafen, { fakeVoice } from "../src/plugins/fakeDeafen";
 import { rank, score } from "../src/ui/search";
+import { mapProse, matchCase, parseRules } from "../src/plugins/text";
+import { splitText } from "../src/plugins/chatText";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -168,6 +170,22 @@ const cases: [string, string][] = [
 for (const [input, want] of cases) check(`cleanUrl ${input}`, cleanUrl(input) === want, cleanUrl(input));
 check("trailing punctuation kept", cleanContent("see https://a.com/?fbclid=1.") === "see https://a.com/.", cleanContent("see https://a.com/?fbclid=1."));
 check("code blocks untouched", cleanContent("`https://a.com/?fbclid=1` and https://a.com/?fbclid=1") === "`https://a.com/?fbclid=1` and https://a.com/", cleanContent("`https://a.com/?fbclid=1` and https://a.com/?fbclid=1"));
+
+// ---- text plugins ----
+const upper = (t: string) => mapProse(t, (p) => p.toUpperCase());
+check("prose is rewritten", upper("hi there") === "HI THERE");
+check("code, links, mentions and emoji are left alone", upper("a `b` https://x.com/y <@123> :smile: c") === "A `b` https://x.com/y <@123> :smile: C", upper("a `b` https://x.com/y <@123> :smile: c"));
+check("fenced code is left alone", upper("x\n```js\nlet a\n```\ny") === "X\n```js\nlet a\n```\nY");
+const [brb] = parseRules(["brb => be right back"], true);
+check("whole-word rules skip parts of words", "brb, abrbx".replace(brb.find, (w) => matchCase(w, brb.replace)) === "be right back, abrbx");
+check("a capitalized word keeps its capital", "Brb".replace(brb.find, (w) => matchCase(w, brb.replace)) === "Be right back");
+const [colour] = parseRules(["/colou?r/ => hue"], false);
+check("regex rules work", "color colour".replace(colour.find, colour.replace) === "hue hue");
+check("broken regex rules are skipped", parseRules(["/(/ => x"], false).length === 0);
+const long = Array.from({ length: 50 }, (_, i) => `line ${i} ${"x".repeat(60)}`).join("\n");
+const parts = splitText(long, 2000);
+check("long text splits under the limit", parts.length === 2 && parts.every((p) => p.length <= 2000), parts.map((p) => p.length));
+check("splitting keeps every line", parts.join("\n") === long);
 
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

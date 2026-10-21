@@ -35,6 +35,8 @@ interface Loaded {
 interface Waiter {
   filter: Filter;
   resolve: (match: any) => void;
+  /** Keeps waiting after a match, for every module that matches (see `everyMatch`). */
+  forever?: boolean;
 }
 
 const CHUNK_GLOBAL = "webpackChunkdiscord_app";
@@ -160,7 +162,7 @@ function settleWaiters(exports: unknown): void {
   for (const waiter of waiters) {
     const match = firstMatch(exports, waiter.filter);
     if (match === undefined) continue;
-    waiters.delete(waiter);
+    if (!waiter.forever) waiters.delete(waiter);
     try {
       waiter.resolve(match);
     } catch (err) {
@@ -241,6 +243,19 @@ export function waitFor(filter: Filter, resolve: (match: any) => void): () => vo
   const waiter: Waiter = { filter, resolve };
   waiters.add(waiter);
   return () => waiters.delete(waiter);
+}
+
+/**
+ * Calls `callback` with every export that passes `filter`: each one already
+ * loaded, then each one as it loads. Discord's runtimes each run their own
+ * copy of shared modules (React's among them), and this reaches all of them.
+ */
+export function everyMatch(filter: Filter, callback: (match: any) => void): void {
+  for (const { module } of loaded) {
+    const match = firstMatch(module.exports, filter);
+    if (match !== undefined) callback(match);
+  }
+  waiters.add({ filter, resolve: callback, forever: true });
 }
 
 /** Finds a module by text in its factory's source and returns its exports, loading it if needed. */
