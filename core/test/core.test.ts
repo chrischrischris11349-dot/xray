@@ -13,6 +13,7 @@ import { localTime } from "../src/plugins/people";
 import { hexColor, sharperImage, textOn } from "../src/plugins/look";
 import { permissionNames } from "../src/plugins/servers";
 import { nameColor } from "../src/plugins/decorations";
+import { convertUnits, decodeBase64 } from "../src/plugins/tools";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -222,6 +223,13 @@ check("other images are left alone", sharperImage("https://cdn.discordapp.com/av
 check("administrator means everything", permissionNames(1n << 3n).length === 1);
 check("permission bits name the right things", permissionNames((1n << 11n) | (1n << 1n)).join() === "Kick Members,Send Messages", permissionNames((1n << 11n) | (1n << 1n)));
 check("name colors are steady per person", nameColor("123", 70) === nameColor("123", 70) && nameColor("123", 70) !== nameColor("124", 70));
+
+// ---- wave 4 ----
+check("units convert both ways", convertUnits("ran 5 km and lifted 100 lb").join() === "5 km = 3.11 mi,100 lb = 45.36 kg", convertUnits("ran 5 km and lifted 100 lb"));
+check("temperatures convert", convertUnits("it's 30°C").join() === "30 °C = 86 °F" || convertUnits("it's 30°C")[0]?.endsWith("86 °F"), convertUnits("it's 30°C"));
+check("plain numbers aren't units", convertUnits("I have 5 apples").length === 0);
+check("Base64 text decodes", decodeBase64("look: aGVsbG8gd29ybGQgZnJvbSB4cmF5").join() === "hello world from xray");
+check("non-text Base64 is skipped", decodeBase64("AAAAAAAAAAAAAAAAAAAAAAAA").length === 0);
 
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

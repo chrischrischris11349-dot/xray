@@ -2,8 +2,8 @@
 
 xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own code (their code is GPL and xray's source is private, so nothing is copied). This file tracks the merged catalog: 483 names after removing duplicates.
 
-- **Built:** 93 catalog plugins, covered by xray plugins (some xray plugins cover several).
-- **Planned:** 339.
+- **Built:** 101 catalog plugins, covered by xray plugins (some xray plugins cover several).
+- **Planned:** 331.
 - **Left out on purpose:** 30 (spam, account tokens, acting on other people, tracking people, faking conversations, cheating).
 - **Not applicable:** 21 (the other mods' own internals and duplicates).
 
@@ -20,6 +20,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | CharacterCounter | Character Counter |
 | ClearURLs | Clean Links |
 | ClientTheme | Accent Color |
+| CollapsibleUI | Focus Mode (partly) |
 | CommandPalette | Search (Ctrl+K) |
 | ConsoleJanitor | Quiet Console |
 | CopyEmojiMarkdown | Copy Emoji |
@@ -30,7 +31,10 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | CustomIdle | Idle Timer |
 | CustomUserColors | Name Colors (partly) |
 | Declutter | Declutter |
+| DecodeBase64 | Decode Base64 |
+| DownloadAllAttachments | Open All Attachments |
 | EventLogs | Message Logger (partly) |
+| ExportMessages | Save Message |
 | FakeVoice | Fake Deafen |
 | FixImagesQuality | Sharper Images |
 | FontLoader | Custom Font (installed fonts) |
@@ -38,6 +42,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | FriendshipRanks | Friends Since (partly) |
 | HideChatButtons | Declutter (partly) |
 | HideMessages | Hide Messages |
+| HideServers | Hide Servers |
 | ImageFilename | Image File Names |
 | ImageZoom | Image Zoom |
 | Ingtoninator | Ingtoninator |
@@ -48,6 +53,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | KeywordNotify | Keyword Alerts |
 | MemberCount | Member Count |
 | MessageClickActions | Double-Click Messages |
+| MessageColors | Color Swatches |
 | MessageLogger | Message Logger |
 | MessageNotifier | Message Alerts |
 | MessagePeek | Message Peek |
@@ -65,6 +71,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | NotificationVolume | Notification Volume |
 | PermissionsViewer | Permissions Viewer |
 | PictureInPicture | Picture in Picture |
+| PinIcon | Pin Marks |
 | PlatformIndicators | Device Indicators |
 | PlatformSpoofer | Device Badge |
 | PolishWording | Auto Capitalize (partly) |
@@ -96,6 +103,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | TypingIndicator | Typing in Channel List |
 | UncompressedImages | Sharper Images |
 | Unindent | Unindent Code |
+| UnitConverter | Unit Converter |
 | UnsuppressEmbeds | Show Link Previews |
 | UserVoiceShow | In Voice Badge |
 | VcNarrator | Voice Narrator |
@@ -288,7 +296,6 @@ Roughly in the order they'll be built: most-used first.
 - VoiceJoinMessages (equicord)
 - AdvancedPermissions (equicord)
 - AltKrispSwitch (equicord)
-- DecodeBase64 (equicord)
 - BannersEverywhere (equicord)
 - BetterAudioPlayer (equicord)
 - BetterActivities (equicord)
@@ -305,7 +312,6 @@ Roughly in the order they'll be built: most-used first.
 - ClipsEnhancements (equicord)
 - ClickableRoles (equicord)
 - ContentWarning (equicord)
-- CollapsibleUI (equicord)
 - CursorBuddy (equicord)
 - CopyProfileColors (equicord)
 - CustomFolderIcons (equicord)
@@ -314,13 +320,11 @@ Roughly in the order they'll be built: most-used first.
 - CustomTimestamps (equicord)
 - DisableCameras (equicord)
 - DiscordDevBanner (equicord)
-- DownloadAllAttachments (equicord)
 - Dragify (equicord)
 - DragFavoriteEmotes (equicord)
 - EquiTweaks (equicord)
 - ElementHighlighter (equicord)
 - ExitSounds (equicord)
-- ExportMessages (equicord)
 - FastDeleteChannels (equicord)
 - FileUpload (equicord)
 - FindReply (equicord)
@@ -337,7 +341,6 @@ Roughly in the order they'll be built: most-used first.
 - GoogleThat (equicord)
 - GlobalBadges (equicord)
 - GuildPickerDumper (equicord)
-- HideServers (equicord)
 - HomeTyping (equicord)
 - HopOn (equicord)
 - Husk (equicord)
@@ -353,7 +356,6 @@ Roughly in the order they'll be built: most-used first.
 - LastActive (equicord)
 - MarkdownTables (equicord)
 - MediaPlaybackSpeed (equicord)
-- MessageColors (equicord)
 - MessageFetchTimer (equicord)
 - MessageLinkTooltip (equicord)
 - MessageLoggerEnhanced (equicord)
@@ -365,7 +367,6 @@ Roughly in the order they'll be built: most-used first.
 - NotificationTitle (equicord)
 - OrbolayBridge (equicord)
 - CancelFriendRequest (equicord)
-- PinIcon (equicord)
 - PingNotifications (equicord)
 - ProfileSets (equicord)
 - Questify (equicord)
@@ -398,7 +399,6 @@ Roughly in the order they'll be built: most-used first.
 - TidalEmbeds (equicord)
 - ToastNotifications (equicord)
 - ToneIndicators (equicord)
-- UnitConverter (equicord)
 - UnreadCountBadge (equicord)
 - UrlHighlighter (equicord)
 - UserPFP (equicord)
