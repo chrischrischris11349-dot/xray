@@ -7,6 +7,7 @@ import { log } from "./env";
 import { isRunning, plugins, startPlugins } from "./plugins/manager";
 import { handleHotkey, lastHotkeyFired } from "./shell/hotkeys";
 import { installNotifications, notificationClicked } from "./shell/notifications";
+import { installTheme } from "./theme";
 import { isPanelOpen, mountUi, openPanel } from "./ui/panel";
 import { hookWebpack, webpackStats } from "./webpack";
 
@@ -19,6 +20,8 @@ function boot(): void {
   installNotifications();
   hookWebpack();
   startPlugins();
+  // Before Discord paints anything, so it never flashes its own colors first.
+  installTheme();
   // The UI needs a document to attach to; at document start there isn't one yet.
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", mountUi, { once: true });
   else mountUi();

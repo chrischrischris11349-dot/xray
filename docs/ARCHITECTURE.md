@@ -121,11 +121,15 @@ Deafen and Clean Links work this way. Plugins that hook Discord's modules use
 1. **Shell and core** (this milestone): window, tray, launch at login, single
    instance, link guard, webpack hook, patcher, plugin manager, panel, Fake
    Deafen, Clean Links.
-2. **UI inside Discord**: render with Discord's own React (found through
-   webpack, so no extra download). Covers the right-click user info, the
-   full-profile sheet with per-server message counts, the quick-reply bubble,
-   Ctrl+K search, and the Obsidian theme as CSS over Discord's variables plus
-   Windows Mica behind a transparent page.
+2. **UI inside Discord**. Done: the Obsidian theme (`core/src/theme/`), which
+   overrides Discord's color tokens, paints a static tinted backdrop under
+   translucent panes, floats the channel list and page as glass cards, and
+   puts the xray mark in the title bar. A real Mica window was tried and
+   dropped: with a transparent WebView2, Windows didn't draw the backdrop and
+   the window turned see-through. Next: render with Discord's own React
+   (found through webpack, so no extra download) for the right-click user
+   info, the full-profile sheet with per-server message counts, the
+   quick-reply bubble and Ctrl+K search.
 3. **Your server**: a small service on the VPS for settings sync and the
    names and avatars xray has seen, reached only through Rust.
 4. **More plugins**: silent edit and delete, message logger, hidden channels,
@@ -136,7 +140,8 @@ Deafen and Clean Links work this way. Plugins that hook Discord's modules use
 ## Testing
 
 - `npm test` runs the core checks under Node, with stand-ins for browser globals.
-- Live: launch the exe with
-  `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222`, pick
-  the target whose URL is on discord.com, and call `window.__xray.diagnostics()`.
-  Relaunch without the port afterwards.
+- Live: launch the debug exe with `XRAY_TEST_WINDOW=offscreen` (opens
+  off-screen and unfocused, so it never pops over a game) and
+  `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222`. Pick
+  the target whose URL is on discord.com and call `window.__xray.diagnostics()`.
+  Take screenshots over CDP (`Page.captureScreenshot`), never from the desktop.

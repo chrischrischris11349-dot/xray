@@ -22,14 +22,21 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
     let url = WebviewUrl::External(Url::parse(DISCORD_APP).expect("DISCORD_APP is a valid URL"));
     let nav_app = app.clone();
     let popup_app = app.clone();
-    WebviewWindowBuilder::new(app, MAIN, url)
+    let mut builder = WebviewWindowBuilder::new(app, MAIN, url)
         .title("xray")
         .inner_size(1280.0, 820.0)
         .min_inner_size(940.0, 600.0)
-        .center()
         .visible(visible)
         .theme(Some(tauri::Theme::Dark))
-        .background_color(Color(6, 6, 7, 255))
+        .background_color(Color(6, 6, 7, 255));
+    // Debug builds only: XRAY_TEST_WINDOW=offscreen opens the window off-screen
+    // and unfocused, so automated tests never pop up over whatever you're doing.
+    builder = if cfg!(debug_assertions) && std::env::var("XRAY_TEST_WINDOW").as_deref() == Ok("offscreen") {
+        builder.position(-4000.0, 0.0).focused(false).skip_taskbar(true)
+    } else {
+        builder.center()
+    };
+    builder
         .initialization_script(CORE)
         .additional_browser_args(BROWSER_ARGS)
         .on_navigation(move |url| {

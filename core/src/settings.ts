@@ -19,6 +19,8 @@ export interface PluginState {
 interface Saved {
   plugins: Record<string, PluginState>;
   seenWelcome?: boolean;
+  /** The Obsidian theme. On unless switched off. */
+  theme?: boolean;
 }
 
 const saved: Saved = read();
@@ -65,5 +67,14 @@ export function seenWelcome(): boolean {
 
 export function markWelcomeSeen(): void {
   saved.seenWelcome = true;
+  save();
+}
+
+export function themeEnabled(): boolean {
+  return saved.theme !== false;
+}
+
+export function setThemeEnabled(on: boolean): void {
+  saved.theme = on;
   save();
 }

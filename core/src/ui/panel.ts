@@ -7,7 +7,8 @@ import { combineImpact, type OverallImpact } from "../plugins/impact";
 import { fakeVoice } from "../plugins/fakeDeafen";
 import { isEnabled, onPluginsChanged, pendingReload, plugins, setEnabled } from "../plugins/manager";
 import type { Impact, Plugin } from "../plugins/types";
-import { markWelcomeSeen, seenWelcome } from "../settings";
+import { markWelcomeSeen, seenWelcome, setThemeEnabled, themeEnabled } from "../settings";
+import { setThemeActive } from "../theme";
 import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotkeys, setHotkeys } from "../shell/hotkeys";
 import { webpackStats } from "../webpack";
 import { h } from "./dom";
@@ -208,6 +209,7 @@ function render(): void {
   const parts = [
     header(),
     fakeVoice.available ? fakeDeafenCard() : null,
+    themeCard(),
     h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
     hotkeyList(),
     h("div", {
@@ -251,6 +253,25 @@ function fakeDeafenCard(): HTMLElement {
     { class: on ? "card on" : "card" },
     h("div", { class: "card-text" }, h("div", { class: "card-title", text: "Fake deafen" }), h("div", { class: "card-sub", text: sub })),
     toggle(on, "Fake deafen", () => fakeVoice.set(!on)),
+  );
+}
+
+function themeCard(): HTMLElement {
+  const on = themeEnabled();
+  return h(
+    "div",
+    { class: "card" },
+    h(
+      "div",
+      { class: "card-text" },
+      h("div", { class: "card-title", text: "Obsidian theme" }),
+      h("div", { class: "card-sub", text: on ? "xray's dark glass look." : "Off: Discord's own look." }),
+    ),
+    toggle(on, "Obsidian theme", () => {
+      setThemeEnabled(!on);
+      setThemeActive(!on);
+      render();
+    }),
   );
 }
 
