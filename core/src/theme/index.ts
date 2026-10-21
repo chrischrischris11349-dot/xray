@@ -29,6 +29,26 @@ export function installTheme(): void {
   // The marker needs <body>, which doesn't exist at document start.
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncMarker, { once: true });
   else syncMarker();
+  markLoadedWhenReady();
+}
+
+/**
+ * Discord paints its own loading screen (seasonal art included) before its app
+ * mounts. xray's glass would otherwise cover it, so the backdrop only takes
+ * over once the app's first real layer appears, marked by `data-xray-loaded`.
+ */
+function markLoadedWhenReady(): void {
+  const mark = () => document.documentElement?.setAttribute("data-xray-loaded", "");
+  if (document.querySelector('[class*="baseLayer_"], [class*="app_"]')) return mark();
+  const observer = new MutationObserver(() => {
+    if (document.querySelector('[class*="baseLayer_"], [class*="app_"]')) {
+      observer.disconnect();
+      mark();
+    }
+  });
+  const start = () => observer.observe(document.body, { childList: true, subtree: true });
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start, { once: true });
 }
 
 export function setThemeActive(on: boolean): void {

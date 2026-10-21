@@ -72,7 +72,10 @@ html.xray-obsidian {
     #010103 !important;
   background-attachment: fixed !important;
 
-  body, #app-mount { background: transparent !important; }
+  body { background: transparent !important; }
+  /* Only clear #app-mount once Discord's app has mounted, so Discord's own
+     loading screen (seasonal art and all) shows first, not the backdrop. */
+  &[data-xray-loaded] #app-mount { background: transparent !important; }
   ::selection { background: rgba(255, 255, 255, 0.22); color: #ffffff; }
 
   /* ---------- the grid: a gap around every pane ---------- */
@@ -141,8 +144,13 @@ html.xray-obsidian {
   nav[class*="guilds_"] [class*="folderGroup_"] { width: 64px !important; }
   nav[class*="guilds_"] [class*="listItem_"] > span,
   nav[class*="guilds_"] [class*="folderHeader_"],
-  nav[class*="guilds_"] [class*="folderGroup_"] [class*="expandedFolderBackground_"],
   nav[class*="guilds_"] [class*="folderGroup_"] > div { margin-inline: auto !important; }
+  /* The pill behind an open folder is absolutely positioned; center it on the narrowed dock. */
+  nav[class*="guilds_"] [class*="folderGroupBackground_"] {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
   /* The selection pill becomes a short glowing tick. */
   nav[class*="guilds_"] [class*="wrapper_"][class*="overlay_"] [class*="item_"] {
     width: 4px !important;

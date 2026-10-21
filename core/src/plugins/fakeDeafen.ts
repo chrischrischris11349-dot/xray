@@ -271,10 +271,53 @@ export const fakeVoice = {
   },
 };
 
+/** A mask icon: the Fake Deafen button in the voice panel. */
+const MASK_ICON =
+  '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 9c-2.2 0-3.9.5-5 .9-1.2.5-2.3.9-3.5.9s-2.3-.4-3.5-.9C7.4 9.5 5.7 9 3.5 9 2.7 9 2 9.7 2 10.5v1.6c0 2.9 2.1 5.4 5 5.8 2.4.4 4.7-1 5.6-3.2l.4-1 .4 1c.9 2.2 3.2 3.6 5.6 3.2 2.9-.4 5-2.9 5-5.8v-1.6c0-.8-.7-1.5-1.5-1.5zM8 15.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm8 0a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>';
+
+/**
+ * Puts a Fake Deafen toggle in Discord's voice panel, next to mute and
+ * deafen, so it's one click before a call. It reflects whether faking is on
+ * and updates when you toggle it anywhere.
+ */
+function installVoicePanelButton(ctx: { css(c: string): void; watch(sel: string, fn: (el: Element) => void): void; onStop(fn: () => void): void }): void {
+  ctx.css(`
+    .xray-fd { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex: none;
+      border: 0; border-radius: 8px; background: transparent; color: var(--interactive-normal, #b5bac1); cursor: pointer;
+      transition: background-color 120ms ease, color 120ms ease; }
+    .xray-fd:hover { background: var(--background-modifier-hover, rgba(255,255,255,.06)); color: var(--interactive-hover, #dbdee1); }
+    .xray-fd[aria-pressed="true"] { background: rgba(255,90,90,.16); color: #ff6b5b; }
+  `);
+  const update = (button: HTMLElement) => {
+    const on = faking;
+    button.setAttribute("aria-pressed", String(on));
+    button.title = on ? "Fake Deafen is on — others see you deafened" : "Enable Fake Deafen";
+  };
+  const buttons = new Set<HTMLElement>();
+  const unsub = fakeVoice.subscribe(() => buttons.forEach(update));
+  ctx.watch('section[class*="panels_"] [class*="buttons_"]', (bar) => {
+    if (bar.querySelector(".xray-fd")) return;
+    const button = document.createElement("button");
+    button.className = "xray-fd";
+    button.type = "button";
+    button.setAttribute("aria-label", "Fake Deafen");
+    button.innerHTML = MASK_ICON;
+    button.addEventListener("click", () => fakeVoice.set(!faking));
+    bar.insertBefore(button, bar.firstChild);
+    buttons.add(button);
+    update(button);
+  });
+  ctx.onStop(() => {
+    unsub();
+    document.querySelectorAll(".xray-fd").forEach((el) => el.remove());
+    buttons.clear();
+  });
+}
+
 export default definePlugin({
   id: PLUGIN_ID,
   name: "Fake Deafen",
-  description: "Look muted and deafened to everyone while you keep listening.",
+  description: "A Fake Deafen button next to mute: others see you deafened while you keep listening. It stays off until you press it, so it never touches your audio on its own.",
   category: "Voice",
   impact: "light",
   impactReason: "Only reads the voice updates you send",
@@ -284,7 +327,7 @@ export default definePlugin({
     serverDeafen: {
       type: "boolean",
       label: "Server deafen too",
-      description: "In servers where you can deafen members, also show the red server-deafen icon. It's a real server deafen, so it appears in the audit log.",
+      description: "In servers where you can deafen members, also show the red server-deafen icon. Warning: this is a real server deafen, so the server stops sending you audio — you won't hear anyone while it's on. It also appears in the audit log. Leave off to just look deafened and still hear.",
       default: false,
     },
     serverMute: {
@@ -300,6 +343,8 @@ export default definePlugin({
     running = true;
     ctx.patch(WebSocket.prototype, "send", { before: rewrite });
     ctx.intercept((action) => keepHearing(action));
+    // Guarded so the unit-test harness (no DOM, a minimal ctx) skips it.
+    if (typeof ctx.css === "function" && typeof ctx.watch === "function") installVoicePanelButton(ctx);
     // A leftover from last time is cleared once you're logged in.
     if (!undoLeftover()) ctx.onAction("CONNECTION_OPEN", () => undoLeftover());
     const onPageHide = () => {
