@@ -28,7 +28,7 @@ pub fn run() {
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
-            enable_autostart_once(handle, &mut shell);
+            sync_autostart(handle, &mut shell);
             let at_login = std::env::args().any(|arg| arg == window::AUTOSTART_ARG);
             window::create(handle, !(at_login && shell.start_minimized))?;
             app.manage(Shell(Mutex::new(shell)));
@@ -51,13 +51,19 @@ pub fn run() {
 
 /// Launch at login is on by default. It's switched on once, on the first run of
 /// a release build, so dev builds never register themselves and turning it off
-/// later sticks.
-fn enable_autostart_once<R: Runtime>(app: &AppHandle<R>, shell: &mut ShellSettings) {
-    if cfg!(debug_assertions) || shell.autostart_initialized {
+/// later sticks. While it's on, each launch re-registers this exe, so the entry
+/// follows xray if it moves (from a build folder to an install, say).
+fn sync_autostart<R: Runtime>(app: &AppHandle<R>, shell: &mut ShellSettings) {
+    if cfg!(debug_assertions) {
         return;
     }
-    if app.autolaunch().enable().is_ok() {
-        shell.autostart_initialized = true;
-        settings::save(app, shell);
+    let autolaunch = app.autolaunch();
+    if !shell.autostart_initialized {
+        if autolaunch.enable().is_ok() {
+            shell.autostart_initialized = true;
+            settings::save(app, shell);
+        }
+    } else if autolaunch.is_enabled().unwrap_or(false) {
+        let _ = autolaunch.enable();
     }
 }
