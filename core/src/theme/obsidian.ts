@@ -167,8 +167,8 @@ const PALETTE = `
 const GLASS_PALETTE = `
   --xr-base: transparent;
   --xr-rail: transparent;
-  --xr-side: rgba(255, 255, 255, 0.022);
-  --xr-chat: rgba(0, 0, 0, 0.24);`;
+  --xr-side: rgba(140, 165, 200, 0.018);
+  --xr-chat: rgba(0, 0, 0, 0.4);`;
 
 export const obsidianCss = `
 ${SCOPE} {${PALETTE}

@@ -42,11 +42,14 @@ html.xray-obsidian {
   --custom-app-top-bar-height: 46px !important;
   --xr-gap: 10px;
   --xr-radius: 18px;
-  --xr-card: rgba(16, 16, 20, 0.66);
-  --xr-panel: rgba(10, 10, 12, 0.8);
-  --xr-edge: rgba(255, 255, 255, 0.075);
-  --xr-edge-hi: rgba(255, 255, 255, 0.11);
-  --xr-tick: rgba(255, 255, 255, 0.2);
+  /* Darker, colder glass: a black control surface, not grey. */
+  --xr-card: rgba(9, 10, 13, 0.74);
+  --xr-panel: rgba(5, 6, 8, 0.86);
+  /* Hairlines are a faint cold steel, not plain white. */
+  --xr-edge: rgba(150, 170, 200, 0.07);
+  --xr-edge-hi: rgba(160, 185, 215, 0.12);
+  /* HUD ticks and selection glow: a cold, sinister cyan-steel. */
+  --xr-tick: rgba(96, 150, 180, 0.3);
   /* Selected rows and your own bubbles. The Accent Color plugin changes these two. */
   --xr-pill: rgba(242, 243, 245, 0.94);
   --xr-on-pill: #0b0b0d;
@@ -58,12 +61,15 @@ html.xray-obsidian {
   --font-headline: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif !important;
   --font-code: var(--xr-mono) !important;
 
-  /* The backdrop: near-black, a faint dot grid and two cool glows, fixed in place. */
+  /* The backdrop: a near-black control surface. A dim dot grid, one cold
+     steel glow bleeding from the top, a deeper sinister undertone at the
+     bottom, and a heavy vignette that pulls the eye to the center. */
   background:
-    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.04) 1px, transparent 1.5px) 0 0 / 24px 24px,
-    radial-gradient(1100px 720px at -4% -14%, rgba(112, 128, 176, 0.24), transparent 62%),
-    radial-gradient(900px 640px at 106% 112%, rgba(124, 92, 168, 0.18), transparent 62%),
-    #040405 !important;
+    radial-gradient(circle at 1px 1px, rgba(150, 175, 205, 0.028) 1px, transparent 1.5px) 0 0 / 26px 26px,
+    radial-gradient(1200px 760px at 50% -20%, rgba(70, 110, 140, 0.18), transparent 60%),
+    radial-gradient(1000px 700px at 108% 118%, rgba(40, 58, 92, 0.16), transparent 58%),
+    radial-gradient(140% 120% at 50% 42%, transparent 52%, rgba(0, 0, 0, 0.55) 100%),
+    #010103 !important;
   background-attachment: fixed !important;
 
   body, #app-mount { background: transparent !important; }
@@ -77,7 +83,8 @@ html.xray-obsidian {
   [class*="base_"] > [class^="bar_"] {
     position: relative !important;
     background: transparent !important;
-    padding-inline: 0 14px !important;
+    /* Reserve room at the right for xray's own window buttons (frame.ts). */
+    padding-inline: 0 128px !important;
   }
   [class*="base_"] > [class^="bar_"]::before {
     content: "xray";

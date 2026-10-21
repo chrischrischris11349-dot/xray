@@ -112,7 +112,6 @@ const ICON_PATHS: Record<string, string> = {
   mobile: "M8 3h8v18H8zM11 18h2",
   web: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.6 2.5 15.4 0 18M12 3c-2.5 2.6-2.5 15.4 0 18",
 };
-const STATUS_COLORS: Record<string, string> = { online: "#3dd68c", idle: "#f5b84a", dnd: "#ff6b5b" };
 
 function clientStatus(userId: string): Record<string, string> {
   try {
@@ -159,7 +158,8 @@ const platformIndicators = definePlugin({
         if (!kinds.length || message.author?.bot) return null;
         const box = document.createElement("span");
         box.className = "xray-icons";
-        for (const kind of kinds) box.append(icon(kind, STATUS_COLORS[statuses[kind]] ?? "#9a9ca5", `${kind[0].toUpperCase()}${kind.slice(1)}: ${statuses[kind]}`));
+        // Monotone: all one muted tone; the status is in the tooltip, not the color.
+        for (const kind of kinds) box.append(icon(kind, "var(--xr-muted, #9a9ca5)", `${kind[0].toUpperCase()}${kind.slice(1)}: ${statuses[kind]}`));
         return box;
       },
       ["PRESENCE_UPDATES"],

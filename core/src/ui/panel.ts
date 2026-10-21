@@ -13,6 +13,7 @@ import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotke
 import { webpackStats } from "../webpack";
 import { h } from "./dom";
 import { type Feature, features, isFeatureOn, onFeaturesChanged, setFeature } from "./features";
+import { mountFrame } from "./frame";
 import { pluginSection } from "./pluginList";
 import { onKey, onKeyUp, uiRoot } from "./root";
 
@@ -67,6 +68,7 @@ export function mountUi(): void {
   onFeaturesChanged(render);
   fakeVoice.subscribe(render);
   mountLauncher();
+  mountFrame();
   if (!seenWelcome()) showWelcome();
 }
 

@@ -28,6 +28,11 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
         .min_inner_size(940.0, 600.0)
         .visible(visible)
         .theme(Some(tauri::Theme::Dark))
+        // Frameless: xray draws its own title bar (the themed bar with the
+        // window buttons) over Discord's own. The shadow keeps Windows'
+        // resize borders and drop shadow on an undecorated window.
+        .decorations(false)
+        .shadow(true)
         .background_color(Color(6, 6, 7, 255));
     // Debug builds only: XRAY_TEST_WINDOW=offscreen opens the window off-screen
     // and unfocused, so automated tests never pop up over whatever you're doing.
