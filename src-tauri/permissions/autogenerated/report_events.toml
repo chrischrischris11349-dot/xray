@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-report-events"
+description = "Enables the report_events command without any pre-configured scope."
+commands.allow = ["report_events"]
+
+[[permission]]
+identifier = "deny-report-events"
+description = "Denies the report_events command without any pre-configured scope."
+commands.deny = ["report_events"]

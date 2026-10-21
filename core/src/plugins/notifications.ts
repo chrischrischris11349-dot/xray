@@ -251,4 +251,28 @@ const streamerMode = definePlugin({
   },
 });
 
-export const notificationPlugins: readonly Plugin<any>[] = [relationshipNotifier, keywordNotify, watchUsers, narrator, streamerMode];
+const blockKeywords = definePlugin({
+  id: "blockKeywords",
+  name: "Block Keywords",
+  description: "Messages containing words you choose never show up, as if the sender were blocked for that message.",
+  category: "Chat",
+  impact: "light",
+  impactReason: "Checks each new message's text",
+  needsReload: false,
+  enabledByDefault: false,
+  options: {
+    keywords: { type: "list", label: "Words", description: "Words or phrases, one per line. /regex/ works too.", default: [] },
+  },
+  start(ctx) {
+    if (!ctx.options.keywords.length) return;
+    const matches = matcher(ctx.options.keywords);
+    const hidden = (message: any) => !!message?.content && message.author?.id !== myId() && matches(message.content);
+    // Dropped before Discord's stores see it, so it never shows or counts as unread.
+    ctx.intercept((action) => {
+      if (action.type === "MESSAGE_CREATE") return hidden(action.message);
+      if (action.type === "LOAD_MESSAGES_SUCCESS" && Array.isArray(action.messages)) action.messages = action.messages.filter((m: any) => !hidden(m));
+    });
+  },
+});
+
+export const notificationPlugins: readonly Plugin<any>[] = [relationshipNotifier, keywordNotify, watchUsers, narrator, streamerMode, blockKeywords];

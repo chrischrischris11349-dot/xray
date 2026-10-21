@@ -228,4 +228,7 @@ select.opt-input option { background: #18181c; color: var(--text); }
 .calltimer { position: fixed; top: 4px; right: 96px; z-index: 2147482980; height: 24px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border-radius: 12px; background: rgba(61,214,140,.1); box-shadow: inset 0 0 0 1px rgba(61,214,140,.28); color: #8cf0c0; font-size: 12px; pointer-events: none; }
 :host-context(html.xray-obsidian) .calltimer { top: 10px; height: 26px; }
 .calltimer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+
+/* Image Zoom (plugins/media.ts) */
+.zoom-lens { position: fixed; z-index: 2147483002; border-radius: 50%; pointer-events: none; background-repeat: no-repeat; background-color: #0b0b0d; box-shadow: 0 18px 50px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.85), inset 0 0 0 1px rgba(0,0,0,.4); }
 `;

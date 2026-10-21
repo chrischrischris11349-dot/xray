@@ -7,6 +7,9 @@ import fakeDeafen, { fakeVoice } from "../src/plugins/fakeDeafen";
 import { rank, score } from "../src/ui/search";
 import { mapProse, matchCase, parseRules } from "../src/plugins/text";
 import { splitText } from "../src/plugins/chatText";
+import { lensStyle, originalImage, searchUrls } from "../src/plugins/media";
+import { anonymousName } from "../src/plugins/utility";
+import { localTime } from "../src/plugins/people";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -117,7 +120,15 @@ check("a throwing patch doesn't break the call", target.add(1, 2) === 3);
 
 // ---- Fake Deafen (WebSocket is the stub from run.mjs) ----
 const stops: (() => void)[] = [];
-fakeDeafen.start({ patch: (t, k, hooks) => { stops.push(patch(t, k, hooks)); }, onStop: (fn) => { stops.push(fn); }, log() {} });
+// Only what Fake Deafen uses; server mute/deafen stay off, so no Discord actions are needed.
+fakeDeafen.start({
+  patch: (t: object, k: PropertyKey, hooks: any) => { stops.push(patch(t, k, hooks)); },
+  onStop: (fn: () => void) => { stops.push(fn); },
+  intercept() {},
+  onAction() {},
+  options: { serverDeafen: false, serverMute: false },
+  log() {},
+} as any);
 type Sock = WebSocket & { sent: string[] };
 const gateway = new WebSocket("wss://gateway-us-east1-b.discord.gg/?encoding=json&v=9") as Sock;
 const other = new WebSocket("wss://example.com/socket") as Sock;
@@ -186,6 +197,17 @@ const long = Array.from({ length: 50 }, (_, i) => `line ${i} ${"x".repeat(60)}`)
 const parts = splitText(long, 2000);
 check("long text splits under the limit", parts.length === 2 && parts.every((p) => p.length <= 2000), parts.map((p) => p.length));
 check("splitting keeps every line", parts.join("\n") === long);
+
+// ---- ported plugins ----
+check("anonymous names keep the extension", /^[a-z0-9]{8}\.png$/.test(anonymousName("IMG_2041.PNG", "random", 0)), anonymousName("IMG_2041.PNG", "random", 0));
+check("anonymous names keep the spoiler prefix", anonymousName("SPOILER_x.jpg", "random", 0).startsWith("SPOILER_"));
+check("date names number extra files", anonymousName("a.txt", "date", 1, new Date(2026, 0, 2, 3, 4, 5)) === "2026-01-02_030405_2.txt", anonymousName("a.txt", "date", 1, new Date(2026, 0, 2, 3, 4, 5)));
+check("no fake extension from a dotted name", anonymousName("my.file name", "date", 0, new Date(2026, 0, 2, 3, 4, 5)) === "2026-01-02_030405");
+const lens = lensStyle({ left: 0, top: 0, width: 100, height: 100 }, 50, 50, 200, 100);
+check("the lens centres the point under the cursor", lens.size[0] === 200 && lens.position[0] === -50 && lens.position[1] === -50, lens);
+check("search uses the original image", originalImage("https://media.discordapp.net/attachments/1/2/a.png?ex=1&width=300&height=200") === "https://media.discordapp.net/attachments/1/2/a.png?ex=1");
+check("every engine opens five searches", searchUrls("all", "https://x/a.png").length === 5);
+check("a timezone gives a local time", localTime("Asia/Tokyo") !== null && localTime("Not/AZone") === null);
 
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

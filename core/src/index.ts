@@ -9,6 +9,7 @@ import { isRunning, pluginCommands, plugins, startPlugins } from "./plugins/mana
 import { setThemeEnabled, themeEnabled } from "./settings";
 import { handleHotkey, lastHotkeyFired } from "./shell/hotkeys";
 import { installNotifications, notificationClicked } from "./shell/notifications";
+import { installReporting } from "./shell/report";
 import { installTheme, setThemeActive } from "./theme";
 import { registerFeature } from "./ui/features";
 import { command, palette, setPaletteCommands } from "./ui/palette";
@@ -26,6 +27,7 @@ function boot(): void {
   // First, so xray's keys are handled before any of Discord's listeners exist.
   installKeyRouter();
   installNotifications();
+  installReporting();
   hookWebpack();
   startPlugins();
   // Before Discord paints anything, so it never flashes its own colors first.

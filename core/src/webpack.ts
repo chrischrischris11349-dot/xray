@@ -121,7 +121,7 @@ function wrapFactory(id: PropertyKey, factory: Factory): Factory {
   const wrapped = function (this: unknown, module: Module, exports: unknown, require: WebpackRequire) {
     if (require !== lastRequire) {
       lastRequire = require;
-      if (!runtimes.has(require)) adopt(require);
+      if (!runtimes.has(require)) adopt(require, module);
     }
     factory.call(this, module, exports, require);
     record(id, module, require);
@@ -132,15 +132,21 @@ function wrapFactory(id: PropertyKey, factory: Factory): Factory {
   return wrapped;
 }
 
-function record(id: PropertyKey, module: Module, require: WebpackRequire): void {
+/** `settle` is false for a module that's still running: its exports aren't there yet. */
+function record(id: PropertyKey, module: Module, require: WebpackRequire, settle = true): void {
   if (recorded.has(module)) return;
   recorded.add(module);
   loaded.push({ id, module, require });
-  if (waiters.size) settleWaiters(module.exports);
+  if (settle && waiters.size) settleWaiters(module.exports);
 }
 
-/** Takes in a runtime's own modules: see the note at the top of this file. */
-function adopt(runtime: WebpackRequire): void {
+/**
+ * Takes in a runtime's own modules: see the note at the top of this file.
+ * Webpack caches a module before running it, so the cache can hold modules
+ * that are still running: `current` (the one whose wrapper got here, which
+ * records itself once it has run) and any built-in module that required it.
+ */
+function adopt(runtime: WebpackRequire, current: Module): void {
   runtimes.add(runtime);
   const table = runtime.m as Record<PropertyKey, (Factory & { [WRAPPED]?: true }) | undefined> | undefined;
   if (table) {
@@ -152,8 +158,8 @@ function adopt(runtime: WebpackRequire): void {
   const cache = runtime.c;
   if (cache) {
     for (const id in cache) {
-      const module = cache[id];
-      if (module && typeof module === "object") record(id, module, runtime);
+      const module = cache[id] as Module & { loaded?: boolean };
+      if (module && typeof module === "object" && module !== current) record(id, module, runtime, module.loaded !== false);
     }
   }
 }
@@ -277,6 +283,20 @@ export const filters = {
     (...props: string[]): Filter =>
     (c) =>
       (typeof c === "object" || typeof c === "function") && c !== null && props.every((p) => p in c),
+  /**
+   * Objects holding each of these as their own plain, writable function, so
+   * the patcher can replace them. This also rules out Discord's lazy
+   * proxies, which invent functions on read but own no properties.
+   */
+  byOwnMethods:
+    (...names: string[]): Filter =>
+    (c) =>
+      typeof c === "object" &&
+      c !== null &&
+      names.every((name) => {
+        const descriptor = Object.getOwnPropertyDescriptor(c, name);
+        return !!descriptor && typeof descriptor.value === "function" && descriptor.writable === true;
+      }),
   /** Functions whose source contains every one of these strings. */
   byCode:
     (...code: string[]): Filter =>

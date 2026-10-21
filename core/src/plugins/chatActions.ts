@@ -400,6 +400,42 @@ const revealSpoilers = definePlugin({
   },
 });
 
+/** A message as one line of text, for a preview. */
+function summary(message: any): string {
+  if (!message) return "";
+  const text = String(message.content ?? "").replace(/\s+/g, " ").trim();
+  if (text) return text.length > 140 ? text.slice(0, 139) + "…" : text;
+  if (message.attachments?.length) return "Sent an attachment";
+  if (message.stickerItems?.length || message.sticker_items?.length) return "Sent a sticker";
+  return message.embeds?.length ? "Sent a link" : "";
+}
+
+const messagePeek = definePlugin({
+  id: "messagePeek",
+  name: "Message Peek",
+  description: "Point at a DM in your list to see its latest message without opening it.",
+  category: "Chat",
+  impact: "light",
+  impactReason: "Only runs when you point at a DM",
+  needsReload: false,
+  enabledByDefault: false,
+  start(ctx) {
+    const over = (event: MouseEvent) => {
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('li[class*="dm_"] a[href^="/channels/@me/"]') : null;
+      if (!link) return;
+      const channelId = link.getAttribute("href")!.split("/").pop()!;
+      const message = stores.messages?.getLastMessage?.(channelId);
+      let text = summary(message);
+      if (!text) return;
+      const channel = stores.channels?.getChannel?.(channelId);
+      if ((channel?.recipients?.length ?? 0) > 1 && message?.author?.id) text = `${message.author.id === myId() ? "You" : message.author.globalName || message.author.username}: ${text}`;
+      if (link.title !== text) link.title = text;
+    };
+    window.addEventListener("mouseover", over, { capture: true, passive: true });
+    ctx.onStop(() => window.removeEventListener("mouseover", over, true));
+  },
+});
+
 export const chatActionPlugins: readonly Plugin<any>[] = [
   silentEdit,
   silentTyping,
@@ -412,4 +448,5 @@ export const chatActionPlugins: readonly Plugin<any>[] = [
   quickMessages,
   jumpToFirst,
   revealSpoilers,
+  messagePeek,
 ];

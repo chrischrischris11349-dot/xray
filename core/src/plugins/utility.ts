@@ -259,6 +259,56 @@ const userLinks = definePlugin({
   },
 });
 
+const LETTERS = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+/** A neutral name for an uploaded file: random or a timestamp, keeping the extension and Discord's SPOILER_ prefix. */
+export function anonymousName(original: string, style: string, index: number, now = new Date()): string {
+  const spoiler = original.startsWith("SPOILER_") ? "SPOILER_" : "";
+  const dot = original.lastIndexOf(".");
+  const ext = dot > spoiler.length && /^\.[a-z0-9]{1,8}$/i.test(original.slice(dot)) ? original.slice(dot).toLowerCase() : "";
+  let base: string;
+  if (style === "date") {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    base = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    if (index) base += `_${index + 1}`;
+  } else {
+    base = Array.from(crypto.getRandomValues(new Uint8Array(8)), (b) => LETTERS[b % LETTERS.length]).join("");
+  }
+  return spoiler + base + ext;
+}
+
+const anonymousUploads = definePlugin({
+  id: "anonymousUploads",
+  name: "Anonymous Uploads",
+  description: "Files you send go out under a neutral name instead of the one on your disk. The extension stays, so previews still work.",
+  category: "Privacy",
+  impact: "light",
+  impactReason: "Only runs when you send a file",
+  needsReload: false,
+  enabledByDefault: false,
+  options: {
+    style: {
+      type: "select",
+      label: "Name files",
+      default: "random",
+      choices: [
+        { value: "random", label: "Random letters" },
+        { value: "date", label: "Date and time" },
+      ],
+    },
+  },
+  start(ctx) {
+    const style = ctx.options.style;
+    // The name people see is each attachment's `filename` in the message you send.
+    ctx.onApiRequest(["POST"], /^\/channels\/\d+\/messages$/, ({ body }) => {
+      if (!Array.isArray(body?.attachments)) return;
+      body.attachments.forEach((attachment: any, index: number) => {
+        if (typeof attachment?.filename === "string") attachment.filename = anonymousName(attachment.filename, style, index);
+      });
+    });
+  },
+});
+
 export const utilityPlugins: readonly Plugin<any>[] = [
   blockTracking,
   keepChannel,
@@ -268,4 +318,5 @@ export const utilityPlugins: readonly Plugin<any>[] = [
   platformSpoofer,
   userLinks,
   consoleJanitor,
+  anonymousUploads,
 ];

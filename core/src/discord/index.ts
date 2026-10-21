@@ -71,6 +71,7 @@ export const stores = {
   get profiles() { return store("UserProfileStore"); },
   get typing() { return store("TypingStore"); },
   get streamerMode() { return store("StreamerModeStore"); },
+  get permissions() { return store("PermissionStore"); },
 };
 
 /** Your account's id, once you're logged in. */

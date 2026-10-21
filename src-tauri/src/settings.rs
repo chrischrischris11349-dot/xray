@@ -20,6 +20,10 @@ pub struct ShellSettings {
     pub autostart_initialized: bool,
     /// Global hotkeys (see hotkeys.rs).
     pub hotkeys: Hotkeys,
+    /// Your log server's ingest URL (report.rs). Empty means logs are never sent.
+    pub log_endpoint: String,
+    /// The bearer token your log server checks. Empty means logs are never sent.
+    pub log_token: String,
 }
 
 impl Default for ShellSettings {
@@ -29,6 +33,8 @@ impl Default for ShellSettings {
             start_minimized: false,
             autostart_initialized: false,
             hotkeys: Hotkeys::default(),
+            log_endpoint: String::new(),
+            log_token: String::new(),
         }
     }
 }

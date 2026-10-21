@@ -2,8 +2,8 @@
 
 xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own code (their code is GPL and xray's source is private, so nothing is copied). This file tracks the merged catalog: 483 names after removing duplicates.
 
-- **Built:** 58 catalog plugins, covered by xray plugins (some xray plugins cover several).
-- **Planned:** 374.
+- **Built:** 66 catalog plugins, covered by xray plugins (some xray plugins cover several).
+- **Planned:** 366.
 - **Left out on purpose:** 30 (spam, account tokens, acting on other people, tracking people, faking conversations, cheating).
 - **Not applicable:** 21 (the other mods' own internals and duplicates).
 
@@ -12,11 +12,14 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | Catalog plugin | In xray |
 |---|---|
 | Abbreviation | Abbreviations |
+| AnonymiseFileNames | Anonymous Uploads |
+| BlockKeywords | Block Keywords |
 | BlurNSFW | Blur NSFW |
 | CallTimer | Call Timer |
 | ClearURLs | Clean Links |
 | CommandPalette | Search (Ctrl+K) |
 | ConsoleJanitor | Quiet Console |
+| CopyProfileId | Copy ID |
 | CopyUserMention | Copy User Links |
 | CopyUserURLs | Copy User Links |
 | CustomIdle | Idle Timer |
@@ -24,9 +27,11 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | EventLogs | Message Logger (partly) |
 | FakeVoice | Fake Deafen |
 | FrequentQuickSwitcher | Search (Ctrl+K) |
+| FriendshipRanks | Friends Since (partly) |
 | HideChatButtons | Declutter (partly) |
 | HideMessages | Hide Messages |
 | ImageFilename | Image File Names |
+| ImageZoom | Image Zoom |
 | Ingtoninator | Ingtoninator |
 | JumpTo | Jump to First Message |
 | KeepCurrentChannel | Reopen Last Channel |
@@ -35,6 +40,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | MessageClickActions | Double-Click Messages |
 | MessageLogger | Message Logger |
 | MessageNotifier | Message Alerts |
+| MessagePeek | Message Peek |
 | NewGuildSettings | Quiet New Servers |
 | NoBlockedMessages | No Blocked Messages |
 | NoCaps | No Caps Lock |
@@ -52,6 +58,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | RecentDMSwitcher | Recent DM Switcher |
 | RelationshipNotifier | Removal Alerts |
 | RevealAllSpoilers | Reveal Spoilers |
+| ReverseImageSearch | Reverse Image Search |
 | SendTimestamps | Timestamps |
 | ServerInfo | Server Info |
 | ServerSearch | Search (Ctrl+K) |
@@ -65,6 +72,7 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | StreamerModeOnStream | Streamer Mode When Sharing |
 | TalkInReverse | Talk in Reverse |
 | TextReplace | Text Replace |
+| Timezones | Timezones |
 | Unindent | Unindent Code |
 | VcNarrator | Voice Narrator |
 | ViewRaw | View Raw |
@@ -74,6 +82,8 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 
 | Catalog plugin | Why |
 |---|---|
+| Avatar history (asked for, not in a catalog) | records other people's past profiles |
+| breach.vip lookup (asked for, not in a catalog) | looks up other people's leaked data |
 | AntiDeleteMessage | evades moderation |
 | AntiMoveDeco | evades moderation |
 | AntiNickname | evades moderation |
@@ -173,7 +183,6 @@ Roughly in the order they'll be built: most-used first.
 - YoutubeAdblock (vencord)
 - AccountPanelServerProfile (vencord)
 - AddAttachments (vencord)
-- AnonymiseFileNames (vencord)
 - WebRichPresence (arRPC) (vencord)
 - BetterFolders (vencord)
 - BetterRoleContext (vencord)
@@ -202,7 +211,6 @@ Roughly in the order they'll be built: most-used first.
 - GreetStickerPicker (vencord)
 - HideMedia (vencord)
 - IgnoreActivities (vencord)
-- ImageZoom (vencord)
 - MemberCount (vencord)
 - MentionAvatars (vencord)
 - MessageLatency (vencord)
@@ -218,7 +226,6 @@ Roughly in the order they'll be built: most-used first.
 - QuickMention (vencord)
 - ReplyTimestamp (vencord)
 - ReplaceGoogleSearch (vencord)
-- ReverseImageSearch (vencord)
 - ReviewDB (vencord)
 - RoleColorEverywhere (vencord)
 - ServerListIndicators (vencord)
@@ -286,7 +293,6 @@ Roughly in the order they'll be built: most-used first.
 - BetterForwards (equicord)
 - BetterImageEditor (equicord)
 - BetterInvites (equicord)
-- BlockKeywords (equicord)
 - ChannelBadges (equicord)
 - BypassStatus (equicord)
 - ClientSideBlock (equicord)
@@ -321,7 +327,6 @@ Roughly in the order they'll be built: most-used first.
 - FontLoader (equicord)
 - FriendCodes (equicord)
 - FriendTags (equicord)
-- FriendshipRanks (equicord)
 - FullVCPFP (equicord)
 - Ghosted (equicord)
 - GifMaker (equicord)
@@ -351,7 +356,6 @@ Roughly in the order they'll be built: most-used first.
 - MessageLinkTooltip (equicord)
 - MessageLoggerEnhanced (equicord)
 - MessageTranslate (equicord)
-- MessagePeek (equicord)
 - MicLoopbackTester (equicord)
 - MoreUserTags (equicord)
 - MoreStickers (equicord)
@@ -391,7 +395,6 @@ Roughly in the order they'll be built: most-used first.
 - StickerBlocker (equicord)
 - Streaks (equicord)
 - TidalEmbeds (equicord)
-- Timezones (equicord)
 - ToastNotifications (equicord)
 - ToneIndicators (equicord)
 - UnitConverter (equicord)
@@ -427,7 +430,6 @@ Roughly in the order they'll be built: most-used first.
 - ClearDMs (nightcord)
 - ClientDiagnostics (nightcord)
 - CloseGroup (nightcord)
-- CopyProfileId (nightcord)
 - DoubleEmoji (nightcord)
 - CustomStream (nightcord)
 - DynamicIslande (nightcord)

@@ -21,12 +21,18 @@ await build({
       "globalThis.window = globalThis;",
       "globalThis.document = {};",
       "globalThis.WebSocket = class { static OPEN = 1; constructor(url) { this.url = url; this.readyState = 1; this.sent = []; } send(data) { this.sent.push(data); } };",
+      "globalThis.addEventListener = () => {}; globalThis.removeEventListener = () => {};",
+      "globalThis.location = { href: 'https://discord.com/channels/@me', hostname: 'discord.com', pathname: '/channels/@me' };",
+      "globalThis.Element = class {};",
+      "globalThis.HTMLElement = class extends Element {};",
+      "globalThis.HTMLImageElement = class extends HTMLElement {};",
+      "globalThis.XMLHttpRequest = class { open(method, url) { this.method = method; this.url = url; } send(body) { this.body = body; } };",
     ].join("\n"),
   },
 });
 
 try {
-  execFileSync(process.execPath, [outfile], { stdio: ["ignore", "inherit", "ignore"] });
+  execFileSync(process.execPath, [outfile], { stdio: ["ignore", "inherit", "inherit"] });
 } catch {
   process.exit(1);
 }

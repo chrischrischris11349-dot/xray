@@ -7,7 +7,7 @@ import { combineImpact, type OverallImpact } from "../plugins/impact";
 import { fakeVoice } from "../plugins/fakeDeafen";
 import { isEnabled, onPluginsChanged, pendingReload, plugins } from "../plugins/manager";
 import type { Impact } from "../plugins/types";
-import { markWelcomeSeen, seenWelcome, setThemeEnabled, themeEnabled } from "../settings";
+import { loggingEnabled, markWelcomeSeen, seenWelcome, setLoggingEnabled, setThemeEnabled, themeEnabled } from "../settings";
 import { setThemeActive } from "../theme";
 import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotkeys, setHotkeys } from "../shell/hotkeys";
 import { webpackStats } from "../webpack";
@@ -210,6 +210,7 @@ function render(): void {
     header(),
     fakeVoice.available ? fakeDeafenCard() : null,
     themeCard(),
+    loggingCard(),
     features().length ? h("div", { class: "section" }, h("span", { class: "label", text: "Features" })) : null,
     features().length ? h("div", { class: "list" }, ...features().map(featureRow)) : null,
     h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
@@ -265,6 +266,25 @@ function featureRow(feature: Feature): HTMLElement {
     { class: "row" },
     h("div", { class: "row-text" }, h("div", { class: "row-name", text: feature.name }), h("div", { class: "row-desc", text: feature.description })),
     toggle(on, feature.name, () => setFeature(feature, !on)),
+  );
+}
+
+/** Logs go nowhere until a server is set in shell.json (see server/README.md), so this switch is safe to leave on. */
+function loggingCard(): HTMLElement {
+  const on = loggingEnabled();
+  return h(
+    "div",
+    { class: "card" },
+    h(
+      "div",
+      { class: "card-text" },
+      h("div", { class: "card-title", text: "Send logs to my server" }),
+      h("div", { class: "card-sub", text: on ? "xray's errors and your voice and plugin events. Kept 15 days." : "Off. Needs your server's address in shell.json." }),
+    ),
+    toggle(on, "Send logs to my server", () => {
+      setLoggingEnabled(!on);
+      render();
+    }),
   );
 }
 

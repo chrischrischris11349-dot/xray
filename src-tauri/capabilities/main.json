@@ -1,10 +1,20 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The commands Discord's page may call: notify (a desktop notification) and get/set_hotkeys (xray's own bindings). Anything granted here can be called by any script on discord.com, Discord's own included, so keep this list small and the commands narrow. notify caps text and drops bursts; set_hotkeys validates every binding, and the page never sees keystrokes, only which xray action fired.",
-  "windows": ["main"],
+  "description": "The commands Discord's page may call: notify (a desktop notification), get/set_hotkeys (xray's own bindings) and report_events (forward xray's own log events to your log server). Anything granted here can be called by any script on discord.com, Discord's own included, so keep this list small and the commands narrow. notify caps text and drops bursts; set_hotkeys validates every binding, and the page never sees keystrokes, only which xray action fired. report_events holds the server address and token on the Rust side and only reaches your configured https server, so a hostile script could at most add noise to your own log.",
+  "windows": [
+    "main"
+  ],
   "remote": {
-    "urls": ["https://discord.com/*", "https://*.discord.com/*"]
+    "urls": [
+      "https://discord.com/*",
+      "https://*.discord.com/*"
+    ]
   },
-  "permissions": ["allow-notify", "allow-get-hotkeys", "allow-set-hotkeys"]
+  "permissions": [
+    "allow-notify",
+    "allow-get-hotkeys",
+    "allow-set-hotkeys",
+    "allow-report-events"
+  ]
 }

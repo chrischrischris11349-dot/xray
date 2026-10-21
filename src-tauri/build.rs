@@ -6,6 +6,6 @@ fn main() {
     }
     // Listing the app's commands generates an `allow-<command>` permission for
     // each, so capabilities can grant them one at a time.
-    let manifest = tauri_build::AppManifest::new().commands(&["notify", "get_hotkeys", "set_hotkeys"]);
+    let manifest = tauri_build::AppManifest::new().commands(&["notify", "get_hotkeys", "set_hotkeys", "report_events"]);
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest)).expect("tauri-build failed");
 }
