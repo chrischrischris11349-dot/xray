@@ -25,6 +25,7 @@ import { warn } from "../env";
 import { pluginState, save } from "../settings";
 import { reportEvent } from "../shell/report";
 import { filters, find, findByCode } from "../webpack";
+import { icon } from "../ui/icons";
 import { definePlugin } from "./types";
 
 const VOICE_STATE_UPDATE = 4;
@@ -272,8 +273,7 @@ export const fakeVoice = {
 };
 
 /** A mask icon: the Fake Deafen button in the voice panel. */
-const MASK_ICON =
-  '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 9c-2.2 0-3.9.5-5 .9-1.2.5-2.3.9-3.5.9s-2.3-.4-3.5-.9C7.4 9.5 5.7 9 3.5 9 2.7 9 2 9.7 2 10.5v1.6c0 2.9 2.1 5.4 5 5.8 2.4.4 4.7-1 5.6-3.2l.4-1 .4 1c.9 2.2 3.2 3.6 5.6 3.2 2.9-.4 5-2.9 5-5.8v-1.6c0-.8-.7-1.5-1.5-1.5zM8 15.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm8 0a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>';
+const MASK_ICON = icon("glasses", 20);
 
 /**
  * Puts a Fake Deafen toggle in Discord's voice panel, next to mute and

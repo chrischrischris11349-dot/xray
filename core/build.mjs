@@ -25,6 +25,8 @@ const options = {
     __XRAY_DEV__: String(!release),
   },
   logLevel: "info",
+  // Icons (Lucide, ISC) are bundled as SVG text, so nothing loads from outside at runtime.
+  loader: { ".svg": "text" },
 };
 
 if (watch) {

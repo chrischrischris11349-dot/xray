@@ -8,15 +8,16 @@
  */
 import { audioActions, myId, stores, whenStore } from "../discord";
 import { h } from "../ui/dom";
+import { icon } from "../ui/icons";
 import { uiRoot } from "../ui/root";
 import { definePlugin } from "./types";
 
-const MIC = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M18 11a6 6 0 0 1-12 0M12 17v3"/></svg>`;
-const MIC_OFF = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M18 11a6 6 0 0 1-12 0M12 17v3M4 3l16 18"/></svg>`;
-const HEADPHONE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="13" width="4" height="7" rx="1.5" fill="currentColor" stroke="none"/><rect x="17.5" y="13" width="4" height="7" rx="1.5" fill="currentColor" stroke="none"/></svg>`;
-const HEADPHONE_OFF = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13v-1a8 8 0 0 1 16 0v1"/><rect x="2.5" y="13" width="4" height="7" rx="1.5" fill="currentColor" stroke="none"/><rect x="17.5" y="13" width="4" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M3 3l18 18"/></svg>`;
-const CAM = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M4 6h10a2 2 0 0 1 2 2v1.5l4-2.5v10l-4-2.5V16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>`;
-const CAM_OFF = `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M4 6h10a2 2 0 0 1 2 2v1.5l4-2.5v10l-4-2.5V16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><path fill="none" stroke="var(--xr-panel, #0b0b0d)" stroke-width="2.4" d="M3 3l18 18"/><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M3 3l18 18"/></svg>`;
+const MIC = icon("mic");
+const MIC_OFF = icon("micOff");
+const HEADPHONE = icon("headphones");
+const HEADPHONE_OFF = icon("headphoneOff");
+const CAM = icon("video");
+const CAM_OFF = icon("videoOff");
 
 export default definePlugin({
   id: "voiceBar",

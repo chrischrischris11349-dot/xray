@@ -15,6 +15,7 @@ await build({
   platform: "node",
   format: "cjs",
   logLevel: "warning",
+  loader: { ".svg": "text" },
   define: { __XRAY_VERSION__: '"test"', __XRAY_DEV__: "true" },
   banner: {
     js: [

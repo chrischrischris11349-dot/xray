@@ -11,11 +11,12 @@
 import { loggedIn, navigate, onStoresChanged, privateChannelActions, safeImage, stores, userView, whenStore } from "../discord";
 import { find } from "../webpack";
 import { h } from "./dom";
+import { icon } from "./icons";
 import type { Feature } from "./features";
 import { onKey, uiRoot } from "./root";
 import { rank, type Searchable } from "./search";
 
-const SEARCH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`;
+const SEARCH = icon("search", 17, 1.75);
 
 type Kind = "DM" | "Friend" | "Channel" | "Server" | "xray";
 const ORDER: readonly Kind[] = ["DM", "Friend", "Channel", "Server", "xray"];

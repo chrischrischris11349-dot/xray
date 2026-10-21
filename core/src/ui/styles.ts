@@ -8,10 +8,10 @@ export const css = `
 * { box-sizing: border-box; }
 :host {
   all: initial;
-  --text: #f2f3f5; --muted: #9a9ca5; --faint: #858790;
+  --text: #f2f2f2; --muted: #9c9c9c; --faint: #868686;
   --line: rgba(255,255,255,.065); --line2: rgba(255,255,255,.12);
   --seg: rgba(255,255,255,.055); --hover: rgba(255,255,255,.045); --inset: rgba(255,255,255,.035);
-  --accent: #f2f3f5; --onAccent: #0b0b0d; --accentSoft: rgba(255,255,255,.09);
+  --accent: #f2f2f2; --onAccent: #0b0b0b; --accentSoft: rgba(255,255,255,.09);
   --ok: #3dd68c; --warn: #f5b84a; --bad: #ff7a66; --switchOff: rgba(255,255,255,.16);
   --ease: cubic-bezier(.32,.72,0,1);
   color: var(--text);
@@ -24,7 +24,7 @@ export const css = `
 .panel {
   position: fixed; top: 52px; right: 16px; z-index: 2147483000;
   width: 420px; max-height: calc(100vh - 72px); overflow-y: auto; padding: 8px;
-  border-radius: 18px; background: rgba(22,22,26,.74);
+  border-radius: 18px; background: rgba(20,20,20,.74);
   backdrop-filter: saturate(180%) blur(24px);
   box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.07);
   scrollbar-width: thin; scrollbar-color: var(--line2) transparent;
@@ -86,7 +86,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .toast {
   position: fixed; left: 50%; bottom: 28px; z-index: 2147483000; transform: translateX(-50%);
   display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 14px;
-  background: rgba(22,22,26,.82); backdrop-filter: saturate(180%) blur(24px);
+  background: rgba(20,20,20,.82); backdrop-filter: saturate(180%) blur(24px);
   box-shadow: 0 20px 50px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.09);
   font-size: 13.5px; animation: pop 200ms var(--ease);
 }
@@ -94,7 +94,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Shared glass for floating surfaces */
 .bubble, .qr, .palette {
-  background: rgba(22,22,26,.86);
+  background: rgba(20,20,20,.86);
   backdrop-filter: saturate(180%) blur(24px);
   box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.07);
 }
@@ -109,7 +109,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bubble:active { transform: scale(.94); }
 .badge {
   position: absolute; top: -3px; right: -3px; min-width: 20px; height: 20px; padding: 0 5px;
-  border-radius: 10px; border: 2px solid #0b0b0d; background: #d92d20; color: #fff;
+  border-radius: 10px; border: 2px solid #0b0b0b; background: #d92d20; color: #fff;
   font: 700 11px/16px "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; text-align: center;
 }
 .qr {
@@ -182,7 +182,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Dialogs (dialog.ts) */
 .dialog-scrim { align-items: center; padding: 24px; }
-.dialog { width: min(500px, 100%); max-height: 80vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 18px; background: rgba(22,22,26,.94); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.07); animation: pop 200ms var(--ease); scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+.dialog { width: min(500px, 100%); max-height: 80vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 18px; background: rgba(20,20,20,.94); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.07); animation: pop 200ms var(--ease); scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
 .dialog-title { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
 .dialog-text { font-size: 13.5px; color: var(--muted); white-space: pre-wrap; }
 .dialog-facts { display: grid; grid-template-columns: auto 1fr; gap: 9px 18px; margin: 0; }
@@ -220,7 +220,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .opt-input.num { width: 84px; }
 .opt-input.wide { width: 100%; resize: vertical; }
 select.opt-input { max-width: 180px; }
-select.opt-input option { background: #18181c; color: var(--text); }
+select.opt-input option { background: #181818; color: var(--text); }
 .switch.small { width: 36px; height: 22px; }
 .switch.small span { width: 18px; height: 18px; }
 
@@ -230,11 +230,11 @@ select.opt-input option { background: #18181c; color: var(--text); }
 .calltimer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 
 /* Image Zoom (plugins/media.ts) */
-.zoom-lens { position: fixed; z-index: 2147483002; border-radius: 50%; pointer-events: none; background-repeat: no-repeat; background-color: #0b0b0d; box-shadow: 0 18px 50px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.85), inset 0 0 0 1px rgba(0,0,0,.4); }
+.zoom-lens { position: fixed; z-index: 2147483002; border-radius: 50%; pointer-events: none; background-repeat: no-repeat; background-color: #0b0b0b; box-shadow: 0 18px 50px rgba(0,0,0,.6), 0 0 0 2px rgba(255,255,255,.85), inset 0 0 0 1px rgba(0,0,0,.4); }
 
 /* Passcode Lock (plugins/comfort.ts): above everything, including the panel. */
 .lock { position: fixed; inset: 0; z-index: 2147483600; display: flex; align-items: center; justify-content: center; background: rgba(4,4,5,.86); backdrop-filter: blur(28px) saturate(140%); }
-.lock-card { width: 300px; display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 18px; background: rgba(22,22,26,.9); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09); }
+.lock-card { width: 300px; display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: 18px; background: rgba(20,20,20,.9); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.09); }
 .lock-title { font-size: 16px; font-weight: 650; text-align: center; }
 .lock-input { height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line2); background: rgba(255,255,255,.04); color: var(--text); font: inherit; letter-spacing: .2em; outline: none; text-align: center; }
 .lock-input:focus { border-color: rgba(255,255,255,.3); }

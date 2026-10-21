@@ -42,17 +42,17 @@ html.xray-obsidian {
   --custom-app-top-bar-height: 46px !important;
   --xr-gap: 10px;
   --xr-radius: 18px;
-  /* Darker, colder glass: a black control surface, not grey. */
-  --xr-card: rgba(9, 10, 13, 0.74);
-  --xr-panel: rgba(5, 6, 8, 0.86);
-  /* Hairlines are a faint cold steel, not plain white. */
-  --xr-edge: rgba(150, 170, 200, 0.07);
-  --xr-edge-hi: rgba(160, 185, 215, 0.12);
-  /* HUD ticks and selection glow: a cold, sinister cyan-steel. */
-  --xr-tick: rgba(96, 150, 180, 0.3);
+  /* Neutral dark glass: true black-grey, no blue cast. */
+  --xr-card: rgba(12, 12, 13, 0.72);
+  --xr-panel: rgba(7, 7, 8, 0.86);
+  /* Hairlines: plain white at a whisper, so edges read as glass, not color. */
+  --xr-edge: rgba(255, 255, 255, 0.06);
+  --xr-edge-hi: rgba(255, 255, 255, 0.1);
+  /* HUD ticks: neutral silver. */
+  --xr-tick: rgba(255, 255, 255, 0.18);
   /* Selected rows and your own bubbles. The Accent Color plugin changes these two. */
-  --xr-pill: rgba(242, 243, 245, 0.94);
-  --xr-on-pill: #0b0b0d;
+  --xr-pill: rgba(242, 242, 242, 0.94);
+  --xr-on-pill: #0b0b0b;
   --xr-mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
   --xr-card-shadow: inset 0 0 0 1px var(--xr-edge), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   /* Windows' own variable font instead of Discord's gg sans. */
@@ -61,15 +61,14 @@ html.xray-obsidian {
   --font-headline: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif !important;
   --font-code: var(--xr-mono) !important;
 
-  /* The backdrop: a near-black control surface. A dim dot grid, one cold
-     steel glow bleeding from the top, a deeper sinister undertone at the
-     bottom, and a heavy vignette that pulls the eye to the center. */
+  /* The backdrop: near-black glass. A very dim dot grid, one soft neutral
+     light from the top (like light falling on smoked glass) and a heavy
+     vignette that pulls the eye to the center. No color cast. */
   background:
-    radial-gradient(circle at 1px 1px, rgba(150, 175, 205, 0.028) 1px, transparent 1.5px) 0 0 / 26px 26px,
-    radial-gradient(1200px 760px at 50% -20%, rgba(70, 110, 140, 0.18), transparent 60%),
-    radial-gradient(1000px 700px at 108% 118%, rgba(40, 58, 92, 0.16), transparent 58%),
-    radial-gradient(140% 120% at 50% 42%, transparent 52%, rgba(0, 0, 0, 0.55) 100%),
-    #010103 !important;
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.022) 1px, transparent 1.5px) 0 0 / 26px 26px,
+    radial-gradient(1200px 700px at 50% -22%, rgba(255, 255, 255, 0.07), transparent 60%),
+    radial-gradient(140% 120% at 50% 42%, transparent 50%, rgba(0, 0, 0, 0.6) 100%),
+    #050505 !important;
   background-attachment: fixed !important;
 
   body { background: transparent !important; }
@@ -207,7 +206,7 @@ html.xray-obsidian {
     right: var(--xr-gap) !important;
     bottom: var(--xr-gap) !important;
     border-radius: 16px !important;
-    background: rgba(22, 22, 27, 0.82) !important;
+    background: rgba(20, 20, 20, 0.82) !important;
     box-shadow: inset 0 0 0 1px var(--xr-edge-hi), inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 12px 32px rgba(0, 0, 0, 0.45) !important;
   }
 
@@ -276,7 +275,15 @@ html.xray-obsidian {
   }
   [data-xray-mine] [class*="messageContent_"]:has([class*="emojiJumbo_"]),
   [class*="messageListItem_"] [class*="repliedTextContent_"] { margin-left: 0; padding: 0; background: none; box-shadow: none; }
-  [data-xray-mine] [class*="messageContent_"] a { color: #1f4fd1 !important; }
+  [data-xray-mine] [class*="messageContent_"] a { color: #111111 !important; }
+  /* Links are near-white now, not blue, so an underline marks them instead. */
+  [class*="markup_"] a[href] {
+    text-decoration: underline !important;
+    text-decoration-color: rgba(255, 255, 255, 0.28) !important;
+    text-underline-offset: 2px;
+  }
+  [class*="markup_"] a[href]:hover { text-decoration-color: currentColor !important; }
+  [data-xray-mine] [class*="markup_"] a[href] { text-decoration-color: rgba(0, 0, 0, 0.35) !important; }
   [data-xray-mine] [class*="messageContent_"] code.inline,
   [data-xray-mine] [class*="messageContent_"] [class*="mention"] { background: rgba(11, 11, 13, 0.08) !important; color: var(--xr-on-pill) !important; }
   [data-xray-mine] [class*="messageContent_"] [class*="edited_"] { color: rgba(11, 11, 13, 0.5) !important; }
@@ -300,7 +307,7 @@ html.xray-obsidian {
   [class*="messageListItem_"] [class*="buttonsInner_"] {
     border: 0 !important;
     border-radius: 12px !important;
-    background: rgba(24, 24, 28, 0.92) !important;
+    background: rgba(22, 22, 22, 0.92) !important;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 10px 26px rgba(0, 0, 0, 0.5) !important;
   }
   [class*="embedFull_"] {
@@ -367,15 +374,15 @@ html.xray-obsidian {
   [class*="menu_"][role="menu"] {
     padding: 6px !important;
     border-radius: 14px !important;
-    background: rgba(20, 20, 24, 0.86) !important;
+    background: rgba(18, 18, 18, 0.86) !important;
     backdrop-filter: saturate(160%) blur(20px);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
   }
   [role="menu"] [class*="item_"] { border-radius: 8px !important; }
   [role="menu"] [class*="item_"][class*="focused_"]:not([class*="colorDanger_"]),
   [role="menu"] [class*="item_"][class*="focused_"]:not([class*="colorDanger_"]) * {
-    background: #f2f3f5 !important;
-    color: #0b0b0d !important;
+    background: #f2f2f2 !important;
+    color: #0b0b0b !important;
   }
   [role="menu"] [class*="item_"][class*="focused_"]:not([class*="colorDanger_"]) * { background: transparent !important; }
 

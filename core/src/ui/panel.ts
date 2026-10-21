@@ -12,13 +12,14 @@ import { setThemeActive } from "../theme";
 import { type Binding, getHotkeys, HOTKEY_ACTIONS, type HotkeyAction, type Hotkeys, setHotkeys } from "../shell/hotkeys";
 import { webpackStats } from "../webpack";
 import { h } from "./dom";
+import { icon } from "./icons";
 import { type Feature, features, isFeatureOn, onFeaturesChanged, setFeature } from "./features";
 import { mountFrame } from "./frame";
 import { pluginSection } from "./pluginList";
 import { onKey, onKeyUp, uiRoot } from "./root";
 
 const LOGO = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f2f3f5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" fill="none" stroke="#0b0b0d" stroke-width="2.2" stroke-linecap="round"/></svg>`;
-const CLOSE = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
+const CLOSE = icon("x", 16, 1.75);
 const WELCOME_MS = 6000;
 
 const RATING: Record<Impact, { label: string; color: string; level: number }> = {

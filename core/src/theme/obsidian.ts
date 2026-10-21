@@ -87,31 +87,31 @@ const TOKENS: Record<string, string> = {
   // text
   "--text-strong": "var(--xr-strong)",
   "--text-default": "var(--xr-text)",
-  "--text-subtle": "#a6a8b0",
+  "--text-subtle": "#a8a8a8",
   "--text-muted": "var(--xr-muted)",
   "--chat-text-muted": "var(--xr-muted)",
   "--channels-default": "var(--xr-muted)",
   "--input-text-default": "var(--xr-text)",
   "--input-placeholder-text-default": "var(--xr-faint)",
   "--input-icon-default": "var(--xr-faint)",
-  "--interactive-text-default": "#8f919a",
-  "--interactive-icon-default": "#8f919a",
+  "--interactive-text-default": "#909090",
+  "--interactive-icon-default": "#909090",
   "--interactive-text-hover": "var(--xr-strong)",
   "--interactive-icon-hover": "var(--xr-strong)",
   "--interactive-text-active": "var(--xr-strong)",
   "--interactive-icon-active": "var(--xr-strong)",
-  "--interactive-muted": "#56585f",
-  "--text-link": "#9db4ff",
+  "--interactive-muted": "#575757",
+  "--text-link": "#e4e4e4",
   // accent: Discord's blurple becomes Obsidian's white. Filled buttons turn
   // white with dark text. Places where Discord forces white text on its
   // brand color (the selected server, "Add Friend") get frosted glass instead.
-  "--brand-500": "#8b90a0",
-  "--brand-560": "#6f7482",
+  "--brand-500": "#8f8f8f",
+  "--brand-560": "#727272",
   "--background-brand": "rgba(255, 255, 255, 0.16)",
   "--text-brand": "var(--xr-strong)",
   "--control-primary-background-default": "var(--xr-accent)",
   "--control-primary-background-hover": "#ffffff",
-  "--control-primary-background-active": "#d3d5da",
+  "--control-primary-background-active": "#d4d4d4",
   "--control-primary-text-default": "var(--xr-on-accent)",
   "--control-primary-text-hover": "var(--xr-on-accent)",
   "--control-primary-text-active": "var(--xr-on-accent)",
@@ -139,24 +139,24 @@ const TOKENS: Record<string, string> = {
 
 /** Solid surfaces: used everywhere except the main app layer (see GLASS_PALETTE). */
 const PALETTE = `
-  --xr-base: #08080a;
-  --xr-rail: #08080a;
-  --xr-side: #0e0e11;
-  --xr-chat: #0b0b0d;
-  --xr-raised: #141417;
-  --xr-raised-2: #19191d;
-  --xr-raised-3: #202025;
+  --xr-base: #080808;
+  --xr-rail: #080808;
+  --xr-side: #0e0e0e;
+  --xr-chat: #0b0b0b;
+  --xr-raised: #141414;
+  --xr-raised-2: #191919;
+  --xr-raised-3: #202020;
   --xr-field: rgba(255, 255, 255, 0.045);
   --xr-line: rgba(255, 255, 255, 0.065);
   --xr-line-2: rgba(255, 255, 255, 0.1);
   --xr-hover: rgba(255, 255, 255, 0.045);
   --xr-selected: rgba(255, 255, 255, 0.085);
-  --xr-strong: #f2f3f5;
-  --xr-text: #dcdde2;
-  --xr-muted: #9a9ca5;
-  --xr-faint: #80828b;
-  --xr-accent: #f2f3f5;
-  --xr-on-accent: #0b0b0d;`;
+  --xr-strong: #f2f2f2;
+  --xr-text: #dcdcdc;
+  --xr-muted: #9c9c9c;
+  --xr-faint: #828282;
+  --xr-accent: #f2f2f2;
+  --xr-on-accent: #0b0b0b;`;
 
 /**
  * Glass surfaces for the main app layer. Discord nests its big containers
@@ -167,7 +167,7 @@ const PALETTE = `
 const GLASS_PALETTE = `
   --xr-base: transparent;
   --xr-rail: transparent;
-  --xr-side: rgba(140, 165, 200, 0.018);
+  --xr-side: rgba(255, 255, 255, 0.018);
   --xr-chat: rgba(0, 0, 0, 0.4);`;
 
 export const obsidianCss = `
@@ -180,9 +180,10 @@ ${Object.entries(TOKENS)
 ${GLASS_SCOPE} {${GLASS_PALETTE}
 }
 
-/* Section labels as small uppercase mono, the data-label style from the preview. */
+/* Section labels as small uppercase mono, the data-label style from the preview.
+   Message headers also use a headerText_ class; those keep normal names. */
 html.xray-obsidian [class*="sectionTitle_"] > h2,
-html.xray-obsidian [class*="headerText_"],
+html.xray-obsidian [class*="headerText_"]:not(li[id^="chat-messages-"] *),
 html.xray-obsidian h3[class*="membersGroup_"],
 html.xray-obsidian [class*="membersGroup_"] > h3,
 html.xray-obsidian li[class*="containerDefault_"] h3 {

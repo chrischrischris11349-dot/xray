@@ -28,6 +28,7 @@ const declutter = definePlugin({
     download: { type: "boolean", label: "“Download apps” in the server list", default: true },
     discover: { type: "boolean", label: "Discover in the server list", default: false },
     help: { type: "boolean", label: "Help button in the top bar", default: true },
+    boostPopups: { type: "boolean", label: "Boost and Nitro pop-ups", description: "The pink gradient nudges, like “Boost This Server”.", default: true },
   },
   start(ctx) {
     const o = ctx.options;
@@ -41,6 +42,8 @@ const declutter = definePlugin({
     if (o.download) rules.push('nav[class*="guilds_"] [class*="listItem_"]:has([data-list-item-id="guildsnav___app-download-button"])');
     if (o.discover) rules.push('nav[class*="guilds_"] [class*="listItem_"]:has([data-list-item-id="guildsnav___guild-discover-button"])');
     if (o.help) rules.push('[class*="base_"] > [class^="bar_"] [class*="trailing_"] > :is(a, div):has([aria-label="Help"]), [class*="base_"] > [class^="bar_"] [class*="trailing_"] [aria-label="Help"]');
+    // The whole layer goes, click trap included, so no invisible layer is left eating clicks.
+    if (o.boostPopups) rules.push('[class*="layerContainer_"] [class*="clickTrapContainer_"]:has([class*="popoverGradientWrapper_"])');
     ctx.css(hide(rules));
   },
 });

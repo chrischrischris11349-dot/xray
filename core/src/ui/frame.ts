@@ -11,12 +11,13 @@
  */
 import { invoke } from "../shell/bridge";
 import { h } from "./dom";
+import { icon } from "./icons";
 import { uiRoot } from "./root";
 
-const MIN = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>`;
-const MAX = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>`;
-const RESTORE = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7.5" y="7.5" width="11" height="11" rx="2"/><path d="M5.5 15.5V7a1.5 1.5 0 0 1 1.5-1.5h8.5"/></svg>`;
-const X = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>`;
+const MIN = icon("minus", 16, 1.5);
+const MAX = icon("square", 13, 1.6);
+const RESTORE = icon("copy", 13, 1.6);
+const X = icon("x", 16, 1.5);
 
 function call(command: string): void {
   invoke(`plugin:window|${command}`).catch(() => {
