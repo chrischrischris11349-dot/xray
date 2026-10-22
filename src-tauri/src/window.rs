@@ -36,7 +36,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
         .background_color(Color(6, 6, 7, 255));
     // Debug builds only: XRAY_TEST_WINDOW=offscreen opens the window off-screen
     // and unfocused, so automated tests never pop up over whatever you're doing.
-    let offscreen = cfg!(debug_assertions) && std::env::var("XRAY_TEST_WINDOW").as_deref() == Ok("offscreen");
+    let offscreen = is_offscreen_test();
     builder = if offscreen {
         builder.position(OFFSCREEN.0, OFFSCREEN.1).focused(false).skip_taskbar(true)
     } else {
@@ -75,6 +75,11 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
 const OFFSCREEN: (f64, f64) = (-4000.0, 0.0);
 
 /// Brings the window back from the tray or the taskbar and focuses it.
+/// Debug builds only: `XRAY_TEST_WINDOW=offscreen`, for automated tests.
+pub fn is_offscreen_test() -> bool {
+    cfg!(debug_assertions) && std::env::var("XRAY_TEST_WINDOW").as_deref() == Ok("offscreen")
+}
+
 pub fn show<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window(MAIN) {
         let _ = window.unminimize();

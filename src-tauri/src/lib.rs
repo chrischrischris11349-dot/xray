@@ -23,9 +23,13 @@ use settings::ShellSettings;
 pub struct Shell(pub Mutex<ShellSettings>);
 
 pub fn run() {
-    tauri::Builder::default()
-        // Must be registered first: a second launch hands off to the running copy and exits.
-        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| window::show(app)))
+    let mut builder = tauri::Builder::default();
+    // Must be registered first: a second launch hands off to the running copy and exits.
+    // An off-screen test copy skips this, so it never brings your own window to the front.
+    if !window::is_offscreen_test() {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| window::show(app)));
+    }
+    builder
         .plugin(tauri_plugin_autostart::init(
             MacosLauncher::LaunchAgent,
             Some(vec![window::AUTOSTART_ARG]),

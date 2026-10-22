@@ -180,21 +180,6 @@ ${Object.entries(TOKENS)
 ${GLASS_SCOPE} {${GLASS_PALETTE}
 }
 
-/* Section labels as small uppercase mono, the data-label style from the preview.
-   Message headers also use a headerText_ class; those keep normal names. */
-html.xray-obsidian [class*="sectionTitle_"] > h2,
-html.xray-obsidian [class*="headerText_"]:not(li[id^="chat-messages-"] *),
-html.xray-obsidian h3[class*="membersGroup_"],
-html.xray-obsidian [class*="membersGroup_"] > h3,
-html.xray-obsidian li[class*="containerDefault_"] h3 {
-  font-family: var(--font-code) !important;
-  font-size: 11px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.12em !important;
-  text-transform: uppercase !important;
-  color: var(--xr-faint) !important;
-}
-
 /* "Add Friend" sits on the white button fill but hard-codes white text. */
 html.xray-obsidian [class*="addFriend_"]:not([class*="selected_"]) {
   color: var(--xr-on-accent) !important;

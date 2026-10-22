@@ -55,10 +55,7 @@ html.xray-obsidian {
   --xr-on-pill: #0b0b0b;
   --xr-mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
   --xr-card-shadow: inset 0 0 0 1px var(--xr-edge), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  /* Windows' own variable font instead of Discord's gg sans. */
-  --font-primary: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif !important;
-  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif !important;
-  --font-headline: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif !important;
+  /* Text stays in Discord's own gg sans; mono is only for code. */
   --font-code: var(--xr-mono) !important;
 
   /* The backdrop: near-black glass. A very dim dot grid, one soft neutral
@@ -99,7 +96,7 @@ html.xray-obsidian {
     height: 22px;
     padding-left: 32px;
     line-height: 22px;
-    font: 650 14px var(--font-display);
+    font: 650 14px var(--font-primary);
     color: var(--xr-strong);
     background: no-repeat left center / 22px 22px url("${MARK}");
     pointer-events: none;
@@ -121,13 +118,11 @@ html.xray-obsidian {
   [class*="base_"] > [class^="bar_"] > [class*="title_"] [class*="title_"]::before {
     content: "/";
     margin-right: 2px;
-    font: 400 13px var(--xr-mono);
+    font-weight: 400;
     color: rgba(255, 255, 255, 0.22);
   }
   [class*="base_"] > [class^="bar_"] [class*="title_"] [class*="lineClamp1_"] {
-    font: 500 11px var(--xr-mono) !important;
-    letter-spacing: 0.16em !important;
-    text-transform: uppercase !important;
+    font-weight: 600 !important;
     color: var(--xr-muted) !important;
   }
   [class*="base_"] > [class^="bar_"] [class*="title_"] svg { opacity: 0.6; }
@@ -220,12 +215,7 @@ html.xray-obsidian {
   [class*="sidebarList_"] [class*="selected_"] > [class*="interactive_"] *,
   [class*="sidebarList_"] [class*="interactive_"][class*="selected_"] *,
   [class*="sidebarList_"] [class*="modeSelected_"] [class*="link_"] * { color: var(--xr-on-pill) !important; fill: var(--xr-on-pill); }
-  [class*="privateChannelsHeaderContainer_"] {
-    font: 500 10.5px var(--xr-mono) !important;
-    letter-spacing: 0.16em !important;
-    text-transform: uppercase !important;
-    color: var(--xr-faint) !important;
-  }
+  [class*="privateChannelsHeaderContainer_"] { color: var(--xr-faint) !important; }
   /* "Find or start a conversation" reads as a search field. */
   [class*="sidebarList_"] [class*="searchBar_"] button {
     justify-content: flex-start !important;
@@ -247,7 +237,6 @@ html.xray-obsidian {
   /* Favorite-DM pins only show while you point at the row. */
   li[class*="dm_"] [class*="favoriteIcon_"] { opacity: 0; transition: opacity 120ms ease; }
   li[class*="dm_"]:hover [class*="favoriteIcon_"] { opacity: 0.6; }
-  [class*="numberBadge_"] { font-family: var(--xr-mono) !important; font-weight: 600 !important; }
 
   /* ---------- chat ---------- */
   [class*="subtitleContainer_"] section[class*="title_"] {
@@ -255,11 +244,7 @@ html.xray-obsidian {
     border-bottom: 1px solid var(--xr-edge) !important;
     box-shadow: none !important;
   }
-  [class*="subtitleContainer_"] [class*="titleWrapper_"] h1 {
-    font-family: var(--font-display) !important;
-    font-size: 16px !important;
-    font-weight: 650 !important;
-  }
+  [class*="subtitleContainer_"] [class*="titleWrapper_"] h1 { font-size: 16px !important; font-weight: 650 !important; }
   /* Other people's messages stay flat and clean; only yours get a bubble. */
   [class*="messageListItem_"] [class*="messageContent_"] { line-height: 1.5; }
   /* Yours are an accent bubble, marked by ownMessages.ts. */
@@ -289,20 +274,8 @@ html.xray-obsidian {
   [data-xray-mine] [class*="messageContent_"] [class*="edited_"] { color: rgba(11, 11, 13, 0.5) !important; }
   [class*="messageListItem_"] > [class*="message_"]:hover { background: transparent !important; }
   [class*="messageListItem_"] h3 [class*="username_"] { font-weight: 650 !important; }
-  /* Squircle avatars, to match the dock. */
-  [class*="messageListItem_"] img[class*="avatar_"] { border-radius: 12px !important; }
   [class*="messageListItem_"] time,
-  [class*="messageListItem_"] [class*="timestamp_"] {
-    font-family: var(--xr-mono) !important;
-    font-size: 10.5px !important;
-    letter-spacing: 0.04em !important;
-    color: var(--xr-faint) !important;
-  }
-  [class*="divider_"][class*="hasContent_"] [class*="content_"] {
-    font: 500 10.5px var(--xr-mono) !important;
-    letter-spacing: 0.14em !important;
-    text-transform: uppercase !important;
-  }
+  [class*="messageListItem_"] [class*="timestamp_"] { color: var(--xr-faint) !important; }
   /* The hover toolbar as a glass pill. */
   [class*="messageListItem_"] [class*="buttonsInner_"] {
     border: 0 !important;
@@ -330,7 +303,7 @@ html.xray-obsidian {
     background: rgba(255, 255, 255, 0.14) !important;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.32) !important;
   }
-  [class*="reactionCount_"] { font-family: var(--xr-mono) !important; color: var(--xr-strong) !important; }
+  [class*="reactionCount_"] { color: var(--xr-strong) !important; }
 
   /* The message box: a floating glass pill. */
   form[class*="form_"] { padding: 0 20px 16px !important; }
@@ -363,12 +336,7 @@ html.xray-obsidian {
   [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg) { background: var(--xr-pill) !important; }
   [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg),
   [class*="modal_"] nav[class*="nav_"] [class*="item_"][class*="active_"]:has(svg) * { color: var(--xr-on-pill) !important; }
-  [class*="modal_"] nav[class*="nav_"] h3[class*="label_"] {
-    font: 500 10.5px var(--xr-mono) !important;
-    letter-spacing: 0.16em !important;
-    text-transform: uppercase !important;
-    color: var(--xr-faint) !important;
-  }
+  [class*="modal_"] nav[class*="nav_"] h3[class*="label_"] { color: var(--xr-faint) !important; }
 
   /* ---------- menus ---------- */
   [class*="menu_"][role="menu"] {
