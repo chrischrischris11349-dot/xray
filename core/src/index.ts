@@ -68,7 +68,7 @@ function startUi(): void {
     ...(fakeVoice.available
       ? [command(fakeVoice.active ? "Turn off fake deafen" : "Turn on fake deafen", "Look deafened while you keep listening", () => fakeVoice.set(!fakeVoice.active))]
       : []),
-    command(themeEnabled() ? "Use Discord's own look" : "Use the Obsidian theme", "Switch xray's theme", () => {
+    command(themeEnabled() ? "Use Discord's own look" : "Use xray's theme", "Switch xray's theme", () => {
       setThemeEnabled(!themeEnabled());
       setThemeActive(themeEnabled());
     }),

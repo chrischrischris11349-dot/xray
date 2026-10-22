@@ -260,7 +260,7 @@ const playbackSpeed = definePlugin({
 const themeKey = definePlugin({
   id: "themeSwitchKey",
   name: "Theme Key",
-  description: "Ctrl+Alt+T flips between xray's Obsidian look and Discord's own.",
+  description: "Ctrl+Alt+T flips between xray's theme and Discord's own look.",
   category: "Appearance",
   impact: "light",
   impactReason: "Only runs on its key",

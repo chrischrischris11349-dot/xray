@@ -330,10 +330,10 @@ function themeCard(): HTMLElement {
     h(
       "div",
       { class: "card-text" },
-      h("div", { class: "card-title", text: "Obsidian theme" }),
-      h("div", { class: "card-sub", text: on ? "xray's dark glass look." : "Off: Discord's own look." }),
+      h("div", { class: "card-title", text: "xray theme" }),
+      h("div", { class: "card-sub", text: on ? "Mist and oak: xray's own look." : "Off: Discord's own look." }),
     ),
-    toggle(on, "Obsidian theme", () => {
+    toggle(on, "xray theme", () => {
       setThemeEnabled(!on);
       setThemeActive(!on);
       render();

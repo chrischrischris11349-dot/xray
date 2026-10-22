@@ -21,7 +21,7 @@ export function textOn(hex: string): string {
 const accentColor = definePlugin({
   id: "accentColor",
   name: "Accent Color",
-  description: "Your own color for selected channels, your message bubbles and Discord's main buttons. Works with the Obsidian theme.",
+  description: "Your own color for the selection edge, your messages' edge and Discord's main buttons, in place of oak. Works with xray's theme.",
   category: "Appearance",
   impact: "light",
   impactReason: "A few CSS variables",

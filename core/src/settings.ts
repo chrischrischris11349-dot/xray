@@ -27,7 +27,7 @@ interface Saved {
   seenWelcome?: boolean;
   /** Set once you've been through the plugin picker (ui/picker.ts). */
   pickedPlugins?: boolean;
-  /** The Obsidian theme. On unless switched off. */
+  /** xray's theme (theme/). On unless switched off. */
   theme?: boolean;
   /** xray's UI features by id (quick reply, search). On unless switched off. */
   features?: Record<string, boolean>;

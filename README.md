@@ -8,7 +8,8 @@ pick exactly which plugins run.
 
 Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). See
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how it fits together and the
-rules it follows.
+rules it follows, and [docs/DESIGN.md](docs/DESIGN.md) for the look (design
+tokens) and the extended profile view.
 
 ## Develop
 

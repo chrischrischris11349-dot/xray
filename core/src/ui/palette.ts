@@ -62,7 +62,7 @@ export const palette: Feature = {
 
 /**
  * The search bar in the middle of the command bar, so the palette is one
- * click away and not only a shortcut. It only shows with the Obsidian
+ * click away and not only a shortcut. It only shows with xray's
  * theme (the shell makes room for it; see `.cmdbar` in styles.ts) and
  * while you're logged in.
  */

@@ -93,6 +93,11 @@ export function showDialog(options: DialogOptions): void {
   open(h("div", { class: "dialog", attrs: { role: "dialog", "aria-label": options.title } }, ...parts.filter(Boolean)));
 }
 
+/** Shows a ready-made sheet (like the extended profile) with the dialog's Escape and click-outside behavior. */
+export function showSheet(sheet: HTMLElement, onClose?: () => void): void {
+  open(sheet, undefined, onClose);
+}
+
 /** Puts text on the clipboard. Failures are ignored: there's nothing useful to do about them. */
 export function copyText(text: string): void {
   navigator.clipboard?.writeText(text).catch(() => {});

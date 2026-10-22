@@ -6,19 +6,21 @@ Discord's scripts.
 
 ## Rules that don't bend
 
-- **Original implementations, GPL-3.0.** xray is licensed GPL-3.0-or-later
-  (see `LICENSE`) and its source is public. Features are still written from
-  scratch rather than lifted from Vencord, Equicord or Nightcord — matching
-  their ideas and behavior is fine, and now that xray is GPL-compatible their
-  code could be reused too, but staying original keeps attribution and history
-  clean.
+- **GPL-3.0, Equicord built in.** xray is licensed GPL-3.0-or-later (see
+  `LICENSE`) and its source is public. It runs a pinned Equicord, built from
+  source minus the plugins in `equicord/excluded.json` (see
+  `equicord/README.md`). xray's own plugins are original; where Equicord has
+  the same plugin, Equicord's takes over (`core/src/plugins/equicordTwins.ts`).
 - **Performance first.** Nothing in xray runs per frame or loops forever. Idle
   cost should be zero, and every plugin carries an impact rating
   (`light` / `moderate` / `heavy`) with a one-line reason.
-- **Discord's page gets one Tauri command, `notify`** (`src-tauri/capabilities/main.json`).
-  Anything callable from discord.com is callable by any script running there,
-  Discord's own included. Add a command only if that's safe, and cap what it
-  accepts (`notify` clips text and drops bursts).
+- **Discord's page gets only narrow Tauri commands** (listed and explained in
+  `src-tauri/capabilities/main.json`). Anything callable from discord.com is
+  callable by any script running there, Discord's own included. Add a command
+  only if that's safe, and cap what it accepts (`notify` clips text and drops
+  bursts; `web_fetch` only reaches public https sites).
+- **One design language.** Every color, space, radius, type size and motion
+  value comes from `core/src/theme/tokens.ts`; see `docs/DESIGN.md`.
 
 ## Discord parity: never regress
 

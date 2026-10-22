@@ -15,6 +15,9 @@ import { permissionNames } from "../src/plugins/servers";
 import { nameColor } from "../src/plugins/decorations";
 import { convertUnits, decodeBase64 } from "../src/plugins/tools";
 import { parseTable, toneTags } from "../src/plugins/reading";
+import { accent, contrast, ink, mist } from "../src/theme/tokens";
+import { ageBetween, mergeProfile, profileSections, renderProfile, type ProfileData, type ProfileSection } from "../src/ui/profile";
+import { parseHTML } from "linkedom";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -238,6 +241,88 @@ check("markdown tables parse", JSON.stringify(table) === JSON.stringify([["name"
 check("pipes without a divider aren't a table", parseTable("a | b\nc | d") === null);
 check("tone tags are spelled out", toneTags("ok fine /j lol /srs").join() === "/j joking,/srs serious", toneTags("ok fine /j lol /srs"));
 check("paths aren't tone tags", toneTags("see and/or https://x.com/j").length === 0);
+
+// ---- design tokens: every text color is readable on every surface it can sit on ----
+for (const [surfaceName, surface] of Object.entries(mist)) {
+  for (const [inkName, color] of Object.entries(ink)) {
+    const ratio = contrast(color, surface);
+    check(`${inkName} on ${surfaceName} is at least 4.5:1`, ratio >= 4.5, ratio.toFixed(2));
+  }
+  check(`oak text on ${surfaceName} is at least 4.5:1`, contrast(accent.oak, surface) >= 4.5, contrast(accent.oak, surface).toFixed(2));
+}
+check("text on an oak button is at least 7:1", contrast(accent.onOak, accent.oak) >= 7, contrast(accent.onOak, accent.oak).toFixed(2));
+
+// ---- extended profile ----
+const NOW = new Date("2026-10-21T12:00:00Z");
+function profile(overrides: Partial<ProfileData> = {}): ProfileData {
+  return {
+    id: "123456789012345678", name: "Ana", username: "ana", bot: false, avatar: null, banner: null, accentColor: null,
+    pronouns: null, bio: null, presence: "unknown", customStatus: null, badges: [], createdAt: new Date("2020-03-12T00:00:00Z"),
+    joinedServerAt: null, boostingSince: null, friendsSince: null, roles: [], serverName: null,
+    mutualServers: { state: "loading" }, mutualFriends: { state: "loading" }, connections: { state: "loading" },
+    ...overrides,
+  };
+}
+const ids = (sections: ProfileSection[]) => sections.map((s) => s.id).join();
+const section = <K extends ProfileSection["id"]>(sections: ProfileSection[], id: K) => sections.find((s) => s.id === id) as Extract<ProfileSection, { id: K }> | undefined;
+
+const sparse = profileSections(profile(), NOW);
+check("a bare profile shows dates, mutuals and connections only", ids(sparse) === "dates,servers,friends,connections", ids(sparse));
+check("a bare profile never invents a bio", !section(sparse, "about"));
+check("mutuals say they're loading while the request runs", section(sparse, "servers")?.note === "Loading…" && section(sparse, "friends")?.note === "Loading…");
+check("account age is always shown", section(sparse, "dates")?.facts[0]?.[0] === "Account created");
+
+const failed = profileSections(mergeProfile(profile(), null), NOW);
+check("a failed profile request says so instead of showing nothing", (section(failed, "servers")?.note ?? "").startsWith("Couldn"), section(failed, "servers"));
+const malformed = mergeProfile(profile(), { mutual_guilds: "nope", connected_accounts: [{ type: 3 }] });
+check("malformed mutuals fail, malformed connections are dropped", malformed.mutualServers.state === "failed" && malformed.connections.state === "ready" && (malformed.connections as any).value.length === 0);
+
+const merged = mergeProfile(profile({ serverName: "Burg Bites", joinedServerAt: new Date("2025-01-05T00:00:00Z") }), {
+  user_profile: { bio: "  makes burgers  ", pronouns: "she/her", accent_color: 0xd29a57 },
+  mutual_guilds: Array.from({ length: 15 }, (_, i) => ({ id: String(i), nick: i === 0 ? "ana b" : null })),
+  mutual_friends: [{ global_name: "Bo" }, { username: "cy" }, {}],
+  connected_accounts: [{ type: "github", name: "ana-dev", verified: true }],
+});
+const full = profileSections(merged, NOW);
+check("a full profile shows every section in order", ids(full) === "about,dates,servers,friends,connections", ids(full));
+check("bios are trimmed", section(full, "about")?.text === "makes burgers");
+check("pronouns and accent come from the profile", merged.pronouns === "she/her" && merged.accentColor === "#d29a57");
+check("long mutual lists are cut with a count", section(full, "servers")?.servers.length === 12 && section(full, "servers")?.note === "and 3 more" && section(full, "servers")?.title === "Mutual servers · 15", section(full, "servers")?.note);
+check("unknown servers are named honestly, not made up", section(full, "servers")?.servers[1]?.name === "A server you're in");
+check("friends without a name are skipped", section(full, "friends")?.names.join() === "Bo,cy", section(full, "friends")?.names);
+check("joined date names the server", section(full, "dates")?.facts[1]?.[0] === "Joined Burg Bites", section(full, "dates")?.facts);
+const none = profileSections(mergeProfile(profile(), { mutual_guilds: [], mutual_friends: [], connected_accounts: [] }), NOW);
+check("no mutuals says so plainly", section(none, "servers")?.note === "No servers in common." && section(none, "friends")?.note === "No friends in common.");
+check("no connections leaves the section out", !section(none, "connections"));
+check("ages read naturally", ageBetween(new Date("2026-10-21T08:00:00Z"), NOW) === "today" && ageBetween(new Date("2024-08-01T00:00:00Z"), NOW) === "2 years, 2 months ago", ageBetween(new Date("2024-08-01T00:00:00Z"), NOW));
+
+// Rendering, in a small DOM (linkedom) instead of the browser.
+const realDocument = (globalThis as any).document;
+(globalThis as any).document = parseHTML("<!doctype html><html><body></body></html>").document;
+try {
+  const noop = { close() {}, copyId() {} };
+  const bare = renderProfile(profile(), noop, NOW);
+  check("no banner falls back to the mist banner", !!bare.querySelector(".pf-banner.mist"));
+  check("no avatar falls back to an initial", bare.querySelector(".pf-avatar.pf-initial")?.textContent === "A");
+  check("the sheet is a labelled modal dialog", bare.getAttribute("role") === "dialog" && bare.getAttribute("aria-modal") === "true" && !!bare.querySelector(`#${bare.getAttribute("aria-labelledby")}`));
+  check("status is spelled out, not color alone", bare.querySelector(".pf-status")?.textContent === "Status unknown");
+  check("no Message button without a way to message", !Array.from(bare.querySelectorAll("button")).some((b: any) => b.textContent === "Message"));
+
+  const hostile = renderProfile(profile({ bio: '<img src=x onerror="alert(1)">', name: "<b>x</b>" }), noop, NOW);
+  check("bios and names stay text, never HTML", !hostile.querySelector(".pf-bio img") && hostile.querySelector(".pf-bio")?.textContent === '<img src=x onerror="alert(1)">' && !hostile.querySelector(".pf-name b"));
+
+  const rich = renderProfile({ ...merged, presence: "online", roles: [{ name: "Cook", color: "#d29a57" }, { name: "Member", color: null }], bot: true }, { ...noop, message() {} }, NOW);
+  check("roles render with their names", Array.from(rich.querySelectorAll(".pf-role")).map((r: any) => r.textContent).join() === "Cook,Member");
+  check("bots are tagged", rich.querySelector(".pf-tag")?.textContent === "Bot");
+  check("online status reads Online", rich.querySelector(".pf-status.online")?.textContent === "Online");
+  check("connections show their service", Array.from(rich.querySelectorAll(".pf-item-sub")).some((n: any) => n.textContent === "GitHub"));
+  check("a Message button is offered when there's a way to message", Array.from(rich.querySelectorAll("button")).some((b: any) => b.textContent === "Message"));
+  const odd = renderProfile(mergeProfile(profile(), { mutual_guilds: [], mutual_friends: [], connected_accounts: [] }), noop, NOW);
+  const blocks = Array.from(odd.querySelectorAll(".pf-block")) as any[];
+  check("an odd last block spans the row instead of leaving a hole", blocks.length === 3 && blocks[2].classList.contains("wide") && !blocks[0].classList.contains("wide"), blocks.map((b) => b.className));
+} finally {
+  (globalThis as any).document = realDocument;
+}
 
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

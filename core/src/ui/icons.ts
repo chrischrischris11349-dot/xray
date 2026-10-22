@@ -8,6 +8,7 @@ import chevronRight from "lucide-static/icons/chevron-right.svg";
 import copy from "lucide-static/icons/copy.svg";
 import glasses from "lucide-static/icons/glasses.svg";
 import headphoneOff from "lucide-static/icons/headphone-off.svg";
+import idCard from "lucide-static/icons/id-card.svg";
 import headphones from "lucide-static/icons/headphones.svg";
 import micOff from "lucide-static/icons/mic-off.svg";
 import mic from "lucide-static/icons/mic.svg";
@@ -20,7 +21,7 @@ import video from "lucide-static/icons/video.svg";
 import x from "lucide-static/icons/x.svg";
 
 const SOURCES = {
-  chevronRight, copy, glasses, headphoneOff, headphones, mic, micOff, minus, search, settings, square, video, videoOff, x,
+  chevronRight, copy, glasses, headphoneOff, headphones, idCard, mic, micOff, minus, search, settings, square, video, videoOff, x,
 };
 
 export type IconName = keyof typeof SOURCES;

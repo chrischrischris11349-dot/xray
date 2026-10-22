@@ -112,20 +112,30 @@ const looksLike = {
 function currentTarget(): MenuTarget {
   if (lastClicked === targetFor) return target;
   targetFor = lastClicked;
-  target = { element: lastClicked };
-  let element: Element | null | undefined = lastClicked;
+  target = lastClicked ? aboutElement(lastClicked) : {};
+  return target;
+}
+
+/**
+ * What a piece of Discord's UI is about: the nearest message, user, channel
+ * and server in the React props above it. Used for menus, and by plugins
+ * that add buttons to Discord's own UI (like the profile popout).
+ */
+export function aboutElement(start: Element): MenuTarget {
+  const about: MenuTarget = { element: start };
+  let element: Element | null = start;
   let fiber: any;
   while (element && !(fiber = fiberOf(element))) element = element.parentElement;
   for (let depth = 0; fiber && depth < MAX_FIBER_DEPTH; depth++, fiber = fiber.return) {
     const props = fiber.memoizedProps;
     if (!props || typeof props !== "object") continue;
     for (const key of ["message", "user", "channel", "guild"] as const) {
-      if (!target[key] && looksLike[key](props[key])) target[key] = props[key];
+      if (!about[key] && looksLike[key](props[key])) about[key] = props[key];
     }
-    if (!target.guildId && typeof props.guildId === "string") target.guildId = props.guildId;
+    if (!about.guildId && typeof props.guildId === "string") about.guildId = props.guildId;
   }
-  target.guildId ??= target.guild?.id ?? target.channel?.guild_id ?? undefined;
-  return target;
+  about.guildId ??= about.guild?.id ?? about.channel?.guild_id ?? undefined;
+  return about;
 }
 
 /** Adds entries to the menus with these navIds. Returns a function that removes them. */

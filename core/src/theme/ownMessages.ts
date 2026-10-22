@@ -1,6 +1,6 @@
 /**
- * Marks your own messages with `data-xray-mine`, so the shell can draw their
- * bubbles white. Discord's DOM doesn't say who wrote a message, but every
+ * Marks your own messages with `data-xray-mine`, so the shell can draw the
+ * oak edge beside them. Discord's DOM doesn't say who wrote a message, but every
  * message row has the id `chat-messages-<channel>-<message>`, and the author
  * comes from Discord's MessageStore.
  *
