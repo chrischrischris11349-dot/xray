@@ -14,6 +14,10 @@ pub const AUTOSTART_ARG: &str = "--autostart";
 const DISCORD_APP: &str = "https://discord.com/app";
 /// Built by `npm run core:build` (see core/build.mjs).
 const CORE: &str = include_str!("../inject/core.js");
+/// Equicord's plugins, built by `npm run equicord:build` (see equicord/README.md).
+/// It runs first, so its webpack patcher is in place before Discord's scripts,
+/// and xray's core then rides on it.
+const EQUICORD: &str = include_str!("../inject/equicord.js");
 /// Autoplay lets call sounds play without a click first. The disabled features
 /// are WebView2 pop-up UI that a chat app doesn't need.
 const BROWSER_ARGS: &str = "--autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI";
@@ -43,6 +47,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
         builder.center()
     };
     let window = builder
+        .initialization_script(EQUICORD)
         .initialization_script(CORE)
         .additional_browser_args(BROWSER_ARGS)
         .on_navigation(move |url| {

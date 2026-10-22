@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "core:build": "node core/build.mjs",
+    "equicord:build": "node equicord/build.mjs",
     "core:watch": "node core/build.mjs --watch",
     "typecheck": "tsc --noEmit -p core",
     "test": "node core/test/run.mjs",

@@ -1,0 +1,20 @@
+{
+  "_about": "Equicord plugins removed from xray's build, so they are not in the app at all. Each falls under a kind xray leaves out on purpose (see docs/PLUGINS.md). Directory names under src/plugins or src/equicordplugins.",
+  "plugins": {
+    "iRememberYou": "Tracking: saves a record of everyone you talk to.",
+    "voiceChannelLog": "Tracking: logs other people's voice joins, leaves, mutes and cameras.",
+    "voiceStats": "Tracking: tallies time spent in voice with each person.",
+    "followVoiceUser": "Tracking: follows a person from voice channel to voice channel.",
+    "messageLoggerEnhanced": "Tracking: keeps a permanent record of other people's deleted and edited messages. The plain MessageLogger stays.",
+    "unlimitedAccounts": "Multi-account tooling.",
+    "loginWithQR": "Login tooling: approves logins by QR code, a common account-theft trick.",
+    "noDevtoolsWarning": "Security: stops Discord hiding your login token.",
+    "questify": "Cheating: auto-completes Quests for rewards.",
+    "triviaAI": "Cheating: answers trivia games with AI.",
+    "platformSpoofer": "Deception: pretends you are on another platform.",
+    "noPushToTalk": "Bypasses a server's push-to-talk rule.",
+    "screenRecorder.equibop": "Recording: would capture calls.",
+    "atSomeone": "Spam: pings random people.",
+    "userpluginInstaller.dev": "Security: installs code that people post in chat."
+  }
+}

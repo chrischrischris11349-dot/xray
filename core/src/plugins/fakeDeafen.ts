@@ -60,7 +60,16 @@ let gateway: WebSocket | undefined;
 /** The real voice state Discord last sent, before any rewriting. */
 let lastSent: VoiceState | undefined;
 let realSend: WebSocket["send"] | undefined;
-let options: { readonly serverDeafen: boolean; readonly serverMute: boolean } | undefined;
+let options: { readonly serverDeafen: boolean; readonly serverMute: boolean; readonly looksDeafened: boolean; readonly looksMuted: boolean; readonly shortcut: boolean } | undefined;
+
+/** What others see while faking: deafened, muted, or both (the default). */
+function faked(state: VoiceState): VoiceState {
+  return {
+    ...state,
+    self_deaf: (options?.looksDeafened ?? true) || state.self_deaf,
+    self_mute: (options?.looksMuted ?? true) || state.self_mute,
+  };
+}
 /** What xray is currently holding server-side, if anything. Also saved, in case xray closes mid-call. */
 let applied: ServerState | null = null;
 let syncQueued = false;
@@ -92,14 +101,13 @@ function rewrite(ws: WebSocket, args: unknown[]): void {
   // Joining, leaving or switching servers can change where you should be held.
   queueServerSync();
   if (!faking) return;
-  message.d.self_mute = true;
-  message.d.self_deaf = true;
+  message.d = faked(message.d);
   args[0] = JSON.stringify(message);
 }
 
 function resend(): void {
   if (!gateway || gateway.readyState !== WebSocket.OPEN || !lastSent?.channel_id || !realSend) return;
-  const d = faking ? { ...lastSent, self_mute: true, self_deaf: true } : lastSent;
+  const d = faking ? faked(lastSent) : lastSent;
   realSend.call(gateway, JSON.stringify({ op: VOICE_STATE_UPDATE, d }));
 }
 
@@ -322,6 +330,9 @@ export default definePlugin({
   needsReload: false,
   enabledByDefault: true,
   options: {
+    looksDeafened: { type: "boolean", label: "Look deafened", description: "Others see the deafened icon while it's on.", default: true },
+    looksMuted: { type: "boolean", label: "Look muted", description: "Others see the muted icon while it's on.", default: true },
+    shortcut: { type: "boolean", label: "Ctrl+Shift+Q toggles it", description: "Works while xray is focused. For a key that works in games too, set one under Hotkeys.", default: true },
     serverDeafen: {
       type: "boolean",
       label: "Server deafen too",
@@ -342,7 +353,14 @@ export default definePlugin({
     ctx.patch(WebSocket.prototype, "send", { before: rewrite });
     ctx.intercept((action) => keepHearing(action));
     // Guarded so the unit-test harness (no DOM, a minimal ctx) skips it.
-    if (typeof ctx.css === "function" && typeof ctx.watch === "function") installVoicePanelButton(ctx);
+    if (typeof ctx.css === "function" && typeof ctx.watch === "function") {
+      installVoicePanelButton(ctx);
+      ctx.onKey((event) => {
+        if (!ctx.options.shortcut || !event.ctrlKey || !event.shiftKey || event.altKey || event.code !== "KeyQ") return false;
+        fakeVoice.set(!faking);
+        return true;
+      });
+    }
     // A leftover from last time is cleared once you're logged in.
     if (!undoLeftover()) ctx.onAction("CONNECTION_OPEN", () => undoLeftover());
     const onPageHide = () => {

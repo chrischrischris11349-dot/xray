@@ -13,6 +13,7 @@ import { installReporting } from "./shell/report";
 import { installTheme, setThemeActive } from "./theme";
 import { registerFeature } from "./ui/features";
 import { command, palette, setPaletteCommands } from "./ui/palette";
+import { offerPickerOnFirstRun, showPicker } from "./ui/picker";
 import { isPanelOpen, mountUi, openPanel } from "./ui/panel";
 import { quickReply } from "./ui/quickReply";
 import { installKeyRouter } from "./ui/root";
@@ -63,6 +64,7 @@ function startUi(): void {
   mountUi();
   setPaletteCommands(() => [
     command("Open xray panel", "Plugins, hotkeys and settings", openPanel),
+    command("Choose plugins", "Every xray and Equicord plugin, with a switch each", showPicker),
     ...(fakeVoice.available
       ? [command(fakeVoice.active ? "Turn off fake deafen" : "Turn on fake deafen", "Look deafened while you keep listening", () => fakeVoice.set(!fakeVoice.active))]
       : []),
@@ -74,6 +76,7 @@ function startUi(): void {
   ]);
   registerFeature(quickReply);
   registerFeature(palette);
+  offerPickerOnFirstRun();
 }
 
 boot();

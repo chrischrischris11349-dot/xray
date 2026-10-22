@@ -18,6 +18,11 @@
  * among them). The first time xray meets a runtime, it adopts those: ones
  * that already ran are recorded from the runtime's module cache, and the
  * rest are wrapped like any other.
+ *
+ * When Equicord runs inside xray (see equicord/README.md), its patcher
+ * replaces Discord's module factories with patched copies, which would drop
+ * xray's wrappers. So xray doesn't hook webpack itself then: it listens to
+ * Equicord's module events, which fire for every module in every runtime.
  */
 import { warn } from "./env";
 
@@ -52,6 +57,8 @@ const waiters = new Set<Waiter>();
 const instrumented = new WeakSet<object>();
 const runtimes = new Set<WebpackRequire>();
 let lastRequire: WebpackRequire | undefined;
+/** Equicord's webpack API, when Equicord loaded first. */
+let equicord: { wreq: WebpackRequire; moduleListeners: Set<(exports: any, id: PropertyKey) => void> } | undefined;
 let mainRuntime: WebpackRequire | undefined;
 let mainRuntimeChecked = 0;
 let hooked = false;
@@ -59,6 +66,12 @@ let hooked = false;
 export function hookWebpack(): void {
   if (hooked) return;
   hooked = true;
+  const shared = (window as any).Vencord?.Webpack;
+  if (shared?.moduleListeners instanceof Set) {
+    equicord = shared;
+    shared.moduleListeners.add((exports: any, id: PropertyKey) => record(id, { exports }, shared.wreq));
+    return;
+  }
   let chunks: unknown = (window as any)[CHUNK_GLOBAL];
   if (Array.isArray(chunks)) {
     warn("webpack started before xray; modules it already loaded were missed");
@@ -279,6 +292,7 @@ export function everyMatch(filter: Filter, callback: (match: any) => void): void
 
 /** Finds a module by text in its factory's source and returns its exports, loading it if needed. */
 export function findByCode(...code: string[]): any {
+  if (equicord) return findByCodeShared(equicord.wreq, code);
   for (const [id, factory] of factories) {
     const source = Function.prototype.toString.call(factory);
     if (!code.every((c) => source.includes(c))) continue;
@@ -286,6 +300,17 @@ export function findByCode(...code: string[]): any {
     const instances = loaded.filter((entry) => entry.id === id);
     const instance = instances.find((entry) => entry.require === runtime) ?? instances[0];
     return instance ? instance.module.exports : runtime?.(id);
+  }
+  return undefined;
+}
+
+/** findByCode through Equicord's runtime: its factory table, read as source, then loaded on demand. */
+function findByCodeShared(wreq: WebpackRequire, code: string[]): any {
+  const table = wreq?.m;
+  if (!table) return undefined;
+  for (const id in table) {
+    const source = String(table[id]);
+    if (code.every((c) => source.includes(c))) return wreq.c?.[id]?.exports ?? wreq(id);
   }
   return undefined;
 }
@@ -335,5 +360,5 @@ export const filters = {
 };
 
 export function webpackStats() {
-  return { hooked, runtimes: runtimes.size, factories: factories.size, loaded: loaded.length, waiting: waiters.size };
+  return { hooked, viaEquicord: !!equicord, runtimes: runtimes.size, factories: factories.size, loaded: loaded.length, waiting: waiters.size };
 }

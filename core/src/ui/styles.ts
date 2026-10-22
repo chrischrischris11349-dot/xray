@@ -260,4 +260,25 @@ select.opt-input option { background: #181818; color: var(--text); }
 .xray-vbar button.cam[aria-pressed="true"] { background: rgba(61,214,140,.16); color: #3dd68c; }
 .xray-vbar button[disabled] { opacity: .35; pointer-events: none; }
 :host-context(html:not(.xray-obsidian)) .xray-vbar { display: none; }
+/* Plugin picker (picker.ts): a tall glass sheet with one scrolling list. */
+.pk-scrim { align-items: center; padding: 24px; }
+.picker { width: min(760px, 100%); height: min(86vh, 900px); display: flex; flex-direction: column; gap: 12px; padding: 22px 22px 16px; border-radius: 20px; background: rgba(16,16,16,.96); box-shadow: 0 40px 90px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.09), inset 0 1px 0 rgba(255,255,255,.07); font-family: "gg sans", "Segoe UI", system-ui, sans-serif; animation: pop 200ms var(--ease); }
+.pk-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.pk-sub { margin-top: 4px; font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+.pk-presets { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.pk-presets-label { margin-right: 4px; font-size: 12.5px; color: var(--faint); }
+.picker .plugin-tools { margin: 0; flex-direction: row; align-items: center; }
+.picker .plugin-search { flex: 1; min-width: 0; }
+.pk-list { flex: 1; min-height: 0; overflow-y: auto; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.02); scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+.pk-row { display: flex; align-items: center; gap: 14px; padding: 10px 14px; }
+.pk-row + .pk-row { border-top: 1px solid var(--line); }
+.pk-text { flex: 1; min-width: 0; }
+.pk-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
+.pk-src { padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,.07); color: var(--muted); font-size: 11px; font-weight: 500; }
+.pk-src.xray { background: rgba(255,255,255,.9); color: #0b0b0b; }
+.pk-desc { margin-top: 2px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.pk-empty { padding: 28px; text-align: center; color: var(--faint); font-size: 13.5px; }
+.pk-foot { display: flex; align-items: center; gap: 8px; }
+.pk-count { font-size: 12.5px; color: var(--faint); }
+.pk-spacer { flex: 1; }
 `;

@@ -15,9 +15,11 @@ import { patch } from "../patcher";
 import { pluginState, save } from "../settings";
 import { onKey } from "../ui/root";
 import { builtins } from "./builtins";
+import { carryOverToEquicord, equicordTwin } from "./equicordTwins";
 import type { Plugin, PluginContext, PluginOption } from "./types";
 
-export const plugins: readonly Plugin[] = builtins;
+/** xray's plugins, minus the ones Equicord's version replaces (see equicordTwins.ts). */
+export const plugins: readonly Plugin[] = builtins.filter((plugin) => !equicordTwin(plugin));
 
 export interface PluginCommand {
   title: string;
@@ -40,6 +42,7 @@ export function isRunning(id: string): boolean {
 }
 
 export function startPlugins(): void {
+  carryOverToEquicord(builtins, isEnabled);
   for (const plugin of plugins) {
     const enabled = isEnabled(plugin);
     enabledAtBoot.set(plugin.id, enabled);

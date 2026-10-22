@@ -1,9 +1,8 @@
 /**
  * Everyday helpers: keys, remembering where you were, idle control, and the
- * small privacy switches (tracking, how your device shows up).
+ * small privacy switches.
  */
 import { dispatch } from "../api/flux";
-import { GatewayOp } from "../api/gateway";
 import { menu } from "../api/menus";
 import { currentChannelId, navigate, stores } from "../discord";
 import { storage } from "../env";
@@ -168,43 +167,6 @@ const blockTracking = definePlugin({
   },
 });
 
-const PLATFORMS: Record<string, { os: string; browser: string; device: string }> = {
-  desktop: { os: "Windows", browser: "Discord Client", device: "" },
-  mobile: { os: "Android", browser: "Discord Android", device: "Android" },
-  ios: { os: "iOS", browser: "Discord iOS", device: "iPhone" },
-  web: { os: "Windows", browser: "Chrome", device: "" },
-};
-
-const platformSpoofer = definePlugin({
-  id: "platformSpoofer",
-  name: "Device Badge",
-  description: "Choose which device icon others see next to your status: desktop, phone or web.",
-  category: "Privacy",
-  impact: "light",
-  impactReason: "Changes one value when Discord connects",
-  needsReload: true,
-  enabledByDefault: false,
-  options: {
-    platform: {
-      type: "select",
-      label: "Show me as",
-      default: "desktop",
-      choices: [
-        { value: "desktop", label: "Desktop app" },
-        { value: "mobile", label: "Phone (Android)" },
-        { value: "ios", label: "Phone (iPhone)" },
-        { value: "web", label: "Web browser" },
-      ],
-    },
-  },
-  start(ctx) {
-    const platform = PLATFORMS[ctx.options.platform] ?? PLATFORMS.desktop;
-    ctx.onGatewaySend(GatewayOp.IDENTIFY, (d) => {
-      if (d?.properties && typeof d.properties === "object") Object.assign(d.properties, platform);
-    });
-  },
-});
-
 const consoleJanitor = definePlugin({
   id: "consoleJanitor",
   name: "Quiet Console",
@@ -315,7 +277,6 @@ export const utilityPlugins: readonly Plugin<any>[] = [
   dmSwitcher,
   noF1,
   customIdle,
-  platformSpoofer,
   userLinks,
   consoleJanitor,
   anonymousUploads,

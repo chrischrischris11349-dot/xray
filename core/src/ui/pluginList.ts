@@ -7,6 +7,7 @@ import { isEnabled, optionValue, plugins, setEnabled, setOption } from "../plugi
 import type { Category, Impact, Plugin, PluginOption } from "../plugins/types";
 import { h } from "./dom";
 import { icon } from "./icons";
+import { showPicker } from "./picker";
 import { score } from "./search";
 
 const RATING: Record<Impact, { label: string; color: string }> = {
@@ -39,7 +40,11 @@ export function pluginSection(): HTMLElement {
   search.value = query;
   host = h("div", { class: "plugin-host" });
   renderList();
-  return h("div", { class: "plugins" }, h("div", { class: "plugin-tools" }, search, filters()), host);
+  // With Equicord here, this list is only xray's own; the picker has everything.
+  const everything = (window as any).Vencord?.Plugins
+    ? h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Choose from every plugin, Equicord's too", on: { click: showPicker } })
+    : null;
+  return h("div", { class: "plugins" }, h("div", { class: "plugin-tools" }, everything, search, filters()), host);
 }
 
 function filters(): HTMLElement {

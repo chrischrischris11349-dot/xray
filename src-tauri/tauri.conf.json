@@ -5,7 +5,7 @@
   "identifier": "app.xray.desktop",
   "build": {
     "beforeDevCommand": { "script": "npm run core:build", "wait": true },
-    "beforeBuildCommand": "npm run core:build -- --release",
+    "beforeBuildCommand": "npm run equicord:build && npm run core:build -- --release",
     "frontendDist": "../shell"
   },
   "app": {

@@ -18,11 +18,15 @@ export interface PluginState {
   options?: Record<string, unknown>;
   /** A plugin's own bookkeeping that must survive a restart. */
   data?: Record<string, unknown>;
+  /** Set once Equicord's twin of this plugin has taken over (see plugins/equicordTwins.ts). */
+  handedToEquicord?: boolean;
 }
 
 interface Saved {
   plugins: Record<string, PluginState>;
   seenWelcome?: boolean;
+  /** Set once you've been through the plugin picker (ui/picker.ts). */
+  pickedPlugins?: boolean;
   /** The Obsidian theme. On unless switched off. */
   theme?: boolean;
   /** xray's UI features by id (quick reply, search). On unless switched off. */
@@ -76,6 +80,15 @@ export function pluginState(id: string): PluginState {
 
 export function seenWelcome(): boolean {
   return saved.seenWelcome === true;
+}
+
+export function pickedPlugins(): boolean {
+  return saved.pickedPlugins === true;
+}
+
+export function markPluginsPicked(): void {
+  saved.pickedPlugins = true;
+  save();
 }
 
 export function markWelcomeSeen(): void {
