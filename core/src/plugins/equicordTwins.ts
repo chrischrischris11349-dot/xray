@@ -99,6 +99,9 @@ const TWINS: Record<string, string> = {
   anonymousUploads: "AnonymiseFileNames",
   // Equicord splits these into CopyUserURLs, CopyUserMention and ViewIcons; the picker's Recommended has all three.
   userLinks: "CopyUserURLs",
+  // Your own userplugins built into the same bundle (equicord/userplugins.json).
+  abbreviations: "Abbreviation",
+  noCaps: "NoCaps",
 };
 
 /** Equicord's plugin manager and settings, when Equicord loaded before xray. */

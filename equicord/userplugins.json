@@ -1,0 +1,29 @@
+{
+  "_about": "Your own Vencord userplugins that xray's Equicord build includes. They are copied at build time from XRAY_USERPLUGINS_DIR (default: ~/Vencord/src/userplugins); only the folders named here are taken. If the folder isn't there (CI, another machine), the build goes on without them.",
+  "plugins": [
+    "_nightcordCompat",
+    "abreviation",
+    "audioLimiter",
+    "autoAFK",
+    "autoUnmute",
+    "copyProfileId",
+    "doubleEmoji",
+    "fastDiscord",
+    "fastPing",
+    "fixScreenshare",
+    "liveWallpaper",
+    "muteAllServers",
+    "noCaps",
+    "optimisations",
+    "previewHTML",
+    "previewWebsite",
+    "quickDM",
+    "realtimeTimestamps",
+    "selfDestruct",
+    "showID",
+    "smartPingFilters",
+    "SmoothType",
+    "streamProof",
+    "uncompressedImages"
+  ]
+}

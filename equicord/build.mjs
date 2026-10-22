@@ -8,7 +8,8 @@
 // Needs git, Node 22 and pnpm. The checkout lives in vendor/equicord (ignored).
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -22,7 +23,27 @@ const out = join(root, "src-tauri", "inject", "equicord.js");
 const excluded = JSON.parse(readFileSync(join(root, "equicord", "excluded.json"), "utf8")).plugins;
 const shim = readFileSync(join(root, "equicord", "shim.js"), "utf8");
 
-const stamp = createHash("sha256").update(COMMIT).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).digest("hex").slice(0, 16);
+/** Your own userplugins to include (equicord/userplugins.json), and where they live. */
+const userplugins = JSON.parse(readFileSync(join(root, "equicord", "userplugins.json"), "utf8")).plugins;
+const userpluginsDir = process.env.XRAY_USERPLUGINS_DIR ?? join(homedir(), "Vencord", "src", "userplugins");
+const haveUserplugins = existsSync(userpluginsDir);
+
+/** A fingerprint of every file in the listed userplugins, so editing one triggers a rebuild. */
+function userpluginsHash() {
+  const hash = createHash("sha256");
+  if (!haveUserplugins) return "none";
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir).sort()) {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) walk(path);
+      else hash.update(path).update(readFileSync(path));
+    }
+  };
+  for (const name of userplugins) if (existsSync(join(userpluginsDir, name))) walk(join(userpluginsDir, name));
+  return hash.digest("hex");
+}
+
+const stamp = createHash("sha256").update(COMMIT).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).digest("hex").slice(0, 16);
 if (!process.argv.includes("--force") && existsSync(out) && readFileSync(out, "utf8").includes(`xray-build:${stamp}`)) {
   console.log("equicord.js is up to date");
   process.exit(0);
@@ -65,12 +86,29 @@ for (const { file, find, replace } of FIXUPS) {
   writeFileSync(path, source.replace(find, () => replace));
 }
 
+// Your own userplugins, only the listed ones. A clean checkout has none of its own.
+if (haveUserplugins) {
+  const target = join(vendor, "src", "userplugins");
+  mkdirSync(target, { recursive: true });
+  for (const name of userplugins) {
+    const from = join(userpluginsDir, name);
+    if (!existsSync(from)) {
+      console.warn(`userplugin "${name}" isn't in ${userpluginsDir}; skipped`);
+      continue;
+    }
+    cpSync(from, join(target, name), { recursive: true, filter: (path) => !path.split(/[\\/]/).includes(".git") });
+  }
+} else {
+  console.warn(`no userplugins folder at ${userpluginsDir}; building without them`);
+}
+
 run("pnpm", ["install", "--frozen-lockfile"]);
 run("pnpm", ["buildWeb"]);
 
 const userscript = readFileSync(join(vendor, "dist", "Equicord.user.js"), "utf8");
 const notice = `/*! Equicord (https://github.com/Equicord/Equicord) at ${COMMIT}, GPL-3.0-or-later.
  * Built for xray with these plugins removed: ${Object.keys(excluded).join(", ")}.
+ * Your userplugins included: ${haveUserplugins ? userplugins.filter((n) => !n.startsWith("_")).join(", ") : "none"}.
  * xray-build:${stamp} */\n`;
 writeFileSync(out, notice + shim.replace("/*USERSCRIPT*/", () => userscript));
 console.log(`wrote ${out} (${(Buffer.byteLength(notice) / 1024 + userscript.length / 1024).toFixed(0)} KB)`);
