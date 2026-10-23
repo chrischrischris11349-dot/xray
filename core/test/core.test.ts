@@ -18,6 +18,13 @@ import { parseTable, toneTags } from "../src/plugins/reading";
 import { accent, contrast, ink, mist } from "../src/theme/tokens";
 import { ageBetween, mergeProfile, profileSections, renderProfile, type ProfileData, type ProfileSection } from "../src/ui/profile";
 import { parseHTML } from "linkedom";
+import { LocalMessageEdits } from "../src/plugins/localMessageEdit";
+import { renderChatMessage, messageDate } from "../src/ui/chatMessage";
+import { palettes } from "../src/theme/palettes";
+import { clampBubble } from "../src/ui/bubblePosition";
+import { countLoadedMessages } from "../src/ui/messageCounts";
+import { notificationContent } from "../src/shell/notifications";
+import { parseLocalReport } from "../src/ui/intelligence";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail?: unknown) {
@@ -128,13 +135,13 @@ check("a throwing patch doesn't break the call", target.add(1, 2) === 3);
 
 // ---- Fake Deafen (WebSocket is the stub from run.mjs) ----
 const stops: (() => void)[] = [];
-// Only what Fake Deafen uses; server mute/deafen stay off, so no Discord actions are needed.
+// Saved options from older builds must never reactivate moderation behavior.
 fakeDeafen.start({
   patch: (t: object, k: PropertyKey, hooks: any) => { stops.push(patch(t, k, hooks)); },
   onStop: (fn: () => void) => { stops.push(fn); },
-  intercept() {},
-  onAction() {},
-  options: { serverDeafen: false, serverMute: false },
+  intercept() { throw new Error("Fake Deafen must not intercept incoming moderation state"); },
+  onAction() { throw new Error("Fake Deafen must not install moderation recovery hooks"); },
+  options: { serverDeafen: true, serverMute: true, looksDeafened: false, looksMuted: false },
   log() {},
 } as any);
 type Sock = WebSocket & { sent: string[] };
@@ -158,6 +165,38 @@ check("turning off resends the real state", sentState(gateway, 4).self_deaf === 
 stops.reverse().forEach((stop) => stop());
 gateway.send(voice(false));
 check("stopping the plugin unpatches send", gateway.sent.length === 6);
+check("server moderation options are removed", !("serverMute" in fakeDeafen.options!) && !("serverDeafen" in fakeDeafen.options!));
+check("stopping clears active state and connection", !fakeVoice.available && !fakeVoice.active && !fakeVoice.inVoice);
+
+const isolatedStops: (() => void)[] = [];
+fakeDeafen.start({
+  patch: (t: object, k: PropertyKey, hooks: any) => isolatedStops.push(patch(t, k, hooks)),
+  onStop: (fn: () => void) => isolatedStops.push(fn),
+  options: {},
+} as any); // No stores, moderation actions, dispatcher, or other plugins are required.
+fakeVoice.set(true);
+check("can arm before joining voice without sending", fakeVoice.active && gateway.sent.length === 6);
+const dm = new WebSocket("wss://gateway.discord.gg/?v=10&encoding=json") as Sock;
+const originalDm = { guild_id: null, channel_id: "dm", self_mute: false, self_deaf: false, self_video: true, flags: 2 };
+dm.send(JSON.stringify({ op: 4, d: originalDm }, null, 2));
+check("formatted gateway JSON and DM voice work", sentState(dm, 0).self_deaf && sentState(dm, 0).self_video && sentState(dm, 0).flags === 2 && fakeVoice.inVoice);
+const leave = JSON.stringify({ op: 4, d: { ...originalDm, channel_id: null } });
+dm.send(leave);
+check("leave is unchanged and clears voice status", dm.sent[1] === leave && !fakeVoice.inVoice);
+fakeVoice.set(false);
+check("turning off after leave cannot rejoin", dm.sent.length === 2);
+const reconnected = new WebSocket("wss://gateway-us-west2-b.discord.gg/?encoding=json") as Sock;
+reconnected.send(JSON.stringify({ op: 4, d: { ...originalDm, guild_id: "server", channel_id: "new", self_mute: true } }));
+fakeVoice.set(true);
+fakeVoice.set(false);
+check("reconnect restores the newest real state including actual self mute", sentState(reconnected, 2).self_mute && !sentState(reconnected, 2).self_deaf && sentState(reconnected, 2).channel_id === "new" && dm.sent.length === 2);
+const invalid = [JSON.stringify({ op: 4, d: { channel_id: "bad" } }), '{"op":4,broken', JSON.stringify({ op: 40, d: originalDm }), JSON.stringify({ op: 4, d: null })];
+invalid.forEach(value => reconnected.send(value));
+check("malformed and other opcode packets pass unchanged", invalid.every((value, i) => reconnected.sent[3 + i] === value));
+fakeVoice.set(true);
+isolatedStops.reverse().forEach(stop => stop());
+check("stopping while active restores the actual self state", !sentState(reconnected, reconnected.sent.length - 1).self_deaf && sentState(reconnected, reconnected.sent.length - 1).self_mute);
+check("standalone stop restores the socket method", !fakeVoice.available && !fakeVoice.active);
 
 // ---- search ranking ----
 const entries = [
@@ -270,7 +309,7 @@ const sparse = profileSections(profile(), NOW);
 check("a bare profile shows dates, mutuals and connections only", ids(sparse) === "dates,servers,friends,connections", ids(sparse));
 check("a bare profile never invents a bio", !section(sparse, "about"));
 check("mutuals say they're loading while the request runs", section(sparse, "servers")?.note === "Loading…" && section(sparse, "friends")?.note === "Loading…");
-check("account age is always shown", section(sparse, "dates")?.facts[0]?.[0] === "Account created");
+check("account age is always shown", section(sparse, "dates")?.facts.some(([label]) => label === "Account created") === true);
 
 const failed = profileSections(mergeProfile(profile(), null), NOW);
 check("a failed profile request says so instead of showing nothing", (section(failed, "servers")?.note ?? "").startsWith("Couldn"), section(failed, "servers"));
@@ -290,7 +329,15 @@ check("pronouns and accent come from the profile", merged.pronouns === "she/her"
 check("long mutual lists are cut with a count", section(full, "servers")?.servers.length === 12 && section(full, "servers")?.note === "and 3 more" && section(full, "servers")?.title === "Mutual servers · 15", section(full, "servers")?.note);
 check("unknown servers are named honestly, not made up", section(full, "servers")?.servers[1]?.name === "A server you're in");
 check("friends without a name are skipped", section(full, "friends")?.names.join() === "Bo,cy", section(full, "friends")?.names);
-check("joined date names the server", section(full, "dates")?.facts[1]?.[0] === "Joined Burg Bites", section(full, "dates")?.facts);
+check("joined date names the server", section(full, "dates")?.facts.some(([label]) => label === "Joined Burg Bites") === true, section(full, "dates")?.facts);
+const detailData = mergeProfile(profile({ relationship: "Friend", premiumSince: new Date("2025-01-01"), serverNickname: "old nickname", badges: ["Old badge"] }), {
+  premium_since: null, legacy_username: "old-name#1234", mutual_friends_count: 6,
+  guild_member: { nick: null }, mutual_guilds: [], badges: [],
+});
+const detailFacts = Object.fromEntries(section(profileSections(detailData, NOW), "dates")!.facts);
+check("profile reports confirmed relationship and mutual count without needing the names", detailFacts.Relationship === "Friend" && detailFacts["Mutual friends"] === "6");
+check("profile distinguishes confirmed zero mutual servers from unavailable data", detailFacts["Mutual servers"] === "0" && Object.fromEntries(section(sparse, "dates")!.facts)["Mutual servers"] === "Loading…");
+check("profile shows legacy names and clears stale premium, nicknames and badges", detailFacts["Legacy username"] === "old-name#1234" && detailFacts["Premium since"] === "Unavailable" && detailFacts["Server nickname"] === "Unavailable" && detailData.badges.length === 0);
 const none = profileSections(mergeProfile(profile(), { mutual_guilds: [], mutual_friends: [], connected_accounts: [] }), NOW);
 check("no mutuals says so plainly", section(none, "servers")?.note === "No servers in common." && section(none, "friends")?.note === "No friends in common.");
 check("no connections leaves the section out", !section(none, "connections"));
@@ -317,12 +364,74 @@ try {
   check("online status reads Online", rich.querySelector(".pf-status.online")?.textContent === "Online");
   check("connections show their service", Array.from(rich.querySelectorAll(".pf-item-sub")).some((n: any) => n.textContent === "GitHub"));
   check("a Message button is offered when there's a way to message", Array.from(rich.querySelectorAll("button")).some((b: any) => b.textContent === "Message"));
+  let openedServer = "", openedFriend = "";
+  const navigable = renderProfile({ ...merged, mutualFriendUsers: [{ id: "300760994454437890", name: "Bo", avatar: null, knownServers: ["Burg Bites"] }] }, {
+    ...noop, openServer: id => { openedServer = id; }, openFriend: friend => { openedFriend = friend.id; },
+  }, NOW);
+  const serverButtons = navigable.querySelectorAll('[aria-label^="Open "]:not([aria-label^="Open profile"])');
+  (serverButtons[14] as HTMLButtonElement).click();
+  (navigable.querySelector('[aria-label="Open profile for Bo"]') as HTMLButtonElement).click();
+  check("all shared servers remain navigable beyond the first twelve", serverButtons.length === 15 && openedServer === "14");
+  check("mutual friends open their profiles and show only known server membership", openedFriend === "300760994454437890" && navigable.textContent?.includes("Known in: Burg Bites") === true);
   const odd = renderProfile(mergeProfile(profile(), { mutual_guilds: [], mutual_friends: [], connected_accounts: [] }), noop, NOW);
   const blocks = Array.from(odd.querySelectorAll(".pf-block")) as any[];
   check("an odd last block spans the row instead of leaving a hole", blocks.length === 3 && blocks[2].classList.contains("wide") && !blocks[0].classList.contains("wide"), blocks.map((b) => b.className));
 } finally {
   (globalThis as any).document = realDocument;
 }
+
+const localEdits = new LocalMessageEdits();
+const originalMessage = { id: "one", channel_id: "channel", content: "original", author: { id: "someone-else" } };
+localEdits.save(originalMessage, "local edit");
+check("local edits apply to another user's message", localEdits.apply({ ...originalMessage }).content === "local edit");
+check("local edits leave the source message untouched", originalMessage.content === "original");
+check("local edits are scoped to their channel", localEdits.apply({ ...originalMessage, channel_id: "other" }).content === "original");
+localEdits.apply({ ...originalMessage, content: "server update" });
+localEdits.save({ ...originalMessage, content: "local edit" }, "second edit");
+check("reset restores the latest real content after repeated local edits", localEdits.reset(originalMessage)?.content === "server update");
+localEdits.save(originalMessage, "temporary");
+check("stopping restores and clears all local edits", localEdits.clear()[0].content === "original" && !localEdits.get(originalMessage));
+
+{
+  const previousDocument = (globalThis as any).document;
+  (globalThis as any).document = parseHTML("<html><body></body></html>").document;
+  try {
+    const bubble = renderChatMessage({ timestamp: "2026-10-22T12:00:00Z", attachments: [
+      { filename: "photo.gif", url: "https://cdn.discordapp.com/attachments/one/photo.gif", content_type: "image/gif" },
+      { filename: "report.pdf", url: "https://cdn.discordapp.com/attachments/one/report.pdf", size: 4096 },
+      { filename: "bad", url: "javascript:alert(1)" },
+    ], embeds: [{ type: "gifv", video: { url: "https://media.tenor.com/test.mp4" }, title: "GIF" }] }, false, "hello discord.gg/example <img src=x>");
+    check("mini-chat displays image attachments and animated GIFs", !!bubble.querySelector("img") && !!bubble.querySelector("video[loop]"));
+    check("mini-chat keeps file links and file sizes", !!bubble.querySelector('a[href$="report.pdf"]') && bubble.textContent?.includes("4 KB") === true);
+    check("mini-chat displays bare Discord invites as cards", bubble.querySelector(".qr-invite")?.getAttribute("href") === "https://discord.gg/example");
+    check("mini-chat displays an exact message timestamp", bubble.querySelector("time")?.getAttribute("datetime") === "2026-10-22T12:00:00.000Z");
+    check("mini-chat rejects executable attachment URLs and treats message HTML as text", !bubble.querySelector('a[href^="javascript:"]') && bubble.querySelectorAll("img").length === 1 && bubble.textContent?.includes("<img src=x>") === true);
+    const spoiler = renderChatMessage({ attachments: [{ filename: "SPOILER_hidden.png", url: "https://cdn.discordapp.com/attachments/one/hidden.png" }] }, true, "");
+    check("mini-chat hides spoiler previews until requested", !spoiler.querySelector("img") && !!spoiler.querySelector("button"));
+    spoiler.querySelector("button")!.click();
+    check("mini-chat reveals spoiler previews on click", !!spoiler.querySelector("img"));
+    check("mini-chat can recover message time from a snowflake", !!messageDate({ id: "300760994454437890" }));
+  } finally { (globalThis as any).document = previousDocument; }
+}
+
+for (const [name, p] of Object.entries(palettes)) {
+  for (const text of [p.text, p.muted, p.faint]) {
+    check(`${name} palette text meets 4.5:1 on its raised surface`, contrast(text, p.raised) >= 4.5, contrast(text, p.raised));
+  }
+  check(`${name} palette action text meets 4.5:1`, contrast(p.onAccent, p.accent) >= 4.5, contrast(p.onAccent, p.accent));
+}
+check("dragged message bubbles remain inside a resized window", JSON.stringify(clampBubble(2000, -999, 400, 300)) === JSON.stringify({ x: 336, y: 52 }));
+check("invalid saved message-bubble coordinates get safe defaults", Number.isFinite(clampBubble(NaN, NaN, 400, 300).x));
+const loadedCounts = countLoadedMessages("target", [{ id: "g1", name: "One" }, { id: "g2", name: "Two" }], [{ id: "c1", guild_id: "g1" }, { id: "c1", guild_id: "g1" }, { id: "c2", guild_id: "g2" }], id => id === "c1" ? [{ id: "m1", author: { id: "target" } }, { id: "m1", author: { id: "target" } }, { id: "m2", author: { id: "other" } }] : null);
+check("loaded-message counts deduplicate messages and keep unknown coverage", loadedCounts.total === 1 && loadedCounts.servers[0].channels === 1 && loadedCounts.servers[1].channels === 0);
+check("presentation notifications hide both author and message text", notificationContent("Private author", "Private message", true).title === "XRay" && !notificationContent("Private author", "Private message", true).body.includes("Private"));
+const normalizedIntel = parseLocalReport(JSON.stringify([{ account: "authorized", ip_address: "192.0.2.1" }]), "IntelX", "300760994454437890");
+check("authorized report imports preserve all supplied fields without remote lookup", normalizedIntel.records[0].fields.length === 2 && normalizedIntel.metadata.importedAt === true);
+let mismatchedImportRejected = false;
+try { parseLocalReport(JSON.stringify({ metadata: { query: "300760994454437890" }, records: [] }), "Reports", "300760994454437891"); } catch { mismatchedImportRejected = true; }
+check("report imports reject a mismatched subject", mismatchedImportRejected);
+const inertExport = `<html><img src="https://untrusted.example/tracker"><script>throw new Error('never run')</script><script id="oathnet-report-data" type="application/json">{"metadata":{"query":"300760994454437890"},"records":[]}</script></html>`;
+check("HTML imports extract only the JSON block without creating a document or executing scripts", parseLocalReport(inertExport, "Reports", "").records.length === 0);
 
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");
 process.exit(failures ? 1 : 0);

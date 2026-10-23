@@ -4,6 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { build } from "esbuild";
+import { resolve } from "node:path";
 
 const outfile = "node_modules/.cache/xray/core.test.cjs";
 mkdirSync("node_modules/.cache/xray", { recursive: true });
@@ -33,7 +34,23 @@ await build({
 });
 
 try {
+  execFileSync(process.execPath, ["--test", "core/test/voice-zoom.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/profile-actions.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/sandbox-preview.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/share-preview.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/plugin-card.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/dropdowns.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/screenshare.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/installer.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/timestamp-plugin.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, [outfile], { stdio: ["ignore", "inherit", "inherit"] });
+  for (const [entryPoint, name] of [["core/test/reports.test.ts", "reports"], ["core/test/seasonal.test.ts", "seasonal"], ["core/test/oathnet.test.ts", "oathnet"], ["core/test/release.test.ts", "release"], ["core/test/profile-history.test.ts", "profile-history"], ["core/test/storage-chat.test.ts", "storage-chat"], ["core/test/history-storage.test.ts", "history-storage"], ["equicord/plugins/fakeDM/session.test.ts", "fakedm"], ["core/test/time.test.ts", "time"], ["core/test/profile-monitor.test.ts", "profile-monitor"]]) {
+    const testFile = `node_modules/.cache/xray/${name}.test.cjs`;
+    await build({ entryPoints: [entryPoint], outfile: testFile, bundle: true, platform: "node", format: "cjs", loader: { ".svg": "text" }, logLevel: "warning",
+      ...(["reports","oathnet","release","profile-history","storage-chat","time","profile-monitor"].includes(name) ? { banner:{js:"globalThis.window=globalThis;globalThis.document={};globalThis.addEventListener=()=>{};globalThis.removeEventListener=()=>{};"} } : {}),
+      ...(name === "history-storage" ? { banner:{js:"globalThis.window=globalThis;globalThis.document={};globalThis.addEventListener=()=>{};globalThis.removeEventListener=()=>{};const values=new Map();globalThis.localStorage={getItem:k=>values.get(k)??null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};"},plugins:[{name:"history-fixture",setup(b){b.onResolve({filter:/^\.\.\/discord$/},()=>({path:resolve("core/test/history-discord.fixture.ts")}));}}] } : {}) });
+    execFileSync(process.execPath, ["--test", testFile], { stdio: ["ignore", "inherit", "inherit"] });
+  }
 } catch {
   process.exit(1);
 }

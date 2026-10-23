@@ -39,9 +39,14 @@ check("clear empties the store", data.clear() === 1 && data.list().length === 0)
 
 // ---- over HTTP ----
 import { createServer } from "node:http";
+import {mkdtempSync,rmSync} from "node:fs";
+import {tmpdir} from "node:os";
+import {join} from "node:path";
+import {recordingStore} from "./recordings.mjs";
+const recordingsDir=mkdtempSync(join(tmpdir(),"xray-http-recordings-"));
 const liveDb = openDb(":memory:");
 const liveData = store(liveDb);
-const server = createServer(createApp(liveData));
+const server = createServer(createApp(liveData,recordingStore(recordingsDir)));
 server.listen(0, "127.0.0.1");
 await once(server, "listening");
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -80,7 +85,37 @@ await cfg("/config?ns=textReplace", { method: "PUT", headers: auth(), body: JSON
 await cfg("/clear", { method: "POST", headers: auth() });
 check("config survives a /clear of events", (await (await cfg("/config?ns=textReplace", { headers: auth() })).json()).value !== null);
 
+// ---- account documents: authentication, bounds and compare-and-swap ----
+const docPath="/documents?ns=profile-history.300760994454437890";
+check("documents require authentication",(await call(docPath)).status===401);
+check("documents reject unrelated namespaces",(await call("/documents?ns=xray",{headers:auth()})).status===400);
+check("missing documents have revision zero",(await (await call(docPath,{headers:auth()})).json()).revision===0);
+const writeDoc=(value,revision)=>call(docPath,{method:"PUT",headers:auth(),body:JSON.stringify({value,revision})});
+check("documents acknowledge a new revision",(await (await writeDoc('{"notes":"saved"}',0)).json()).revision===1);
+check("stale document writes are rejected",(await writeDoc("stale",0)).status===409);
+check("stale writes preserve the newer value",(await (await call(docPath,{headers:auth()})).json()).value==='{"notes":"saved"}');
+check("current revision can update",(await (await writeDoc("updated",1)).json()).revision===2);
+check("documents reject invalid shapes",(await writeDoc({},2)).status===400);
+check("documents reject negative revisions",(await writeDoc("bad",-1)).status===400);
+check("documents reject oversized values",(await writeDoc("x".repeat(2_000_001),2)).status===400);
+check("documents reject oversized requests",(await writeDoc("x".repeat(2_600_000),2)).status===413);
+await call("/clear",{method:"POST",headers:auth()});
+check("clearing logs does not remove account documents",(await (await call(docPath,{headers:auth()})).json()).revision===2);
+check("other account documents remain separate",(await (await call("/documents?ns=profile-history.300760994454437891",{headers:auth()})).json()).value===null);
+
+const record=payload=>call("/recordings",{method:"POST",headers:auth(),body:JSON.stringify(payload)});
+check("recording routes require authentication",(await call("/recordings",{method:"POST",body:'{"action":"list"}'})).status===401);
+check("recording start requires consent",(await record({action:"start"})).status===400);
+const recording=await (await record({action:"start",consent:true})).json();
+check("recording route refuses unknown operations",(await record({action:"__proto__"})).status===400);
+check("recording chunks are accepted",(await record({action:"chunk",id:recording.id,index:0,data:Buffer.from("synthetic test bytes").toString("base64")})).status===200);
+check("recording route finalizes audio",(await (await record({action:"finish",id:recording.id})).json()).complete===true);
+check("recording route reads exact audio",Buffer.from((await (await record({action:"read",id:recording.id})).json()).data,"base64").toString()==="synthetic test bytes");
+const monitorPath="/documents?ns=server-monitors.300760994454437890";
+check("monitor namespace is supported",(await call(monitorPath,{method:"PUT",headers:auth(),body:JSON.stringify({value:'{"version":1,"servers":[]}',revision:0})})).status===200);
+check("monitor namespace honors stale revisions",(await call(monitorPath,{method:"PUT",headers:auth(),body:JSON.stringify({value:"stale",revision:0})})).status===409);
 server.close();
+rmSync(recordingsDir,{recursive:true,force:true});
 liveDb.close();
 db.close();
 console.log(failures ? `\n${failures} FAILED` : "\nall passed");

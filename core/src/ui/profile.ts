@@ -1,3 +1,4 @@
+import { formatDateTime } from "../time";
 /**
  * The extended profile: a sheet with more about someone than Discord's own
  * profile shows at once. Opened from a person's right-click menu ("Profile
@@ -17,10 +18,20 @@
  *   3. renderProfile(): builds the sheet. Nothing here parses HTML; all
  *      text goes in as text.
  */
-import { displayName, http, privateChannelActions, safeImage, snowflakeDate, stores } from "../discord";
+import { displayName, http, navigate, onStoresChanged, privateChannelActions, safeImage, snowflakeDate, stores } from "../discord";
 import { warn } from "../env";
-import { copyText, showSheet, closeDialog } from "./dialog";
+import { copyText, showSheet, closeDialog, showDialog } from "./dialog";
 import { h } from "./dom";
+import { oathnetSection } from "./oathnet";
+import { availableMessages } from "./messageBrowser";
+import { reportsFor } from "./reportCache";
+import { renderImportedReport } from "./importedReport";
+import { discordDate, memberJoinedAt } from "./memberDates";
+import { profileJournal } from "./profileJournal";
+import { observeProfileResponse } from "../history";
+import { onAction } from "../api/flux";
+import { linkedText, connectionUrl } from "./reportText";
+import { reportPhoto } from "./importedReport";
 
 export type Presence = "online" | "idle" | "dnd" | "offline" | "unknown";
 /** Where a piece of data stands: shown, still coming, or unavailable. */
@@ -44,7 +55,10 @@ export interface ProfileConnection {
   type: string;
   name: string;
   verified: boolean;
+  id?: string;
+  url?: string;
 }
+export interface ProfileFriend { id: string; name: string; avatar: string | null; knownServers: string[]; }
 
 /** Everything the sheet can show. Only id and the names are always there. */
 export interface ProfileData {
@@ -62,15 +76,23 @@ export interface ProfileData {
   presence: Presence;
   customStatus: string | null;
   badges: string[];
+  badgeIcons?: Record<string, string>;
   createdAt: Date;
   joinedServerAt: Date | null;
   boostingSince: Date | null;
   friendsSince: Date | null;
+  relationship?: string | null;
+  legacyUsername?: string | null;
+  premiumSince?: Date | null;
+  serverNickname?: string | null;
+  mutualFriendCount?: number | null;
   roles: ProfileRole[];
   /** Only set when opened from a server. */
   serverName: string | null;
+  guildId?: string | null;
   mutualServers: Loaded<ProfileServer[]>;
   mutualFriends: Loaded<string[]>;
+  mutualFriendUsers?: ProfileFriend[];
   connections: Loaded<ProfileConnection[]>;
 }
 
@@ -113,7 +135,7 @@ export function gatherProfile(user: any, guildId?: string | null): ProfileData {
     name: displayName(id, guildId),
     username: user.username ?? "unknown",
     bot: !!user.bot,
-    avatar: safely(() => safeImage(user.getAvatarURL?.(guildId ?? undefined, 160))) ?? null,
+    avatar: safely(() => safeImage(user.getAvatarURL?.(guildId ?? undefined, 160))) ?? (user.avatar ? safeImage(`https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=128`) : null),
     banner: bannerUrl(id, guildProfile?.banner ?? profile?.banner ?? user.banner),
     accentColor: hexColor(profile?.accentColor ?? user.accentColor),
     pronouns: nonEmpty(guildProfile?.pronouns) ?? nonEmpty(profile?.pronouns),
@@ -122,11 +144,17 @@ export function gatherProfile(user: any, guildId?: string | null): ProfileData {
     customStatus: nonEmpty([custom?.emoji?.name, custom?.state].filter(Boolean).join(" ")),
     badges: badgeNames(user.publicFlags ?? profile?.flags ?? 0),
     createdAt: snowflakeDate(id),
-    joinedServerAt: dateOrNull(member?.joinedAt),
-    boostingSince: dateOrNull(member?.premiumSince),
+    joinedServerAt: memberJoinedAt(member),
+    boostingSince: discordDate(member?.premiumSince ?? member?.premium_since),
     friendsSince: friends,
+    relationship: relationshipLabel(id),
+    legacyUsername: nonEmpty(profile?.legacyUsername ?? profile?.legacy_username ?? user.legacyUsername ?? user.legacy_username),
+    premiumSince: dateOrNull(profile?.premiumSince ?? profile?.premium_since),
+    serverNickname: nonEmpty(member?.nick),
+    mutualFriendCount: validCount(profile?.mutualFriendsCount ?? profile?.mutual_friends_count),
     roles,
     serverName: guildId ? (safely(() => stores.guilds?.getGuild?.(guildId)?.name) ?? null) : null,
+    guildId: guildId ?? null,
     mutualServers: { state: "loading" },
     mutualFriends: { state: "loading" },
     connections: { state: "loading" },
@@ -159,24 +187,51 @@ export function mergeProfile(data: ProfileData, body: any): ProfileData {
   const friends: string[] | null = Array.isArray(body.mutual_friends)
     ? body.mutual_friends.map((u: any) => nonEmpty(u?.global_name) ?? nonEmpty(u?.username)).filter((n: string | null): n is string => !!n)
     : null;
+  const friendUsers: ProfileFriend[] | undefined = Array.isArray(body.mutual_friends) ? body.mutual_friends.filter((u: any) => typeof u?.id === "string").map((u: any) => {
+    const cached = safely(() => stores.users?.getUser?.(u.id));
+    return { id: u.id, name: nonEmpty(u.global_name) ?? nonEmpty(u.username) ?? cached?.username ?? "Unknown user",
+      avatar: u.avatar ? safeImage(`https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=80`) : safely(() => safeImage(cached?.getAvatarURL?.(undefined, 80))) ?? null,
+      knownServers: (servers ?? []).filter(server => !!safely(() => stores.members?.getMember?.(server.id, u.id))).map(server => server.name) };
+  }) : data.mutualFriendUsers;
   const connections: ProfileConnection[] | null = Array.isArray(body.connected_accounts)
     ? body.connected_accounts
         .filter((c: any) => typeof c?.type === "string" && typeof c?.name === "string")
-        .map((c: any) => ({ type: c.type, name: c.name, verified: c.verified === true }))
+        .map((c: any) => ({ type: c.type, name: c.name, verified: c.verified === true, id: typeof c.id === "string" ? c.id : undefined, url: typeof c.url === "string" ? c.url : undefined }))
     : null;
   const badges = Array.isArray(body.badges) ? body.badges.map((b: any) => nonEmpty(b?.description)).filter(Boolean) : [];
   return {
     ...data,
+    avatar: safeImage(body.user?.avatar_url) ?? (typeof body.user?.avatar === "string" && /^[a-zA-Z0-9_]+$/.test(body.user.avatar) ? safeImage(`https://cdn.discordapp.com/avatars/${data.id}/${body.user.avatar}.png?size=128`) : null) ?? data.avatar,
     bio: nonEmpty(guildProfile.bio) ?? nonEmpty(profile.bio) ?? data.bio,
     pronouns: nonEmpty(guildProfile.pronouns) ?? nonEmpty(profile.pronouns) ?? data.pronouns,
     banner: bannerUrl(data.id, guildProfile.banner ?? profile.banner) ?? data.banner,
     accentColor: hexColor(profile.accent_color) ?? data.accentColor,
-    badges: badges.length ? (badges as string[]) : data.badges,
-    joinedServerAt: dateOrNull(member.joined_at) ?? data.joinedServerAt,
-    boostingSince: dateOrNull(member.premium_since) ?? data.boostingSince,
+    badges: Array.isArray(body.badges) ? (badges as string[]) : data.badges,
+    badgeIcons: Array.isArray(body.badges) ? Object.fromEntries(body.badges.flatMap((b: any) => {
+      const name = nonEmpty(b?.description);
+      const icon = typeof b?.icon === "string" && /^[a-zA-Z0-9_-]+$/.test(b.icon)
+        ? `https://cdn.discordapp.com/badge-icons/${b.icon}.png` : safeImage(b?.icon);
+      return name && icon ? [[name, icon]] : [];
+    })) : data.badgeIcons,
+    ...mergeProfileMember(data, member),
+    legacyUsername: nonEmpty(body.legacy_username ?? profile.legacy_username ?? body.user?.legacy_username) ?? data.legacyUsername,
+    premiumSince: body.premium_since !== undefined ? dateOrNull(body.premium_since) : profile.premium_since !== undefined ? dateOrNull(profile.premium_since) : data.premiumSince,
+    mutualFriendCount: validCount(body.mutual_friends_count) ?? (friends ? friends.length : data.mutualFriendCount),
     mutualServers: servers ? { state: "ready", value: servers } : { state: "failed" },
     mutualFriends: friends ? { state: "ready", value: friends } : { state: "failed" },
+    mutualFriendUsers: friendUsers,
     connections: connections ? { state: "ready", value: connections } : { state: "failed" },
+  };
+}
+
+/** Member dates belong to the selected server, never the account or guild creation date. */
+export function mergeProfileMember(data: ProfileData, member: any): Pick<ProfileData,"joinedServerAt" | "boostingSince" | "serverNickname"> {
+  const unchanged = { joinedServerAt:data.joinedServerAt, boostingSince:data.boostingSince, serverNickname:data.serverNickname };
+  if (!member || typeof member !== "object" || member.guild_id && data.guildId && member.guild_id !== data.guildId || member.guildId && data.guildId && member.guildId !== data.guildId || member.user?.id && member.user.id !== data.id || member.userId && member.userId !== data.id) return unchanged;
+  return {
+    joinedServerAt: (data.guildId || data.serverName) && ("joined_at" in member || "joinedAt" in member) ? memberJoinedAt(member) : data.joinedServerAt,
+    boostingSince: "premium_since" in member || "premiumSince" in member ? discordDate(member.premium_since ?? member.premiumSince) : data.boostingSince,
+    serverNickname: "nick" in member ? nonEmpty(member.nick) : data.serverNickname,
   };
 }
 
@@ -205,11 +260,26 @@ export function profileSections(data: ProfileData, now = new Date()): ProfileSec
   if (data.bio) sections.push({ id: "about", title: "About", text: data.bio });
   if (data.roles.length) sections.push({ id: "roles", title: `Roles · ${data.roles.length}`, roles: data.roles });
 
-  const facts: [string, string][] = [["Account created", dated(data.createdAt, now)]];
+  const countLabel = (loaded: Loaded<unknown[]>) => loaded.state === "ready" ? String(loaded.value.length) : loaded.state === "loading" ? "Loading…" : "Unavailable";
+  const facts: [string, string][] = [
+    ["User ID", data.id],
+    ["Account created", dated(data.createdAt, now)],
+    ["Presence", PRESENCE_LABEL[data.presence]],
+    ["Relationship", data.relationship ?? "Unavailable"],
+    ["Account type", data.bot ? "Bot" : "User"],
+    ["Legacy username", data.legacyUsername ?? "Unavailable"],
+    ["Mutual friends", data.mutualFriendCount != null ? String(data.mutualFriendCount) : countLabel(data.mutualFriends)],
+    ["Mutual servers", countLabel(data.mutualServers)],
+    ["Premium since", data.premiumSince ? dated(data.premiumSince, now) : "Unavailable"],
+    ["Server nickname", data.serverNickname ?? "Unavailable"],
+  ];
   if (data.joinedServerAt) facts.push([data.serverName ? `Joined ${data.serverName}` : "Joined this server", dated(data.joinedServerAt, now)]);
+  if (data.joinedServerAt) facts.push(["Server join timestamp", `${formatDateTime(data.joinedServerAt)} · ${Intl.DateTimeFormat().resolvedOptions().timeZone} · ${data.joinedServerAt.toISOString()}`]);
   if (data.friendsSince) facts.push(["Friends since", dated(data.friendsSince, now)]);
   if (data.boostingSince) facts.push(["Boosting since", dated(data.boostingSince, now)]);
-  sections.push({ id: "dates", title: "Dates", facts });
+  else facts.push(["Boosting since", "Unavailable"]);
+  if (!data.joinedServerAt) facts.push(["Joined this server", "Unavailable"]);
+  sections.push({ id: "dates", title: "Profile details", facts });
 
   sections.push(listSection("servers", "Mutual servers", data.mutualServers, "No servers in common.", (servers) => ({ servers })));
   sections.push(listSection("friends", "Mutual friends", data.mutualFriends, "No friends in common.", (names) => ({ names })));
@@ -260,6 +330,8 @@ export interface ProfileActions {
   close(): void;
   copyId(): void;
   message?(): void;
+  openServer?(id: string): void;
+  openFriend?(friend: ProfileFriend): void;
 }
 
 /** Builds the sheet for this data. */
@@ -269,9 +341,7 @@ export function renderProfile(data: ProfileData, actions: ProfileActions, now = 
   if (data.banner) banner.style.backgroundImage = `url("${data.banner}")`;
   else if (data.accentColor) banner.style.setProperty("--pf-tint", data.accentColor);
 
-  const avatar = data.avatar
-    ? h("img", { class: "pf-avatar", attrs: { src: data.avatar, alt: "", referrerpolicy: "no-referrer" } })
-    : h("div", { class: "pf-avatar pf-initial", attrs: { "aria-hidden": "true" }, text: initial(data.name) });
+  const avatar = reportPhoto(data.avatar,data.name,"pf-avatar pf-initial");
 
   const status = h(
     "span",
@@ -291,11 +361,12 @@ export function renderProfile(data: ProfileData, actions: ProfileActions, now = 
       h("h2", { class: "pf-name", attrs: { id: titleId } }, data.name, data.bot ? h("span", { class: "pf-tag", text: "Bot" }) : null),
       h("div", { class: "pf-handle", text: handle }),
       h("div", { class: "pf-meta" }, status, data.customStatus ? h("span", { class: "pf-custom", text: data.customStatus }) : null),
-      data.badges.length ? h("div", { class: "pf-badges" }, ...data.badges.map((b) => h("span", { class: "pf-badge", text: b }))) : null,
+      data.badges.length ? h("div", { class: "pf-badges" }, ...data.badges.map((b) => h("span", { class: "pf-badge" },
+        data.badgeIcons?.[b] ? h("img", { attrs: { src: data.badgeIcons[b], alt: "", width: "22", height: "22", referrerpolicy: "no-referrer" } }) : null, b))) : null,
     ),
   );
 
-  const blocks = profileSections(data, now).map(renderSection);
+  const blocks = profileSections(data, now).map(section => renderSection(section, data, actions));
   // Half-width blocks pair up; an odd one out spans the row instead of leaving a hole.
   const halves = blocks.filter((block) => !block.classList.contains("wide"));
   if (halves.length % 2 === 1) halves[halves.length - 1].classList.add("wide");
@@ -314,12 +385,12 @@ export function renderProfile(data: ProfileData, actions: ProfileActions, now = 
   return h("div", { class: "profile", attrs: { role: "dialog", "aria-modal": "true", "aria-labelledby": titleId } }, banner, head, body, foot);
 }
 
-function renderSection(section: ProfileSection): HTMLElement {
+function renderSection(section: ProfileSection, data: ProfileData, actions: ProfileActions): HTMLElement {
   const wide = section.id === "about" || section.id === "roles";
   const block = h("section", { class: wide ? "pf-block wide" : "pf-block", attrs: { "aria-label": section.title } }, h("h3", { class: "pf-title", text: section.title }));
   switch (section.id) {
     case "about":
-      block.append(h("p", { class: "pf-bio", text: section.text }));
+      block.append(h("p", { class: "pf-bio" },linkedText(section.text)));
       break;
     case "dates":
       block.append(h("dl", { class: "pf-facts" }, ...section.facts.flatMap(([label, value]) => [h("dt", { text: label }), h("dd", { text: value })])));
@@ -338,26 +409,33 @@ function renderSection(section: ProfileSection): HTMLElement {
       );
       break;
     case "servers":
+      {
+      const serverRow = (server: ProfileServer) => {
+        const row = h("li", { class: "pf-item" });
+        const contents = [server.icon ? h("img", { class: "pf-icon", attrs: { src: server.icon, alt: "", referrerpolicy: "no-referrer", loading: "lazy" } }) : h("span", { class: "pf-icon pf-initial", text: initial(server.name) }),
+          h("span", { class: "pf-item-text" }, h("span", { class: "pf-item-name", text: server.name }), server.nick ? h("span", { class: "pf-item-sub", text: `as ${server.nick}` }) : null)];
+        row.append(actions.openServer ? h("button", { class: "pf-navigation", attrs: { type: "button", "aria-label": `Open ${server.name}` }, on: { click: () => actions.openServer!(server.id) } }, ...contents) : h("div", { class: "pf-navigation" }, ...contents));
+        return row;
+      };
+      const all = data.mutualServers.state === "ready" ? data.mutualServers.value : section.servers;
       block.append(
-        h(
-          "ul",
-          { class: "pf-list" },
-          ...section.servers.map((server) =>
-            h(
-              "li",
-              { class: "pf-item" },
-              server.icon
-                ? h("img", { class: "pf-icon", attrs: { src: server.icon, alt: "", referrerpolicy: "no-referrer" } })
-                : h("span", { class: "pf-icon pf-initial", attrs: { "aria-hidden": "true" }, text: initial(server.name) }),
-              h("span", { class: "pf-item-text" }, h("span", { class: "pf-item-name", text: server.name }), server.nick ? h("span", { class: "pf-item-sub", text: `as ${server.nick}` }) : null),
-            ),
-          ),
-        ),
+        h("ul", { class: "pf-list" }, ...section.servers.map(serverRow)),
       );
+      if (all.length > LIST_LIMIT) block.append(h("details", { class: "pf-report-details" }, h("summary", { text: `Show ${all.length - LIST_LIMIT} more shared servers` }), h("ul", { class: "pf-list" }, ...all.slice(LIST_LIMIT).map(serverRow))));
       break;
+      }
     case "friends":
-      block.append(h("ul", { class: "pf-list compact" }, ...section.names.map((name) => h("li", { class: "pf-item", text: name }))));
+      {
+      const friends = data.mutualFriendUsers;
+      if (friends?.length) {
+        const row = (friend: ProfileFriend) => h("li", { class: "pf-item" }, h("button", { class: "pf-navigation", attrs: { type: "button", "aria-label": `Open profile for ${friend.name}` }, on: { click: () => actions.openFriend?.(friend) } },
+          friend.avatar ? h("img", { class: "pf-icon", attrs: { src: friend.avatar, alt: "", loading: "lazy", referrerpolicy: "no-referrer" } }) : h("span", { class: "pf-icon pf-initial", text: initial(friend.name) }),
+          h("span", { class: "pf-item-text" }, h("span", { class: "pf-item-name", text: friend.name }), h("span", { class: "pf-item-sub", text: friend.knownServers.length ? `Known in: ${friend.knownServers.join(", ")}` : "Shared-server membership not loaded" }))));
+        block.append(h("ul", { class: "pf-list" }, ...friends.slice(0, LIST_LIMIT).map(row)));
+        if (friends.length > LIST_LIMIT) block.append(h("details", { class: "pf-report-details" }, h("summary", { text: `Show ${friends.length - LIST_LIMIT} more mutual friends` }), h("ul", { class: "pf-list" }, ...friends.slice(LIST_LIMIT).map(row))));
+      } else block.append(h("ul", { class: "pf-list compact" }, ...section.names.map((name) => h("li", { class: "pf-item", text: name }))));
       break;
+      }
     case "connections":
       block.append(
         h(
@@ -367,7 +445,7 @@ function renderSection(section: ProfileSection): HTMLElement {
             h(
               "li",
               { class: "pf-item" },
-              h("span", { class: "pf-item-text" }, h("span", { class: "pf-item-name", text: c.name }), h("span", { class: "pf-item-sub", text: CONNECTION_NAMES[c.type] ?? c.type })),
+              h("span", { class: "pf-item-text" }, connectionUrl(c) ? h("a", { class: "pf-item-name",attrs:{href:connectionUrl(c)!,target:"_blank",rel:"noopener noreferrer"}, text: c.name }) : h("span", { class: "pf-item-name", text: c.name }), h("span", { class: "pf-item-sub", text: CONNECTION_NAMES[c.type] ?? c.type })),
               c.verified ? h("span", { class: "pf-verified", text: "Verified" }) : null,
             ),
           ),
@@ -383,26 +461,72 @@ function renderSection(section: ProfileSection): HTMLElement {
 
 /** Opens the sheet for this person, then fills in what Discord's profile request adds. */
 export function showProfile(user: any, guildId?: string | null): void {
+  if (typeof user === "string" && /^\d{14,20}$/.test(user)) user = stores.users?.getUser?.(user) ?? {id:user,username:"User"};
   if (!user?.id) return;
+  // A popout can omit guildId even when opened from a server message.
+  if (!guildId) {
+    const selected = safely(() => stores.selectedChannel?.getChannelId?.());
+    const context = selected ? safely(() => stores.channels?.getChannel?.(selected)?.guild_id) : null;
+    if (context) guildId = context;
+  }
   let data = gatherProfile(user, guildId);
   let sheet: HTMLElement | undefined;
   let open = true;
+  const oathnet = oathnetSection(user.id);
+  const journal = profileJournal(data);
+  const counts = h("section", { class: "pf-block wide", attrs: { "aria-label": "Loaded-message counts" } });
+  counts.hidden = true;
   const actions: ProfileActions = {
     close: () => closeDialog(),
     copyId: () => copyText(user.id),
+    openServer: id => {
+      if (!stores.guilds?.getGuild?.(id)) { showDialog({ title: "Server unavailable", body: "This server is not available in the current account. XRay cannot open a server you do not have access to.", code: id }); return; }
+      closeDialog(); navigate(`/channels/${id}`);
+    },
+    openFriend: friend => showProfile(stores.users?.getUser?.(friend.id) ?? { id: friend.id, username: friend.name, getAvatarURL: () => friend.avatar }, guildId),
     message: user.bot ? undefined : () => {
       closeDialog();
       privateChannelActions()?.openPrivateChannel?.(user.id);
     },
   };
   const draw = () => {
+    const active = (sheet?.getRootNode() as ShadowRoot | undefined)?.activeElement;
+    const keepFocus = active instanceof HTMLElement && journal.element.contains(active) ? active : null;
     const next = renderProfile(data, actions);
+    journal.update(data);
+    next.querySelector(".pf-body")?.prepend(journal.element,oathnet.element);
+    if (data.mutualServers.state === "ready" && data.mutualServers.value.length) {
+      const select = h("select",{class:"dialog-input",attrs:{"aria-label":"Profile server context"}},h("option",{attrs:{value:""},text:"Choose a shared server"}),...data.mutualServers.value.map(server=>h("option",{attrs:{value:server.id},text:server.name})));
+      select.value=guildId ?? "";
+      select.addEventListener("change",()=>{if(select.value) showProfile(user,select.value);});
+      next.querySelector(".pf-body")?.prepend(h("section",{class:"pf-block wide pf-server-context"},h("span",{class:"pf-title",text:"Server context"}),select,h("span",{class:"pf-note",text:"Join dates, roles and nicknames belong to this server."})));
+    }
+    next.querySelector(".pf-body")?.append(counts);
+    const countButton = h("button", { class:"btn ghost", attrs:{type:"button"},text:"Browse available messages",on:{click:()=>{counts.hidden=false;try{counts.replaceChildren(availableMessages(data.id));}catch{counts.replaceChildren(h("p",{class:"pf-note",text:"Message stores are unavailable. Open a conversation and try again."}));}counts.scrollIntoView({block:"nearest"});}}});
+    const linkedReports=reportsFor(data.id);
+    if(linkedReports.length){const section=h("section",{class:"pf-block wide"},h("h3",{class:"pf-title",text:"Saved results matching this profile query"}),h("p",{class:"pf-note",text:"Associated by the supplied/query subject ID. Provider matches are not independently verified identities."}));for(const report of linkedReports)section.append(renderImportedReport(report,data.id,data.avatar));next.querySelector(".pf-body")?.append(section);}
+    next.querySelector(".pf-foot .pf-spacer")?.after(countButton);
+    const reportButton = h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Oathnet report", on: { click: () => {
+      oathnet.element.scrollIntoView({ block: "start" });
+      oathnet.element.querySelector<HTMLButtonElement>("button")?.focus();
+    } } });
+    next.querySelector(".pf-foot .pf-spacer")?.after(reportButton);
     if (sheet) sheet.replaceWith(next);
     sheet = next;
+    if (keepFocus) keepFocus.focus({preventScroll:true});
   };
   draw();
-  showSheet(sheet!, () => (open = false));
+  let stopMembers = () => {};
+  let stopLogout = () => {};
+  showSheet(sheet!, () => { open = false; oathnet.close(); journal.close(); stopMembers(); stopLogout(); });
+  stopLogout = onAction("LOGOUT",closeDialog);
   sheet!.querySelector<HTMLButtonElement>(".pf-close")?.focus();
+  if (guildId) stopMembers = onStoresChanged([stores.members],()=>{
+    if (!open) return;
+    const member = safely(()=>stores.members?.getMember?.(guildId,user.id));
+    const next = mergeProfileMember(data,member);
+    if (next.joinedServerAt?.getTime() !== data.joinedServerAt?.getTime() || next.boostingSince?.getTime() !== data.boostingSince?.getTime() || next.serverNickname !== data.serverNickname) { data={...data,...next}; draw(); }
+  });
 
   const client = http();
   if (!client?.get) {
@@ -410,10 +534,13 @@ export function showProfile(user: any, guildId?: string | null): void {
     draw();
     return;
   }
-  Promise.resolve(
-    client.get({ url: `/users/${user.id}/profile`, query: { with_mutual_guilds: true, with_mutual_friends: true, ...(guildId ? { guild_id: guildId } : {}) } }),
-  )
-    .then((response: any) => (data = mergeProfile(data, response?.body)))
+  // One explicit member read for the selected server fills dates missing in the cache.
+  if (guildId) void Promise.resolve().then(()=>client.get({url:`/guilds/${guildId}/members/${user.id}`})).then((response:any)=>{
+    if (!open) return;
+    data={...data,...mergeProfileMember(data,{...response?.body,guild_id:response?.body?.guild_id ?? guildId})}; draw();
+  }).catch(()=>{ /* The profile keeps cached/returned data; lack of access is not a date. */ });
+  Promise.resolve().then(()=>client.get({ url: `/users/${user.id}/profile`, query: { with_mutual_guilds: true, with_mutual_friends: true, ...(guildId ? { guild_id: guildId } : {}) } }))
+    .then((response: any) => { if (!open) return; data = mergeProfile(data, response?.body); observeProfileResponse(user.id,response?.body); })
     .catch((err: unknown) => {
       warn("couldn't load a profile", err);
       data = markFailed(data);
@@ -422,9 +549,10 @@ export function showProfile(user: any, guildId?: string | null): void {
       if (!open) return;
       // Redrawing replaces the buttons, so keep keyboard focus inside the sheet.
       const root = sheet?.getRootNode() as Document | ShadowRoot | undefined;
-      const hadFocus = !!root && !!sheet?.contains(root.activeElement);
+      const focused = root?.activeElement;
+      const hadFocus = !!root && !!sheet?.contains(focused ?? null);
       draw();
-      if (hadFocus) sheet!.querySelector<HTMLButtonElement>(".pf-close")?.focus();
+      if (hadFocus) (focused instanceof HTMLElement && sheet!.contains(focused) ? focused : sheet!.querySelector<HTMLButtonElement>(".pf-close"))?.focus({preventScroll:true});
     });
 }
 
@@ -443,9 +571,7 @@ function nonEmpty(value: unknown): string | null {
 }
 
 function dateOrNull(value: unknown): Date | null {
-  if (value == null || value === "") return null;
-  const date = new Date(value as string);
-  return Number.isNaN(date.getTime()) ? null : date;
+  return discordDate(value);
 }
 
 function hexColor(value: unknown): string | null {
@@ -471,6 +597,17 @@ const FRIEND = 1;
 function friendsSinceDate(id: string): Date | null {
   if (safely(() => stores.relationships?.getRelationshipType?.(id)) !== FRIEND) return null;
   return dateOrNull(safely(() => stores.relationships?.getSince?.(id)));
+}
+
+function validCount(value: unknown): number | null {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
+}
+
+function relationshipLabel(id: string): string | null {
+  if (id === safely(() => stores.users?.getCurrentUser?.()?.id)) return "You";
+  if (safely(() => stores.relationships?.isIgnored?.(id))) return "Ignored";
+  const type = safely(() => stores.relationships?.getRelationshipType?.(id));
+  return ({ 0: "No relationship", 1: "Friend", 2: "Blocked", 3: "Incoming friend request", 4: "Outgoing friend request" } as Record<number, string>)[type as number] ?? null;
 }
 
 function initial(name: string): string {

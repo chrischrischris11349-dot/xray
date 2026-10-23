@@ -12,6 +12,7 @@
  * still works because the browser's default action isn't cancelled.
  */
 import { css } from "./styles";
+import { installClipboard } from "./clipboard";
 
 type KeyHandler = (event: KeyboardEvent) => boolean;
 
@@ -25,6 +26,7 @@ export function uiRoot(): ShadowRoot {
   if (root) return root;
   host = document.createElement("xray-root");
   root = host.attachShadow({ mode: "closed" });
+  installClipboard(root);
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(css);
   root.adoptedStyleSheets = [sheet];
@@ -41,8 +43,8 @@ export function fromXray(event: Event): boolean {
  * Registers a key handler. Return true to claim the key: Discord won't see it
  * and its default is cancelled. Returns a function that removes the handler.
  */
-export function onKey(handler: KeyHandler): () => void {
-  keyHandlers.push(handler);
+export function onKey(handler: KeyHandler, first = false): () => void {
+  if(first)keyHandlers.unshift(handler);else keyHandlers.push(handler);
   return () => remove(keyHandlers, handler);
 }
 

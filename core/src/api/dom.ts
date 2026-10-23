@@ -5,6 +5,7 @@
  * runs while some plugin is watching.
  */
 import { warn } from "../env";
+import { addedElementRoots } from "./addedElements";
 
 /** Adds CSS to Discord's page. Returns a function that removes it. */
 export function addStyle(css: string): () => void {
@@ -41,7 +42,9 @@ function startObserver(): void {
   const begin = () => {
     if (observer || !watchers.size) return;
     observer = new MutationObserver((records) => {
-      for (const record of records) record.addedNodes.forEach(check);
+      const added: Element[] = [];
+      for (const record of records) for (const node of record.addedNodes) if (node instanceof Element) added.push(node);
+      addedElementRoots(added).forEach(check);
     });
     observer.observe(document.body, { childList: true, subtree: true });
     // Elements that arrived before <body> was ready to watch.

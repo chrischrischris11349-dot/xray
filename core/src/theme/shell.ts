@@ -20,6 +20,7 @@
  * and only small menus use backdrop blur, so scrolling stays cheap at 240 Hz.
  */
 import { accent, edge, mist, motion, radius, space, type } from "./tokens";
+import { discordDropdownCss } from "../ui/dropdownStyles";
 
 const MARK =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='2' width='20' height='20' rx='6' fill='%23EDE9E2'/%3E%3Cpath d='M8.5 8.5l7 7M15.5 8.5l-7 7' fill='none' stroke='%231B1206' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E";
@@ -67,10 +68,10 @@ html.xray-obsidian {
     position: relative !important;
     background: transparent !important;
     /* Room at the right for xray's own window buttons (frame.ts). */
-    padding-inline: 0 128px !important;
+    padding-inline: 0 168px !important;
   }
   /* With the title-bar voice controls on, room for them too. */
-  &[data-xray-vbar] [class*="base_"] > [class^="bar_"] { padding-inline-end: 248px !important; }
+  &[data-xray-vbar]:not([data-xray-presentation]) [class*="base_"] > [class^="bar_"] { padding-inline-end: 288px !important; }
   [class*="base_"] > [class^="bar_"]::before {
     content: "xray";
     position: absolute;
@@ -121,7 +122,7 @@ html.xray-obsidian {
     width: 64px !important;
     margin: 0 var(--xr-gap) calc(52px + var(--xr-gap) * 2) var(--xr-gap) !important;
     border-radius: var(--xr-radius) !important;
-    background: ${mist.m1} !important;
+    background: var(--xr-side) !important;
     box-shadow: var(--xr-edge-line) !important;
   }
   /* Center each icon in the narrowed dock (the selection edge stays pinned at the left). */
@@ -163,7 +164,7 @@ html.xray-obsidian {
     overflow: hidden !important;
     border: 0 !important;
     border-radius: var(--xr-radius) !important;
-    background: ${mist.m1} !important;
+    background: var(--xr-side) !important;
     box-shadow: var(--xr-edge-line), 0 10px 30px rgba(0, 0, 0, 0.28) !important;
   }
   [class*="sidebar_"] + [class*="page_"] {
@@ -171,7 +172,7 @@ html.xray-obsidian {
     overflow: hidden !important;
     border: 0 !important;
     border-radius: var(--xr-radius) !important;
-    background: ${mist.m2} !important;
+    background: var(--xr-chat) !important;
     box-shadow: var(--xr-edge-line), 0 14px 40px rgba(0, 0, 0, 0.32) !important;
   }
   /* Your account: a block under the dock and the channel list. */
@@ -180,7 +181,7 @@ html.xray-obsidian {
     right: var(--xr-gap) !important;
     bottom: var(--xr-gap) !important;
     border-radius: var(--xr-radius) !important;
-    background: ${mist.m1} !important;
+    background: var(--xr-side) !important;
     box-shadow: inset 0 0 0 1px ${edge.strong}, 0 10px 28px rgba(0, 0, 0, 0.3) !important;
   }
 
@@ -243,9 +244,8 @@ html.xray-obsidian {
   [class*="messageListItem_"] [class*="messageContent_"] { line-height: 1.5; }
   /* Your own messages carry the oak edge (marked by ownMessages.ts). */
   [data-xray-mine] [class*="messageContent_"]:not(:empty) {
-    margin-left: -12px;
-    padding-left: 10px;
-    border-left: 2px solid var(--xr-pill);
+    border-left: 0;
+    text-decoration-color: var(--xr-pill);
   }
   [class*="messageListItem_"] > [class*="message_"]:hover { background: var(--message-background-hover) !important; }
   [class*="messageListItem_"] h3 [class*="username_"] { font-weight: ${type.bold} !important; }
@@ -348,4 +348,4 @@ html.xray-obsidian {
 @media (prefers-reduced-transparency: reduce) {
   html.xray-obsidian [class*="menu_"][role="menu"] { background: ${mist.m3} !important; backdrop-filter: none; }
 }
-`;
+` + discordDropdownCss;

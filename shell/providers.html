@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>XRay · Provider keys</title><style>
+:root{color-scheme:dark;font:14px "Segoe UI",sans-serif;background:#111214;color:#eff0f2}body{margin:28px}h1{font-size:23px;margin-bottom:8px}p{color:#a6a9af;line-height:1.5}label{display:block;margin-top:19px;font-weight:600}input,select,button{box-sizing:border-box;width:100%;height:39px;border:1px solid #414349;border-radius:8px;background:#202226;color:inherit;padding:0 12px;margin-top:8px;font:inherit}button{cursor:pointer;background:#e5e6e9;color:#111;font-weight:600}.buttons{display:flex;gap:10px}.buttons button:last-child{background:#282a30;color:#eee}#status{min-height:42px;white-space:pre-wrap;font-size:13px}small{color:#a6a9af}</style></head><body>
+<h1>Provider keys</h1><p>Stored with Windows encryption for this Windows account. Keys stay outside Discord, settings sync and shared installers.</p>
+<label for="provider">Provider</label><select id="provider"><option value="oathnet">Oathnet</option><option value="snusbase">Snusbase</option><option value="intelx">IntelX</option></select>
+<label for="key">API key</label><input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste a key to replace it"><small>Existing keys are never displayed.</small>
+<label for="host">IntelX API instance</label><select id="host"><option value="2.intelx.io">Paid · 2.intelx.io</option><option value="free.intelx.io">Free · free.intelx.io</option></select>
+<p id="configured"></p><div class="buttons"><button id="save">Save key</button><button id="remove">Remove key</button></div><p id="status" role="status"></p>
+<script>
+const el=id=>document.getElementById(id);const invoke=(args)=>window.__TAURI_INTERNALS__.invoke('provider_keys',args);
+async function refresh(){const data=await invoke({provider:null,key:null,host:null});el('configured').textContent=['oathnet','snusbase','intelx'].map(p=>p+': '+(data[p]?'configured':'not configured')).join(' · ');el('host').value=data.intelxHost;}
+el('save').onclick=async()=>{try{if(!el('key').value.trim())throw Error('Paste a key first.');await invoke({provider:el('provider').value,key:el('key').value,host:el('host').value});el('key').value='';el('status').textContent='Saved with Windows encryption.';await refresh();}catch(e){el('status').textContent=String(e);}};
+el('remove').onclick=async()=>{try{await invoke({provider:el('provider').value,key:'',host:null});el('key').value='';el('status').textContent='Key removed.';await refresh();}catch(e){el('status').textContent=String(e);}};
+refresh().catch(e=>el('status').textContent=String(e));
+</script></body></html>

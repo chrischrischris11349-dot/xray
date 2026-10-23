@@ -26,25 +26,40 @@ const accountDetails = definePlugin({
   start(ctx) {
     ctx.menu("user-context", (items, { user, guildId }) => {
       if (!user) return;
-      items.push(menu.item({ id: "account-details", label: "Profile details", action: () => showProfile(user, guildId) }));
+      items.push(menu.item({ id: "account-details", label: "Open profile report", action: () => showProfile(user, guildId) }));
     });
     // A Details button beside Add Friend and More on Discord's profile popout and full profile.
     if (typeof ctx.watch !== "function") return;
-    ctx.watch('[class*="bannerButton_"]', (existing) => {
-      // Each button sits in its own wrapper; the row is the first ancestor holding more than one.
+    ctx.css(`.xray-details { position:relative!important; inset:auto!important; transform:none!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; align-self:center!important; flex:0 0 auto!important; box-sizing:border-box!important; width:var(--xray-profile-action-width)!important; min-width:var(--xray-profile-action-width)!important; height:var(--xray-profile-action-height)!important; margin:0!important; padding:0!important; line-height:1!important; cursor:pointer; }
+      .xray-details > svg { display:block; flex:none; width:18px; height:18px; }
+      .xray-details:focus-visible { outline:2px solid var(--text-normal); outline-offset:2px; }`);
+    ctx.watch('[class*="bannerButton_"], [class*="userProfile"] button[aria-label*="More"], [class*="userPopout"] button[aria-label*="More"], [class*="profile"] [role="button"][aria-label*="More"]', (existing) => {
+      if (existing.closest(".xray-details")) return;
+      const actionSelector = 'button, [role="button"], [class*="bannerButton_"]';
+      // Tooltip wrappers can surround More. Find distinct action branches,
+      // rather than inserting another control inside More's own wrapper.
       let row = existing.parentElement;
-      while (row && row.querySelectorAll('[class*="bannerButton_"]').length < 2) row = row.parentElement;
-      if (!row || row.querySelector(".xray-details")) return;
+      let depth = 0;
+      for (; row && depth < 6; depth++, row = row.parentElement) {
+        const branches = [...row.children].filter(child => !child.classList.contains("xray-details") && (child.matches(actionSelector) || child.querySelector(actionSelector)));
+        if (branches.length >= 2) break;
+      }
+      if (!row || depth === 6 || row.querySelector(".xray-details")) return;
       const { user, guildId } = aboutElement(row);
       if (!user) return;
-      const button = document.createElement("div");
+      const button = document.createElement("button");
+      button.type = "button";
       // Discord's own class, so it looks and sizes like its neighbours.
       button.className = `${existing.className} xray-details`;
       button.setAttribute("role", "button");
       button.setAttribute("tabindex", "0");
-      button.setAttribute("aria-label", "Profile details");
-      button.title = "Profile details";
+      button.setAttribute("aria-label", "Open profile report");
+      button.title = "Open profile report";
       button.innerHTML = DETAILS_ICON;
+      const bounds = existing.getBoundingClientRect();
+      const size = (value: number) => `${value >= 24 && value <= 48 ? value : 32}px`;
+      button.style.setProperty("--xray-profile-action-width", size(bounds.width));
+      button.style.setProperty("--xray-profile-action-height", size(bounds.height));
       const open = (event: Event) => {
         event.stopPropagation();
         // Close Discord's popout first (it closes on Escape), so the sheet isn't stacked on it.
@@ -58,15 +73,12 @@ const accountDetails = definePlugin({
           open(event);
         }
       });
-      // Wrapped like its neighbours (each sits in its own element) so spacing matches; placed just before More.
-      let node: Element = button;
-      if (existing.parentElement !== row) {
-        node = document.createElement(existing.parentElement!.tagName);
-        node.append(button);
-      }
-      row.insertBefore(node, row.lastElementChild);
+      // Insert at the action-row level, just before More (including its tooltip wrapper).
+      let before: Element = row.querySelector('[aria-label*="More"]') ?? existing;
+      while (before.parentElement && before.parentElement !== row) before = before.parentElement;
+      row.insertBefore(button, before);
     });
-    ctx.onStop(() => document.querySelectorAll(".xray-details").forEach((el) => (el.parentElement?.childElementCount === 1 ? el.parentElement : el).remove()));
+    ctx.onStop(() => document.querySelectorAll(".xray-details").forEach(el => el.remove()));
   },
 });
 

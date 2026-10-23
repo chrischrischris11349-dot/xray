@@ -1,3 +1,4 @@
+import { formatDateTime } from "../time";
 /**
  * Message helpers: quiet pings from chosen people, send a message again,
  * schedule one for later, find the replies to a message, and turn a message
@@ -138,13 +139,13 @@ const scheduledMessages = definePlugin({
       const item: Scheduled = { channelId, content, at: at.getTime() };
       setQueue([...queue(), item]);
       arm(item);
-      showDialog({ title: "Scheduled", body: `It'll be sent ${at.toLocaleString()}, as long as xray is open.` });
+      showDialog({ title: "Scheduled", body: `It'll be sent ${formatDateTime(at)}, as long as xray is open.` });
     });
     ctx.command("Show scheduled messages", "What's waiting to be sent", () => {
       const list = queue().sort((a, b) => a.at - b.at);
       showDialog({
         title: "Scheduled messages",
-        body: list.length ? list.map((q) => [new Date(q.at).toLocaleString(), q.content.slice(0, 120)] as [string, string]) : "Nothing scheduled.",
+        body: list.length ? list.map((q) => [formatDateTime(new Date(q.at)), q.content.slice(0, 120)] as [string, string]) : "Nothing scheduled.",
         actions: list.length
           ? [{ label: "Cancel all", danger: true, run: () => { timers.forEach((timer) => clearTimeout(timer)); timers.clear(); setQueue([]); } }, { label: "Close", primary: true }]
           : undefined,

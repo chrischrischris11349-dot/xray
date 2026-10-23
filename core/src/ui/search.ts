@@ -19,6 +19,10 @@ function normalize(text: string): string {
 export function score(query: string, text: string): number {
   const q = normalize(query.trim());
   const t = normalize(text);
+  return normalizedScore(q, t);
+}
+
+function normalizedScore(q: string, t: string): number {
   if (!q) return 1;
   if (t === q) return 100;
   if (t.startsWith(q)) return 80 - Math.min(t.length - q.length, 30) / 3;
@@ -30,11 +34,23 @@ export function score(query: string, text: string): number {
   return next === q.length ? 15 : 0;
 }
 
+const prepared = new WeakMap<Searchable, { title: string; keywords: string | undefined; normalizedTitle: string; normalizedKeywords: string }>();
+function prepare(item: Searchable) {
+  let value = prepared.get(item);
+  if (!value || value.title !== item.title || value.keywords !== item.keywords) {
+    value = { title: item.title, keywords: item.keywords, normalizedTitle: normalize(item.title), normalizedKeywords: item.keywords ? normalize(item.keywords) : "" };
+    prepared.set(item, value);
+  }
+  return value;
+}
+
 /** The best `limit` matches, best first. The title counts fully, keywords count less. */
 export function rank<T extends Searchable>(query: string, items: readonly T[], limit: number): T[] {
+  const normalizedQuery = normalize(query.trim());
   const scored: { item: T; points: number }[] = [];
   for (const item of items) {
-    const points = Math.max(score(query, item.title), item.keywords ? score(query, item.keywords) * 0.6 : 0);
+    const cached = prepare(item);
+    const points = Math.max(normalizedScore(normalizedQuery, cached.normalizedTitle), item.keywords ? normalizedScore(normalizedQuery, cached.normalizedKeywords) * 0.6 : 0);
     if (points > 0) scored.push({ item, points: points + (item.boost ?? 0) });
   }
   return scored.sort((a, b) => b.points - a.points).slice(0, limit).map((entry) => entry.item);

@@ -139,8 +139,8 @@ export async function initSync(): Promise<void> {
   }
 }
 
-export function featureEnabled(id: string): boolean {
-  return saved.features?.[id] !== false;
+export function featureEnabled(id: string, defaultValue = true): boolean {
+  return saved.features?.[id] ?? defaultValue;
 }
 
 export function setFeatureEnabled(id: string, on: boolean): void {

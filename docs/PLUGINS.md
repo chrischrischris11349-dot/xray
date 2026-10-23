@@ -153,7 +153,6 @@ xray rebuilds the plugin catalogs of Vencord, Equicord and Nightcord as its own 
 | AutoReply | automated replies as you |
 | AutoResponder | automated replies as you |
 | DMBomb | spam |
-| FakeDM | fakes conversations |
 | FakeFriends | fakes friends |
 | FakeSwitcher | impersonation |
 | FloodPanel | spam |

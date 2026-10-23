@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-oathnet-lookup"
+description = "Enables the oathnet_lookup command without any pre-configured scope."
+commands.allow = ["oathnet_lookup"]
+
+[[permission]]
+identifier = "deny-oathnet-lookup"
+description = "Denies the oathnet_lookup command without any pre-configured scope."
+commands.deny = ["oathnet_lookup"]

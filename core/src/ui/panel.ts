@@ -17,6 +17,15 @@ import { type Feature, features, isFeatureOn, onFeaturesChanged, setFeature } fr
 import { mountFrame } from "./frame";
 import { pluginSection } from "./pluginList";
 import { onKey, onKeyUp, uiRoot } from "./root";
+import { appearanceControl, applyPalette, timeFormatControl } from "./appearance";
+import { mountPresentation } from "./presentation";
+import { intelligence, openIntelligence } from "./intelligence";
+import { openVoiceDiagnostics } from "./voiceDiagnostics";
+import { showScreenShareStatus } from "../plugins/screenShare";
+import { makeFloatingPanel } from "./floatingPanel";
+import { serverDataEnabled, setServerData } from "../shell/serverStorage";
+import { flushHistory } from "../history";
+import { myId } from "../discord";
 
 const LOGO = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f2f3f5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" fill="none" stroke="#0b0b0d" stroke-width="2.2" stroke-linecap="round"/></svg>`;
 const CLOSE = icon("x", 16, 1.75);
@@ -48,6 +57,7 @@ const KEY_NAMES: Record<string, string> = {
 
 let root: ShadowRoot | undefined;
 let panel: HTMLElement | undefined;
+let stopFloating: (() => void) | undefined;
 /** Saved bindings, loaded from the Rust side when the panel opens. */
 let hotkeys: Hotkeys | null = null;
 let hotkeyError = "";
@@ -57,10 +67,14 @@ let capturing: HotkeyAction | null = null;
 let pendingModifier: number | null = null;
 /** Mouse 4 and 5 also mean back and forward; the click that sets one mustn't navigate. */
 let swallowMouseUp = false;
+let storageBusy = false;
+let storageMessage: { account?: string; text: string } = { text: "" };
 
 export function mountUi(): void {
   if (root) return;
   root = uiRoot();
+  applyPalette();
+  mountPresentation();
   onKey(handleKey);
   onKeyUp(handleKeyUp);
   window.addEventListener("mousedown", onMouseDown, true);
@@ -92,6 +106,7 @@ export function openPanel(): void {
   panel = h("div", { class: "panel", attrs: { role: "dialog", "aria-label": "xray" } });
   root.append(panel);
   render();
+  stopFloating = makeFloatingPanel(panel);
   getHotkeys()
     .then((saved) => {
       hotkeys = saved;
@@ -104,6 +119,7 @@ export function openPanel(): void {
 }
 
 export function closePanel(): void {
+  stopFloating?.(); stopFloating = undefined;
   panel?.remove();
   panel = undefined;
   capturing = null;
@@ -224,10 +240,16 @@ function render(): void {
     header(),
     fakeVoice.available ? fakeDeafenCard() : null,
     themeCard(),
+    appearanceControl(),
+    timeFormatControl(),
     loggingCard(),
     syncCard(),
+    serverStorageCard(),
     features().length ? h("div", { class: "section" }, h("span", { class: "label", text: "Features" })) : null,
     features().length ? h("div", { class: "list" }, ...features().map(featureRow)) : null,
+    isFeatureOn(intelligence) ? h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Open intelligence workspace", on: { click: () => openIntelligence() } }) : null,
+    h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Check voice audio", on: { click: openVoiceDiagnostics } }),
+    h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Screen-share status", on: { click: showScreenShareStatus } }),
     h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
     hotkeyList(),
     h("div", {
@@ -251,7 +273,7 @@ function render(): void {
 function header(): HTMLElement {
   return h(
     "div",
-    { class: "head" },
+    { class: "head", attrs: { tabindex: "0", "aria-label": "Move settings panel", title: "Drag to move · resize from the bottom corner · Alt+arrows move · Alt+Shift+arrows resize" } },
     h("span", { class: "logo", trustedHtml: LOGO }),
     h("span", { class: "title", text: "xray" }),
     h("span", { class: "label", text: `v${__XRAY_VERSION__}` }),
@@ -331,7 +353,7 @@ function themeCard(): HTMLElement {
       "div",
       { class: "card-text" },
       h("div", { class: "card-title", text: "xray theme" }),
-      h("div", { class: "card-sub", text: on ? "Mist and oak: xray's own look." : "Off: Discord's own look." }),
+      h("div", { class: "card-sub", text: on ? "XRay surfaces, spacing and your selected palette." : "Off: Discord's own look." }),
     ),
     toggle(on, "xray theme", () => {
       setThemeEnabled(!on);
@@ -339,6 +361,22 @@ function themeCard(): HTMLElement {
       render();
     }),
   );
+}
+
+function serverStorageCard(): HTMLElement {
+  const on = serverDataEnabled();
+  const account = myId();
+  const button = toggle(on, "Store profile data on my server", () => {
+    if (storageBusy) return;
+    storageBusy = true; storageMessage = { account, text: "Checking storage and migrating existing records…" }; render();
+    void (async () => {
+      await flushHistory(); await setServerData(!on);
+      storageMessage = { account, text: !on ? "Server storage verified. Persistent local history and audit copies removed." : "History and audits now save on this device. The server copy is retained." };
+    })().catch(error => { storageMessage = { account, text: String((error as Error)?.message ?? error) }; }).finally(() => { storageBusy = false; render(); });
+  });
+  button.toggleAttribute("disabled", storageBusy);
+  return h("div", { class: "card" }, h("div", { class: "card-text" }, h("div", { class: "card-title", text: "Store profile data on my server" }),
+    h("div", { class: "card-sub", attrs: { role: "status" }, text: (storageMessage.account === account ? storageMessage.text : "") || (on ? "Notes, opted-in history and moderation audits save remotely. No persistent local fallback. Keep XRay open until saves finish." : "Moves notes, history and audits after a verified upload. Set sync_endpoint and sync_token in shell.json. App files and Discord caches still use disk.") })),button);
 }
 
 function hotkeyList(): HTMLElement {

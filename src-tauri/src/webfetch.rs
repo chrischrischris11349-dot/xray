@@ -116,7 +116,7 @@ fn read(response: ureq::Response, final_url: &str) -> Result<WebResponse, String
 }
 
 /// Only https, and only hosts that resolve to public addresses.
-fn check_public(url: &tauri::Url) -> Result<(), String> {
+pub(crate) fn check_public(url: &tauri::Url) -> Result<(), String> {
     if url.scheme() != "https" {
         return Err("only https is allowed".into());
     }
@@ -131,7 +131,7 @@ fn check_public(url: &tauri::Url) -> Result<(), String> {
     Ok(())
 }
 
-fn is_public(ip: IpAddr) -> bool {
+pub(crate) fn is_public(ip: IpAddr) -> bool {
     match ip {
         IpAddr::V4(v4) => !(v4.is_private() || v4.is_loopback() || v4.is_link_local() || v4.is_unspecified() || v4.is_broadcast() || v4.octets()[0] == 100 && (64..128).contains(&v4.octets()[1])),
         IpAddr::V6(v6) => {

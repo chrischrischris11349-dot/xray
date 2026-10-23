@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>XRay HTML sandbox</title><style>body{margin:0;background:#151618;color:#ddd;font:13px "Segoe UI",sans-serif}header{height:42px;box-sizing:border-box;padding:12px 16px;border-bottom:1px solid #393b40}iframe{display:block;width:100vw;height:calc(100vh - 42px);border:0;background:white}</style></head><body><header>Untrusted HTML · isolated preview · no Discord session or native permissions</header><iframe title="Sandboxed HTML preview" sandbox="" referrerpolicy="no-referrer"></iframe><script>
+const data=window.__sandboxContent??{html:'<p>Preview content unavailable.</p>',scripts:false};const frame=document.querySelector('iframe');
+frame.setAttribute('sandbox',data.scripts?'allow-scripts':'');
+const policy="default-src 'none'; style-src 'unsafe-inline' https:; img-src data: https:; font-src data: https:; script-src "+(data.scripts?"'unsafe-inline'":"'none'")+"; connect-src 'none'; form-action 'none'; base-uri https:; frame-src 'none'";
+const base=document.createElement('base');if(typeof data.baseUrl==='string'&&data.baseUrl.startsWith('https://'))base.href=data.baseUrl;
+frame.srcdoc='<meta http-equiv="Content-Security-Policy" content="'+policy+'">'+base.outerHTML+data.html;
+</script></body></html>

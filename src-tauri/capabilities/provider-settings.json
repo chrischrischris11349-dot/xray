@@ -1,0 +1,1 @@
+{"identifier":"provider-settings","windows":["provider-settings"],"permissions":["allow-provider-keys"],"description":"Bundled local provider setup can replace Windows-encrypted API keys. No remote origins are granted this capability."}

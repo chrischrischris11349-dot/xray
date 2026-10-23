@@ -1,8 +1,8 @@
 {
   "name": "xray",
   "private": true,
-  "version": "0.1.0",
-  "description": "xray — a lightweight Discord client",
+  "version": "0.5.3",
+  "description": "xray \u00e2\u20ac\u201d a lightweight Discord client",
   "type": "module",
   "scripts": {
     "core:build": "node core/build.mjs",
@@ -21,5 +21,8 @@
     "linkedom": "^0.18.5",
     "lucide-static": "^0.460.0",
     "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "exifr": "7.1.3"
   }
 }

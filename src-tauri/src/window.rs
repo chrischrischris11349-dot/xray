@@ -46,6 +46,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
     } else {
         builder.center()
     };
+    if let Some(script) = crate::installer::script(app) { builder = builder.initialization_script(script); }
     let window = builder
         .initialization_script(EQUICORD)
         .initialization_script(CORE)
@@ -67,6 +68,8 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
             NewWindowResponse::Deny
         })
         .build()?;
+    let zoom = app.state::<crate::Shell>().0.lock().map(|s| s.zoom).unwrap_or(1.0);
+    let _ = window.set_zoom(if zoom.is_finite() { zoom.clamp(0.5,2.0) } else { 1.0 });
     if offscreen {
         // Windows ignores the builder's off-screen position and cascades the
         // window onto the screen, so move it again now that it exists. This
@@ -122,4 +125,24 @@ fn open_in_browser<R: Runtime>(app: &AppHandle<R>, url: &Url) {
     if matches!(url.scheme(), "http" | "https") {
         let _ = app.opener().open_url(url.as_str(), None::<&str>);
     }
+}
+
+/// Native page zoom scales Discord and the closed-shadow UI together.
+#[tauri::command]
+pub fn change_zoom(app: AppHandle, step: i32) -> Result<f64,String> {
+    if ![-1,0,1].contains(&step) { return Err("Invalid zoom step".into()); }
+    let window=app.get_webview_window(MAIN).ok_or("Main window unavailable")?;
+    let state=app.state::<crate::Shell>();
+    let mut settings=state.0.lock().map_err(|_|"Settings unavailable")?;
+    let value=next_zoom(settings.zoom,step);
+    window.set_zoom(value).map_err(|e|e.to_string())?;
+    settings.zoom=value;crate::settings::save(&app,&settings);Ok(value)
+}
+fn next_zoom(current:f64,step:i32)->f64 {
+    if step==0 {return 1.0;}
+    let current=if current.is_finite(){current}else{1.0};
+    ((current*10.0).round()+step as f64).clamp(5.0,20.0)/10.0
+}
+#[cfg(test)] mod zoom_tests { use super::*;
+ #[test] fn zoom_limits_reset_and_invalid_saved_value(){assert_eq!(next_zoom(1.0,1),1.1);assert_eq!(next_zoom(0.5,-1),0.5);assert_eq!(next_zoom(2.0,1),2.0);assert_eq!(next_zoom(1.7,0),1.0);assert_eq!(next_zoom(f64::NAN,1),1.1);}
 }

@@ -1,0 +1,3537 @@
+{
+  "coreIds": [
+    "fakeDeafen",
+    "messageLogger",
+    "localMessageEdit",
+    "messageModeration",
+    "cleanLinks",
+    "translate",
+    "silentEdit",
+    "silentTyping",
+    "noReplyMention",
+    "silentMessages",
+    "replyKeys",
+    "messageClickActions",
+    "viewRaw",
+    "hideMessages",
+    "quickMessages",
+    "jumpToFirst",
+    "revealSpoilers",
+    "messagePeek",
+    "unsuppressEmbeds",
+    "voiceBar",
+    "screenShareCapture",
+    "webContextMenus",
+    "copyEmojiMarkdown",
+    "unitConverter",
+    "decodeBase64",
+    "exportMessage",
+    "openAllAttachments",
+    "messageColors",
+    "pinIcon",
+    "hideServers",
+    "focusMode",
+    "markdownTables",
+    "toneIndicators",
+    "contentWarning",
+    "stickerBlocker",
+    "searchTheWeb",
+    "mediaPlaybackSpeed",
+    "themeSwitchKey",
+    "scheduledMessages",
+    "findReply",
+    "silenceUsers",
+    "repeatMessages",
+    "quoter",
+    "unreadCountBadge",
+    "channelBadges",
+    "calmMode",
+    "passcodeLock",
+    "textReplace",
+    "abbreviations",
+    "autoCapitalize",
+    "noCaps",
+    "signature",
+    "sendTimestamps",
+    "splitLongMessages",
+    "unindent",
+    "normalizeMessageLinks",
+    "reverseText",
+    "ington",
+    "relationshipNotifier",
+    "keywordNotify",
+    "watchUsers",
+    "vcNarrator",
+    "streamerModeOnStream",
+    "blockKeywords",
+    "declutter",
+    "blurNsfw",
+    "noBlockedMessages",
+    "imageFilename",
+    "pictureInPicture",
+    "callTimer",
+    "keyboardSounds",
+    "noTypingAnimation",
+    "characterCounter",
+    "noPendingCount",
+    "alwaysTrust",
+    "notificationVolume",
+    "accentColor",
+    "customFont",
+    "imageQuality",
+    "replyTimestamp",
+    "typingIndicator",
+    "showMeYourName",
+    "platformIndicators",
+    "userVoiceShow",
+    "ircColors",
+    "showRolesInChat",
+    "moreUserTags",
+    "imageZoom",
+    "reverseImageSearch",
+    "copyFileContents",
+    "voiceDownload",
+    "accountDetails",
+    "quickCopy",
+    "friendsSince",
+    "timezones",
+    "viewBanners",
+    "cancelFriendRequest",
+    "serverInfo",
+    "permissionsViewer",
+    "memberCount",
+    "readAllServers",
+    "newGuildSettings",
+    "friendsOnline",
+    "blockTracking",
+    "keepCurrentChannel",
+    "recentDmSwitcher",
+    "noF1",
+    "customIdle",
+    "userLinks",
+    "consoleJanitor",
+    "anonymousUploads"
+  ],
+  "plugins": [
+    {
+      "key": "feature:quickReply",
+      "id": "quickReply",
+      "source": "Interface",
+      "name": "Mini-chat bubble",
+      "description": "Read messages, stage images and reply in the floating mini-chat.",
+      "recommended": true,
+      "minimal": true
+    },
+    {
+      "key": "feature:palette",
+      "id": "palette",
+      "source": "Interface",
+      "name": "Quick search",
+      "description": "Local Ctrl+K search for friends, channels and commands.",
+      "recommended": true,
+      "minimal": true
+    },
+    {
+      "key": "feature:intelligence",
+      "id": "intelligence",
+      "source": "Interface",
+      "name": "Intelligence workspace",
+      "description": "Authorized local report imports. Live provider searches are not configured.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:accentColor",
+      "id": "accentColor",
+      "source": "XRay",
+      "name": "Accent Color",
+      "description": "Your own color for the selection edge, your messages' edge and Discord's main buttons, in place of oak. Works with xray's theme.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:autoCapitalize",
+      "id": "autoCapitalize",
+      "source": "XRay",
+      "name": "Auto Capitalize",
+      "description": "Starts each sentence with a capital letter and fixes a lowercase “i”.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:blockTracking",
+      "id": "blockTracking",
+      "source": "XRay",
+      "name": "Block Tracking",
+      "description": "Discord's analytics and usage reports leave empty. Nothing else changes.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:calmMode",
+      "id": "calmMode",
+      "source": "XRay",
+      "name": "Calm Mode",
+      "description": "Turns on Discord's reduced motion everywhere: fewer animations, less redrawing, easier on a high-refresh screen.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:quickCopy",
+      "id": "quickCopy",
+      "source": "XRay",
+      "name": "Copy ID",
+      "description": "“Copy ID” on messages, people, channels and servers without turning on Developer Mode, plus a person's avatar link.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:declutter",
+      "id": "declutter",
+      "source": "XRay",
+      "name": "Declutter",
+      "description": "Hides Discord's shop, Nitro and Quests tabs, the gift button and other things you never click.",
+      "recommended": true,
+      "minimal": true
+    },
+    {
+      "key": "xray:fakeDeafen",
+      "id": "fakeDeafen",
+      "source": "XRay",
+      "name": "Fake Deafen",
+      "description": "A standalone toggle: appear self-deafened while keeping local audio unchanged. Never server-mutes or server-deafens you. Starts off each launch.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "xray:focusMode",
+      "id": "focusMode",
+      "source": "XRay",
+      "name": "Focus Mode",
+      "description": "Ctrl+Shift+F hides the server list and channel list, leaving just the chat. Press it again to bring them back.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:friendsOnline",
+      "id": "friendsOnline",
+      "source": "XRay",
+      "name": "Friends Online",
+      "description": "A small count under the home button of how many friends are online.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:friendsSince",
+      "id": "friendsSince",
+      "source": "XRay",
+      "name": "Friends Since",
+      "description": "Right-click a friend to see when you became friends.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:localMessageEdit",
+      "id": "localMessageEdit",
+      "source": "XRay",
+      "name": "Local Message Edit",
+      "description": "Edit any message’s text in your own view. Right-click a message to edit or reset it. Edits last for this session.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "xray:messageModeration",
+      "id": "messageModeration",
+      "source": "XRay",
+      "name": "Moderator message controls",
+      "description": "Global controls for real moderator deletion where Manage Messages allows it. Other people's text edits remain explicitly local. Starts off each launch.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "xray:openAllAttachments",
+      "id": "openAllAttachments",
+      "source": "XRay",
+      "name": "Open All Attachments",
+      "description": "Right-click a message with several files to open them all at once.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:passcodeLock",
+      "id": "passcodeLock",
+      "source": "XRay",
+      "name": "Passcode Lock",
+      "description": "Locks xray behind a passcode when it starts, after you've been away, or on Ctrl+Shift+L. Set the passcode from Ctrl+K.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:accountDetails",
+      "id": "accountDetails",
+      "source": "XRay",
+      "name": "Profile Details",
+      "description": "A fuller profile for anyone: banner, bio, status, roles, join dates, mutual servers and friends, and connections. Right-click someone, or press Details on their profile.",
+      "recommended": true,
+      "minimal": true
+    },
+    {
+      "key": "xray:replyKeys",
+      "id": "replyKeys",
+      "source": "XRay",
+      "name": "Reply Keys",
+      "description": "Ctrl+↑/↓ picks a message to reply to; Ctrl+Shift+↑/↓ picks one of yours to edit.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:exportMessage",
+      "id": "exportMessage",
+      "source": "XRay",
+      "name": "Save Message",
+      "description": "Right-click a message to save it as a text file, with who sent it and when.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:quickMessages",
+      "id": "quickMessages",
+      "source": "XRay",
+      "name": "Saved Replies",
+      "description": "Messages you send often, one search away: Ctrl+K, type part of one, Enter sends it here.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:screenShareCapture",
+      "id": "screenShareCapture",
+      "source": "XRay",
+      "name": "Screen-share capture preferences",
+      "description": "Optional frame-rate and resolution budgets, smoother-video or clearer-text hints, and an application-window picker hint. Keeps Discord's encoding and permission limits.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "xray:searchTheWeb",
+      "id": "searchTheWeb",
+      "source": "XRay",
+      "name": "Search the Web",
+      "description": "Right-click a message to search the web for it, or for the part you've selected.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:silentEdit",
+      "id": "silentEdit",
+      "source": "XRay",
+      "name": "Silent Edit & Delete",
+      "description": "Right-click your message: edit it without the “(edited)” tag, or blank it before deleting so message loggers keep nothing.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:themeSwitchKey",
+      "id": "themeSwitchKey",
+      "source": "XRay",
+      "name": "Theme Key",
+      "description": "Ctrl+Alt+T flips between xray's theme and Discord's own look.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:voiceBar",
+      "id": "voiceBar",
+      "source": "XRay",
+      "name": "Title Bar Voice Controls",
+      "description": "Mute, deafen and camera buttons in the title bar, next to the window buttons, always in reach.",
+      "recommended": true,
+      "minimal": true
+    },
+    {
+      "key": "xray:translate",
+      "id": "translate",
+      "source": "XRay",
+      "name": "Translate",
+      "description": "Right-click a message to translate it into your language.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:viewBanners",
+      "id": "viewBanners",
+      "source": "XRay",
+      "name": "View Banners",
+      "description": "Right-click someone or a server to open their banner full size.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Abbreviation",
+      "id": "Abbreviation",
+      "source": "Equicord",
+      "name": "Abbreviation",
+      "description": "Automatically replaces abbreviations with full sentences before sending the message.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AccountPanelServerProfile",
+      "id": "AccountPanelServerProfile",
+      "source": "Equicord",
+      "name": "AccountPanelServerProfile",
+      "description": "Right click your account panel in the bottom left to view your profile in the current server",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AddAttachments",
+      "id": "AddAttachments",
+      "source": "Equicord",
+      "name": "AddAttachments",
+      "description": "Allows you to add new attachments while editing messages",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AdvancedPermissions",
+      "id": "AdvancedPermissions",
+      "source": "Equicord",
+      "name": "AdvancedPermissions",
+      "description": "Show advanced permissions card by default.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AltKrispSwitch",
+      "id": "AltKrispSwitch",
+      "source": "Equicord",
+      "name": "AltKrispSwitch",
+      "description": "Makes the Noise Suppression Popout switch between None and Krisp instead of Krisp and Standard",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AlwaysAnimate",
+      "id": "AlwaysAnimate",
+      "source": "Equicord",
+      "name": "AlwaysAnimate",
+      "description": "Animates anything that can be animated",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AlwaysExpandProfiles",
+      "id": "AlwaysExpandProfiles",
+      "source": "Equicord",
+      "name": "AlwaysExpandProfiles",
+      "description": "Always expands profile popouts to the full modal",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AlwaysExpandRoles",
+      "id": "AlwaysExpandRoles",
+      "source": "Equicord",
+      "name": "AlwaysExpandRoles",
+      "description": "Always expands the role list in profile popouts",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AlwaysTrust",
+      "id": "AlwaysTrust",
+      "source": "Equicord",
+      "name": "AlwaysTrust",
+      "description": "Removes the annoying untrusted domain and suspicious file popup",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Animalese",
+      "id": "Animalese",
+      "source": "Equicord",
+      "name": "Animalese",
+      "description": "Plays animal crossing animalese for every message sent (they yap a lot)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AnonymiseFileNames",
+      "id": "AnonymiseFileNames",
+      "source": "Equicord",
+      "name": "AnonymiseFileNames",
+      "description": "Anonymise uploaded file names",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AudioLimiter",
+      "id": "AudioLimiter",
+      "source": "Equicord",
+      "name": "AudioLimiter",
+      "description": "Automatically caps the volume of other users — no more screaming or loud noises that pierce your ears.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AutoAFK",
+      "id": "AutoAFK",
+      "source": "Equicord",
+      "name": "AutoAFK",
+      "description": "Automatically switches your status to appear offline when you've been inactive, and switches it back once you're active again.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AutoJumpToMessage",
+      "id": "AutoJumpToMessage",
+      "source": "Equicord",
+      "name": "AutoJumpToMessage",
+      "description": "Automatically opens the channel from new messages.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AutoUnmute",
+      "id": "AutoUnmute",
+      "source": "Equicord",
+      "name": "AutoUnmute",
+      "description": "Automatically unmutes and undeafens when you are server muted/deafened, if you have permissions",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:AutoZipper",
+      "id": "AutoZipper",
+      "source": "Equicord",
+      "name": "AutoZipper",
+      "description": "Automatically zips specified file types and folders before uploading to Discord",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BannersEverywhere",
+      "id": "BannersEverywhere",
+      "source": "Equicord",
+      "name": "BannersEverywhere",
+      "description": "Displays banners in the member list ",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterActivities",
+      "id": "BetterActivities",
+      "source": "Equicord",
+      "name": "BetterActivities",
+      "description": "Shows activity icons in the member list and allows showing all activities",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterAudioPlayer",
+      "id": "BetterAudioPlayer",
+      "source": "Equicord",
+      "name": "BetterAudioPlayer",
+      "description": "Adds a spectrograph and oscilloscope visualizer to audio attachment players.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterBanReasons",
+      "id": "BetterBanReasons",
+      "source": "Equicord",
+      "name": "BetterBanReasons",
+      "description": "Create custom reasons to use in the Discord ban modal, and/or show a text input by default instead of the options.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterBlockedUsers",
+      "id": "BetterBlockedUsers",
+      "source": "Equicord",
+      "name": "BetterBlockedUsers",
+      "description": "Allows you to search in blocked users list and makes names selectable in settings.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterCommands",
+      "id": "BetterCommands",
+      "source": "Equicord",
+      "name": "BetterCommands",
+      "description": "Enhances the command system with miscellaneous improvements.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterFolders",
+      "id": "BetterFolders",
+      "source": "Equicord",
+      "name": "BetterFolders",
+      "description": "Shows server folders on dedicated sidebar and adds folder related improvements",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterForwards",
+      "id": "BetterForwards",
+      "source": "Equicord",
+      "name": "BetterForwards",
+      "description": "Message forward utilities including NSFW bypass and UI improvements.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterGifAltText",
+      "id": "BetterGifAltText",
+      "source": "Equicord",
+      "name": "BetterGifAltText",
+      "description": "Change GIF alt text from simply being 'GIF' to containing the gif tags / filename",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterGifPicker",
+      "id": "BetterGifPicker",
+      "source": "Equicord",
+      "name": "BetterGifPicker",
+      "description": "Makes the gif picker open the favorite category by default",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterImageEditor",
+      "id": "BetterImageEditor",
+      "source": "Equicord",
+      "name": "BetterImageEditor",
+      "description": "Keeps a shelf of your pictures in the avatar and banner editor, and remembers how you cropped each one.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterInvites",
+      "id": "BetterInvites",
+      "source": "Equicord",
+      "name": "BetterInvites",
+      "description": "See invites expiration date, view inviter profile and preview servers before joining by clicking the name",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterPlusReacts",
+      "id": "BetterPlusReacts",
+      "source": "Equicord",
+      "name": "BetterPlusReacts",
+      "description": "The amount of plus before :emoji: is the message to add it to",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterRoleContext",
+      "id": "BetterRoleContext",
+      "source": "Equicord",
+      "name": "BetterRoleContext",
+      "description": "Adds options to copy role color / edit role / view role icon when right clicking roles in the user profile or in the member list",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterRoleDot",
+      "id": "BetterRoleDot",
+      "source": "Equicord",
+      "name": "BetterRoleDot",
+      "description": "Copy role colour on RoleDot (accessibility setting) click. Also allows using both RoleDot and coloured names simultaneously",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterSessions",
+      "id": "BetterSessions",
+      "source": "Equicord",
+      "name": "BetterSessions",
+      "description": "Enhances the sessions (devices) menu. Allows you to view exact timestamps, give each session a custom name, and receive notifications about new sessions.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterSettings",
+      "id": "BetterSettings",
+      "source": "Equicord",
+      "name": "BetterSettings",
+      "description": "Enhances your settings-menu-opening experience",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BetterUploadButton",
+      "id": "BetterUploadButton",
+      "source": "Equicord",
+      "name": "BetterUploadButton",
+      "description": "Upload with a single click, open menu with right click",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BiggerStreamPreview",
+      "id": "BiggerStreamPreview",
+      "source": "Equicord",
+      "name": "BiggerStreamPreview",
+      "description": "This plugin allows you to enlarge stream previews",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BlockKeywords",
+      "id": "BlockKeywords",
+      "source": "Equicord",
+      "name": "BlockKeywords",
+      "description": "Blocks messages containing specific user-defined keywords, as if the user sending them was blocked.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BlockKrisp",
+      "id": "BlockKrisp",
+      "source": "Equicord",
+      "name": "BlockKrisp",
+      "description": "Prevent Krisp from loading",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BlurNSFW",
+      "id": "BlurNSFW",
+      "source": "Equicord",
+      "name": "BlurNSFW",
+      "description": "Blur attachments in NSFW channels until hovered",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BypassPinPrompt",
+      "id": "BypassPinPrompt",
+      "source": "Equicord",
+      "name": "BypassPinPrompt",
+      "description": "Bypass the pin prompt when using the pin functions",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:BypassStatus",
+      "id": "BypassStatus",
+      "source": "Equicord",
+      "name": "BypassStatus",
+      "description": "Still get notifications from specific sources when in do not disturb mode. Right-click on users/channels/guilds to set them to bypass do not disturb mode.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CallTimer",
+      "id": "CallTimer",
+      "source": "Equicord",
+      "name": "CallTimer",
+      "description": "Add call timers for all users in voice channels and in the connection status.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CancelFriendRequest",
+      "id": "CancelFriendRequest",
+      "source": "Equicord",
+      "name": "CancelFriendRequest",
+      "description": "Adds a way to cancel outgoing friend requests from profiles.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ChannelBadges",
+      "id": "ChannelBadges",
+      "source": "Equicord",
+      "name": "ChannelBadges",
+      "description": "Adds badges to channels based on their type",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ChannelTabs",
+      "id": "ChannelTabs",
+      "source": "Equicord",
+      "name": "ChannelTabs",
+      "description": "Group your commonly visited channels in tabs, like a browser",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CharacterCounter",
+      "id": "CharacterCounter",
+      "source": "Equicord",
+      "name": "CharacterCounter",
+      "description": "Adds a character counter to the chat input",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CleanChannelName",
+      "id": "CleanChannelName",
+      "source": "Equicord",
+      "name": "CleanChannelName",
+      "description": "Remove emoji and decoration from channel names. Reverts to the original while you're editing the channel.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CleanerChannelGroups",
+      "id": "CleanerChannelGroups",
+      "source": "Equicord",
+      "name": "CleanerChannelGroups",
+      "description": "Hides all channels in collapsed categories, even if they have unread messages.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ClearURLs",
+      "id": "ClearURLs",
+      "source": "Equicord",
+      "name": "ClearURLs",
+      "description": "Automatically removes tracking elements from URLs you send",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ClickableRoles",
+      "id": "ClickableRoles",
+      "source": "Equicord",
+      "name": "ClickableRoles",
+      "description": "Click on roles in user profiles and the member list to see which members have them.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ClientSideBlock",
+      "id": "ClientSideBlock",
+      "source": "Equicord",
+      "name": "ClientSideBlock",
+      "description": "Allows you to locally hide almost all content from any user",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ClientTheme",
+      "id": "ClientTheme",
+      "source": "Equicord",
+      "name": "ClientTheme",
+      "description": "Recreation of the old client theme experiment. Add a color to your Discord client theme",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CollapsibleUI",
+      "id": "CollapsibleUI",
+      "source": "Equicord",
+      "name": "CollapsibleUI",
+      "description": "Native collapsible channel, member, chat button, and user area surfaces.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ColorSighted",
+      "id": "ColorSighted",
+      "source": "Equicord",
+      "name": "ColorSighted",
+      "description": "Removes the colorblind-friendly icons from statuses, just like 2015-2017 Discord",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CommandPalette",
+      "id": "CommandPalette",
+      "source": "Equicord",
+      "name": "CommandPalette",
+      "description": "Raycast style command palette for running actions anywhere in Discord",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ConsoleJanitor",
+      "id": "ConsoleJanitor",
+      "source": "Equicord",
+      "name": "ConsoleJanitor",
+      "description": "Disables annoying console messages/errors",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ConsoleShortcuts",
+      "id": "ConsoleShortcuts",
+      "source": "Equicord",
+      "name": "ConsoleShortcuts",
+      "description": "Adds shorter Aliases for many things on the window. Run `shortcutList` for a list.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ContentWarning",
+      "id": "ContentWarning",
+      "source": "Equicord",
+      "name": "ContentWarning",
+      "description": "Allows you to specify certain trigger words that will be blurred by default. Hovering/Clicking on the blurred content will reveal it.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyEmojiMarkdown",
+      "id": "CopyEmojiMarkdown",
+      "source": "Equicord",
+      "name": "CopyEmojiMarkdown",
+      "description": "Allows you to copy emojis as formatted string (<:blobcatcozy:1026533070955872337>)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyFileContents",
+      "id": "CopyFileContents",
+      "source": "Equicord",
+      "name": "CopyFileContents",
+      "description": "Adds a button to text file attachments to copy their contents",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyProfileColors",
+      "id": "CopyProfileColors",
+      "source": "Equicord",
+      "name": "CopyProfileColors",
+      "description": "A plugin to copy people's profile gradient colors to clipboard.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyProfileId",
+      "id": "CopyProfileId",
+      "source": "Equicord",
+      "name": "CopyProfileId",
+      "description": "Adds a button next to the Message button in user profile popouts to quickly copy the user ID.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyStatusUrls",
+      "id": "CopyStatusUrls",
+      "source": "Equicord",
+      "name": "CopyStatusUrls",
+      "description": "Copy the users status url when you right-click it",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyStickerLinks",
+      "id": "CopyStickerLinks",
+      "source": "Equicord",
+      "name": "CopyStickerLinks",
+      "description": "Adds the ability to copy & open Sticker links",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyUserMention",
+      "id": "CopyUserMention",
+      "source": "Equicord",
+      "name": "CopyUserMention",
+      "description": "Adds a button to copy user's mention on the user context menu, works best with ValidUser.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CopyUserURLs",
+      "id": "CopyUserURLs",
+      "source": "Equicord",
+      "name": "CopyUserURLs",
+      "description": "Adds a 'Copy User URL' option to the user context menu.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CrashHandler",
+      "id": "CrashHandler",
+      "source": "Equicord",
+      "name": "CrashHandler",
+      "description": "Utility plugin for handling and possibly recovering from crashes without a restart",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CursorBuddy",
+      "id": "CursorBuddy",
+      "source": "Equicord",
+      "name": "CursorBuddy",
+      "description": "Adds a sprite that follows your cursor.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CustomFolderIcons",
+      "id": "CustomFolderIcons",
+      "source": "Equicord",
+      "name": "CustomFolderIcons",
+      "description": "Customize folder icons with any png",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CustomIdle",
+      "id": "CustomIdle",
+      "source": "Equicord",
+      "name": "CustomIdle",
+      "description": "Allows you to set the time before Discord goes idle (or disable auto-idle)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CustomRPC",
+      "id": "CustomRPC",
+      "source": "Equicord",
+      "name": "CustomRPC",
+      "description": "Add a fully customisable Rich Presence (Game status) to your Discord profile",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CustomSounds",
+      "id": "CustomSounds",
+      "source": "Equicord",
+      "name": "CustomSounds",
+      "description": "Customize Discord's sounds.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CustomStatusTimeouts",
+      "id": "CustomStatusTimeouts",
+      "source": "Equicord",
+      "name": "CustomStatusTimeouts",
+      "description": "Adds configurable timeout presets to the status (presence) menu.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CustomTimestamps",
+      "id": "CustomTimestamps",
+      "source": "Equicord",
+      "name": "CustomTimestamps",
+      "description": "Custom timestamps on messages and tooltips",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:CustomUserColors",
+      "id": "CustomUserColors",
+      "source": "Equicord",
+      "name": "CustomUserColors",
+      "description": "Lets you add a custom color to any user, anywhere! Highly recommend to use with typingTweaks and roleColorEverywhere",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Dearrow",
+      "id": "Dearrow",
+      "source": "Equicord",
+      "name": "Dearrow",
+      "description": "Makes YouTube embed titles and thumbnails less sensationalist, powered by Dearrow",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Declutter",
+      "id": "Declutter",
+      "source": "Equicord",
+      "name": "Declutter",
+      "description": "Cleans up Discord by removing non-essential UI elements like profile effects, shop tabs, boosts, and more.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DecodeBase64",
+      "id": "DecodeBase64",
+      "source": "Equicord",
+      "name": "DecodeBase64",
+      "description": "Decode base64 content of any message and copy the decoded content.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Decor",
+      "id": "Decor",
+      "source": "Equicord",
+      "name": "Decor",
+      "description": "Create and use your own custom avatar decorations, or pick your favorite from the presets.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DisableCallIdle",
+      "id": "DisableCallIdle",
+      "source": "Equicord",
+      "name": "DisableCallIdle",
+      "description": "Disables automatically getting kicked from a DM voice call after 3 minutes and being moved to an AFK voice channel.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DisableCameras",
+      "id": "DisableCameras",
+      "source": "Equicord",
+      "name": "DisableCameras",
+      "description": "Disables cameras in a call by default",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DiscordDevBanner",
+      "id": "DiscordDevBanner",
+      "source": "Equicord",
+      "name": "DiscordDevBanner",
+      "description": "Enables the Discord developer banner, in which displays the build-ID",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DontRoundMyTimestamps",
+      "id": "DontRoundMyTimestamps",
+      "source": "Equicord",
+      "name": "DontRoundMyTimestamps",
+      "description": "Always rounds relative timestamps down, so 7.6y becomes 7y instead of 8y",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DoubleEmoji",
+      "id": "DoubleEmoji",
+      "source": "Equicord",
+      "name": "DoubleEmoji",
+      "description": "Keeps the emoji picker open on click and highlights selected emojis with a blue border.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DownloadAllAttachments",
+      "id": "DownloadAllAttachments",
+      "source": "Equicord",
+      "name": "DownloadAllAttachments",
+      "description": "Adds a popover button to download all attachments in a message at once.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:DragFavoriteEmotes",
+      "id": "DragFavoriteEmotes",
+      "source": "Equicord",
+      "name": "DragFavoriteEmotes",
+      "description": "Adds the ability to change the order of your favorite emotes",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Dragify",
+      "id": "Dragify",
+      "source": "Equicord",
+      "name": "Dragify",
+      "description": "Drop users, channels, or servers into chat to insert mentions or invites.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ephemeral",
+      "id": "ephemeral",
+      "source": "Equicord",
+      "name": "ephemeral",
+      "description": "Whether the response should only be visible to you",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:EquicordToolbox",
+      "id": "EquicordToolbox",
+      "source": "Equicord",
+      "name": "EquicordToolbox",
+      "description": "Adds a button next to the inbox button in the channel header that houses Equicord quick actions",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Equissant",
+      "id": "Equissant",
+      "source": "Equicord",
+      "name": "Equissant",
+      "description": "Crossant every specified amount of clicks :trolley:",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:EquiTweaks",
+      "id": "EquiTweaks",
+      "source": "Equicord",
+      "name": "EquiTweaks",
+      "description": "A collection of small tweaks and fixes for Discord.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ExitSounds",
+      "id": "ExitSounds",
+      "source": "Equicord",
+      "name": "ExitSounds",
+      "description": "Play soundboard sounds when you disconnect from voice.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Experiments",
+      "id": "Experiments",
+      "source": "Equicord",
+      "name": "Experiments",
+      "description": "Enable Access to Experiments & other dev-only features in Discord!",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ExportMessages",
+      "id": "ExportMessages",
+      "source": "Equicord",
+      "name": "ExportMessages",
+      "description": "Allows you to export any message to a file",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ExpressionCloner",
+      "id": "ExpressionCloner",
+      "source": "Equicord",
+      "name": "ExpressionCloner",
+      "description": "Allows you to clone Emotes & Stickers to your own server (right click them)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:F8Break",
+      "id": "F8Break",
+      "source": "Equicord",
+      "name": "F8Break",
+      "description": "Pause the client when you press F8 with DevTools (+ breakpoints) open.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FakeDM",
+      "id": "FakeDM",
+      "source": "Equicord",
+      "name": "FakeDM",
+      "description": "Adds fake local messages to DMs and group DMs for this Discord session only.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FakeNitro",
+      "id": "FakeNitro",
+      "source": "Equicord",
+      "name": "FakeNitro",
+      "description": "Allows you to send fake emojis/stickers, use nitro themes, and stream in nitro quality",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FakeProfileThemes",
+      "id": "FakeProfileThemes",
+      "source": "Equicord",
+      "name": "FakeProfileThemes",
+      "description": "Allows profile theming by hiding the colors in your bio thanks to invisible 3y3 encoding",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FastDeleteChannels",
+      "id": "FastDeleteChannels",
+      "source": "Equicord",
+      "name": "FastDeleteChannels",
+      "description": "Adds a trash icon to delete channels",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FastDiscord",
+      "id": "FastDiscord",
+      "source": "Equicord",
+      "name": "FastDiscord",
+      "description": "Maximizes app smoothness and responsiveness: animations, media, memory cache, background FPS, and network (presence) are all optimized. Disabled by default; everything returns to normal once disabled.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FastPing",
+      "id": "FastPing",
+      "source": "Equicord",
+      "name": "FastPing",
+      "description": "Double-click a user ID you just typed in the chat box to instantly turn it into a <@mention>.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FavoriteAnything",
+      "id": "FavoriteAnything",
+      "source": "Equicord",
+      "name": "FavoriteAnything",
+      "description": "Favorite any image, video, or file attachment",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FavoriteEmojiFirst",
+      "id": "FavoriteEmojiFirst",
+      "source": "Equicord",
+      "name": "FavoriteEmojiFirst",
+      "description": "Puts your favorite emoji first in the emoji autocomplete and also has emoji alias.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FileUpload",
+      "id": "FileUpload",
+      "source": "Equicord",
+      "name": "FileUpload",
+      "description": "Upload files to hosting services like Zipline, Nest, S3, and WebDAV",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FindReply",
+      "id": "FindReply",
+      "source": "Equicord",
+      "name": "FindReply",
+      "description": "Jumps to the earliest reply to a message in a channel (lets you follow past conversations more easily).",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FixCodeblockGap",
+      "id": "FixCodeblockGap",
+      "source": "Equicord",
+      "name": "FixCodeblockGap",
+      "description": "Removes the gap between codeblocks and text below it",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FixFileExtensions",
+      "id": "FixFileExtensions",
+      "source": "Equicord",
+      "name": "FixFileExtensions",
+      "description": "Fixes file extensions by renaming them to a compatible supported format if possible",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FixImagesQuality",
+      "id": "FixImagesQuality",
+      "source": "Equicord",
+      "name": "FixImagesQuality",
+      "description": "Improves quality of images by loading them at their original resolution",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FixScreenshare",
+      "id": "FixScreenshare",
+      "source": "Equicord",
+      "name": "FixScreenshare",
+      "description": "Fixes infinite loading and crashes on screenshare after reload (Ctrl+R) by forcing module re-initialization.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FontLoader",
+      "id": "FontLoader",
+      "source": "Equicord",
+      "name": "FontLoader",
+      "description": "Loads any font from Google Fonts",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ForceOwnerCrown",
+      "id": "ForceOwnerCrown",
+      "source": "Equicord",
+      "name": "ForceOwnerCrown",
+      "description": "Force the owner crown next to usernames even if the server is large.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FrequentQuickSwitcher",
+      "id": "FrequentQuickSwitcher",
+      "source": "Equicord",
+      "name": "FrequentQuickSwitcher",
+      "description": "Rewrites and filters the quick switcher results to be your most frequent channels",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FriendCodes",
+      "id": "FriendCodes",
+      "source": "Equicord",
+      "name": "FriendCodes",
+      "description": "Generate FriendCodes to easily add friends",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FriendInvites",
+      "id": "FriendInvites",
+      "source": "Equicord",
+      "name": "FriendInvites",
+      "description": "Create and manage friend invite links via slash commands (/create friend invite, /view friend invites, /revoke friend invites).",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FriendshipRanks",
+      "id": "FriendshipRanks",
+      "source": "Equicord",
+      "name": "FriendshipRanks",
+      "description": "Adds badges showcasing how long you have been friends with a user for",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FriendTags",
+      "id": "FriendTags",
+      "source": "Equicord",
+      "name": "FriendTags",
+      "description": "Allows you to filter by custom tags in the quick switcher by starting a search with &",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FullSearchContext",
+      "id": "FullSearchContext",
+      "source": "Equicord",
+      "name": "FullSearchContext",
+      "description": "Makes the message context menu in message search results have all options you'd expect",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FullUserInChatbox",
+      "id": "FullUserInChatbox",
+      "source": "Equicord",
+      "name": "FullUserInChatbox",
+      "description": "Makes the user mention in the chatbox have more functionalities, like left/right clicking",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:FullVCPFP",
+      "id": "FullVCPFP",
+      "source": "Equicord",
+      "name": "FullVCPFP",
+      "description": "Makes avatars take up the entire vc tile",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GameActivityToggle",
+      "id": "GameActivityToggle",
+      "source": "Equicord",
+      "name": "GameActivityToggle",
+      "description": "Adds a button next to the mic and deafen button to toggle game activity. Right click it to toggle Spotify activity.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Ghosted",
+      "id": "Ghosted",
+      "source": "Equicord",
+      "name": "Ghosted",
+      "description": "A cute ghost will appear if you don't answer their DMs",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GifCollections",
+      "id": "GifCollections",
+      "source": "Equicord",
+      "name": "GifCollections",
+      "description": "Allows you to create collections of gifs.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GifMaker",
+      "id": "GifMaker",
+      "source": "Equicord",
+      "name": "GifMaker",
+      "description": "Create and caption GIFs from any media in chat or the GIF picker.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GifPaste",
+      "id": "GifPaste",
+      "source": "Equicord",
+      "name": "GifPaste",
+      "description": "Makes picking a gif in the gif picker insert a link into the chatbox instead of instantly sending it",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GifProviderSwitcher",
+      "id": "GifProviderSwitcher",
+      "source": "Equicord",
+      "name": "GifProviderSwitcher",
+      "description": "Allows you to use Tenor or Giphy GIF search instead of Klipy",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GitHubRepos",
+      "id": "GitHubRepos",
+      "source": "Equicord",
+      "name": "GitHubRepos",
+      "description": "Displays a user's public GitHub repositories in their profile",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GlobalBadges",
+      "id": "GlobalBadges",
+      "source": "Equicord",
+      "name": "GlobalBadges",
+      "description": "Adds global badges from other client mods",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GoogleThat",
+      "id": "GoogleThat",
+      "source": "Equicord",
+      "name": "GoogleThat",
+      "description": "Adds a command to send a internet search link",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GreetStickerPicker",
+      "id": "GreetStickerPicker",
+      "source": "Equicord",
+      "name": "GreetStickerPicker",
+      "description": "Allows you to use any greet sticker instead of only the random one by right-clicking the 'Wave to say hi!' button",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:GuildPickerDumper",
+      "id": "GuildPickerDumper",
+      "source": "Equicord",
+      "name": "GuildPickerDumper",
+      "description": "Context menu to dump and download a server's emojis and stickers.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:HideChatButtons",
+      "id": "HideChatButtons",
+      "source": "Equicord",
+      "name": "HideChatButtons",
+      "description": "Able to hide the chat buttons",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:HideMedia",
+      "id": "HideMedia",
+      "source": "Equicord",
+      "name": "HideMedia",
+      "description": "Hide attachments and embeds for individual messages via hover button",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:HideMessages",
+      "id": "HideMessages",
+      "source": "Equicord",
+      "name": "HideMessages",
+      "description": "Temporarily hide messages and DMs until you restart.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:HideServers",
+      "id": "HideServers",
+      "source": "Equicord",
+      "name": "HideServers",
+      "description": "Allows you to hide servers from the guild list and quick switcher by right clicking them",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:HomeTyping",
+      "id": "HomeTyping",
+      "source": "Equicord",
+      "name": "HomeTyping",
+      "description": "Changes the home button to a typing indicator if someone in your dms is typing",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:HopOn",
+      "id": "HopOn",
+      "source": "Equicord",
+      "name": "HopOn",
+      "description": "Hop on! Opens a configurable URL when a message matches a custom regex in the current channel.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Husk",
+      "id": "Husk",
+      "source": "Equicord",
+      "name": "Husk",
+      "description": "Adds Husk button (check settings to change used emoji)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:IconViewer",
+      "id": "IconViewer",
+      "source": "Equicord",
+      "name": "IconViewer",
+      "description": "Adds a new tab to settings to preview all icons.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:IdleAutoRestart",
+      "id": "IdleAutoRestart",
+      "source": "Equicord",
+      "name": "IdleAutoRestart",
+      "description": "Automatically restarts the client after being idle for a configurable amount of time, but avoids restarting while you are in VC.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:IgnoreActivities",
+      "id": "IgnoreActivities",
+      "source": "Equicord",
+      "name": "IgnoreActivities",
+      "description": "Ignore activities from showing up on your status ONLY. You can configure which ones are specifically ignored from the Registered Games and Activities tabs, or use the general settings below",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:IgnoreCalls",
+      "id": "IgnoreCalls",
+      "source": "Equicord",
+      "name": "IgnoreCalls",
+      "description": "Allows you to ignore calls from specific users or dm groups.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ILoveSpam",
+      "id": "ILoveSpam",
+      "source": "Equicord",
+      "name": "ILoveSpam",
+      "description": "Do not hide messages from 'likely spammers'",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ImageFilename",
+      "id": "ImageFilename",
+      "source": "Equicord",
+      "name": "ImageFilename",
+      "description": "Display the file name of images & GIFs as a tooltip when hovering over them",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ImageLink",
+      "id": "ImageLink",
+      "source": "Equicord",
+      "name": "ImageLink",
+      "description": "Never hide image links in messages, even if it's the only content",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ImageZoom",
+      "id": "ImageZoom",
+      "source": "Equicord",
+      "name": "ImageZoom",
+      "description": "Lets you zoom in to images and gifs. Use scroll wheel to zoom in and shift + scroll wheel to increase lens radius / size",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ImplicitRelationships",
+      "id": "ImplicitRelationships",
+      "source": "Equicord",
+      "name": "ImplicitRelationships",
+      "description": "Shows your implicit relationships in the Friends tab.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Ingtoninator",
+      "id": "Ingtoninator",
+      "source": "Equicord",
+      "name": "Ingtoninator",
+      "description": "Suffixes 'ington' to a random word in your message",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:InRole",
+      "id": "InRole",
+      "source": "Equicord",
+      "name": "InRole",
+      "description": "Know who is in a role with the role context menu or /inrole command (read plugin info!)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:InstantScreenshare",
+      "id": "InstantScreenshare",
+      "source": "Equicord",
+      "name": "InstantScreenshare",
+      "description": "Instantly screenshare when joining a voice channel with support for desktop sources, windows, and video input devices (cameras, capture cards)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:InviteDefaults",
+      "id": "InviteDefaults",
+      "source": "Equicord",
+      "name": "InviteDefaults",
+      "description": "Allows you to edit the default values when creating server invites.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:IrcColors",
+      "id": "IrcColors",
+      "source": "Equicord",
+      "name": "IrcColors",
+      "description": "Makes username colors in chat unique, like in IRC clients",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:JumpTo",
+      "id": "JumpTo",
+      "source": "Equicord",
+      "name": "JumpTo",
+      "description": "Adds context menu options to jump to the start or bottom of a channel/DM.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:KeepCurrentChannel",
+      "id": "KeepCurrentChannel",
+      "source": "Equicord",
+      "name": "KeepCurrentChannel",
+      "description": "Attempt to navigate to the channel you were in before switching accounts or loading Discord.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:KeyboardNavigation",
+      "id": "KeyboardNavigation",
+      "source": "Equicord",
+      "name": "KeyboardNavigation",
+      "description": "Allows you to navigate the UI with a keyboard.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:KeyboardSounds",
+      "id": "KeyboardSounds",
+      "source": "Equicord",
+      "name": "KeyboardSounds",
+      "description": "Adds OperaGX or osu! sound effects when typing on your keyboard.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:KeywordNotify",
+      "id": "KeywordNotify",
+      "source": "Equicord",
+      "name": "KeywordNotify",
+      "description": "Sends a notification if a given message matches certain keywords or regexes",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:LastActive",
+      "id": "LastActive",
+      "source": "Equicord",
+      "name": "LastActive",
+      "description": "A plugin to jump to last active message from yourself or another user in a channel/server.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:LimitlessScreenshare",
+      "id": "LimitlessScreenshare",
+      "source": "Equicord",
+      "name": "LimitlessScreenshare",
+      "description": "Adds a slider for screenshare resolution and fps.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:LiveWallpaper",
+      "id": "LiveWallpaper",
+      "source": "Equicord",
+      "name": "LiveWallpaper",
+      "description": "Global wallpaper for the entire Discord interface (image, gif, video). Compatible with ChannelWallpaper.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:LoadingQuotes",
+      "id": "LoadingQuotes",
+      "source": "Equicord",
+      "name": "LoadingQuotes",
+      "description": "Replace Discords loading quotes",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MarkdownTables",
+      "id": "MarkdownTables",
+      "source": "Equicord",
+      "name": "MarkdownTables",
+      "description": "Render GitHub-style markdown tables in Discord messages.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MediaPlaybackSpeed",
+      "id": "MediaPlaybackSpeed",
+      "source": "Equicord",
+      "name": "MediaPlaybackSpeed",
+      "description": "Allows changing the (default) playback speed of media embeds",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MemberCount",
+      "id": "MemberCount",
+      "source": "Equicord",
+      "name": "MemberCount",
+      "description": "Shows the number of online members, total members, and users in voice channels on the server - in the member list and tooltip.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MentionAvatars",
+      "id": "MentionAvatars",
+      "source": "Equicord",
+      "name": "MentionAvatars",
+      "description": "Shows user avatars and role icons inside mentions",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageBurst",
+      "id": "MessageBurst",
+      "source": "Equicord",
+      "name": "MessageBurst",
+      "description": "Merges messages sent within a time period with your previous sent message if no one else sends a message before you.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageClickActions",
+      "id": "MessageClickActions",
+      "source": "Equicord",
+      "name": "MessageClickActions",
+      "description": "Customize click actions on messages.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageColors",
+      "id": "MessageColors",
+      "source": "Equicord",
+      "name": "MessageColors",
+      "description": "Displays color codes like #FF0042 inside of messages",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageFetchTimer",
+      "id": "MessageFetchTimer",
+      "source": "Equicord",
+      "name": "MessageFetchTimer",
+      "description": "Shows how long it took to fetch messages for the current channel",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageLatency",
+      "id": "MessageLatency",
+      "source": "Equicord",
+      "name": "MessageLatency",
+      "description": "Displays an indicator for messages that took ≥n seconds to send",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageLinkEmbeds",
+      "id": "MessageLinkEmbeds",
+      "source": "Equicord",
+      "name": "MessageLinkEmbeds",
+      "description": "Adds a preview to messages that link another message",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageLinkTooltip",
+      "id": "MessageLinkTooltip",
+      "source": "Equicord",
+      "name": "MessageLinkTooltip",
+      "description": "Adds a tooltip with a message preview when hovering over message links, replies, and forwarded messages.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageLogger",
+      "id": "MessageLogger",
+      "source": "Equicord",
+      "name": "MessageLogger",
+      "description": "Temporarily logs deleted and edited messages.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageNotifier",
+      "id": "MessageNotifier",
+      "source": "Equicord",
+      "name": "MessageNotifier",
+      "description": "Get toasts for when chosen users send a message",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessagePeek",
+      "id": "MessagePeek",
+      "source": "Equicord",
+      "name": "MessagePeek",
+      "description": "Shows the last message preview and timestamp in the Direct Messages list.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MessageTranslate",
+      "id": "MessageTranslate",
+      "source": "Equicord",
+      "name": "MessageTranslate",
+      "description": "Auto translate messages to your language with caching, per-channel toggles, and more options.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MicLoopbackTester",
+      "id": "MicLoopbackTester",
+      "source": "Equicord",
+      "name": "MicLoopbackTester",
+      "description": "Adds mic loopback test icon to the user panel",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MiddleClickTweaks",
+      "id": "MiddleClickTweaks",
+      "source": "Equicord",
+      "name": "MiddleClickTweaks",
+      "description": "Various middle click tweaks, such as with pasting and link opening.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MoreCommands",
+      "id": "MoreCommands",
+      "source": "Equicord",
+      "name": "MoreCommands",
+      "description": "Adds various fun and useful commands",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MoreQuickReactions",
+      "id": "MoreQuickReactions",
+      "source": "Equicord",
+      "name": "MoreQuickReactions",
+      "description": "Improves the quick react buttons in the message context menu.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MoreStickers",
+      "id": "MoreStickers",
+      "source": "Equicord",
+      "name": "MoreStickers",
+      "description": "Adds sticker packs from other social media platforms. (e.g. LINE)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MoreUserTags",
+      "id": "MoreUserTags",
+      "source": "Equicord",
+      "name": "MoreUserTags",
+      "description": "Adds tags for webhooks and moderative roles (owner, admin, etc.)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Moyai",
+      "id": "Moyai",
+      "source": "Equicord",
+      "name": "Moyai",
+      "description": "Plays a 🗿 sound effect whenever a moyai emoji is sent, reacted, or used as a voice effect in your current channel.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MusicControls",
+      "id": "MusicControls",
+      "source": "Equicord",
+      "name": "MusicControls",
+      "description": "Music Controls and Lyrics for multiple services ",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MusicRichPresence",
+      "id": "MusicRichPresence",
+      "source": "Equicord",
+      "name": "MusicRichPresence",
+      "description": "Rich Presence for Last.FM/Listenbrainz",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MuteAllServers",
+      "id": "MuteAllServers",
+      "source": "Equicord",
+      "name": "MuteAllServers",
+      "description": "Right-click a server → mute all servers and mark all as read in one click.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:MutualGroupDMs",
+      "id": "MutualGroupDMs",
+      "source": "Equicord",
+      "name": "MutualGroupDMs",
+      "description": "Shows mutual group dms in profiles",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NeverPausePreviews",
+      "id": "NeverPausePreviews",
+      "source": "Equicord",
+      "name": "NeverPausePreviews",
+      "description": "Prevents in-call/PiP previews (screenshare, streams, etc) from pausing even if the client loses focus",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NewGuildSettings",
+      "id": "NewGuildSettings",
+      "source": "Equicord",
+      "name": "NewGuildSettings",
+      "description": "Automatically mute new servers and change various other settings upon joining",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NewPluginsManager",
+      "id": "NewPluginsManager",
+      "source": "Equicord",
+      "name": "NewPluginsManager",
+      "description": "Utility that notifies you when new plugins are added to Equicord",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoBlockedMessages",
+      "id": "NoBlockedMessages",
+      "source": "Equicord",
+      "name": "NoBlockedMessages",
+      "description": "Hide all blocked/ignored messages from chat completely.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoCaps",
+      "id": "NoCaps",
+      "source": "Equicord",
+      "name": "NoCaps",
+      "description": "Automatically converts messages containing 60%+ uppercase letters into lowercase before sending.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoF1",
+      "id": "NoF1",
+      "source": "Equicord",
+      "name": "NoF1",
+      "description": "Disables F1 help bind.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoMaskedUrlPaste",
+      "id": "NoMaskedUrlPaste",
+      "source": "Equicord",
+      "name": "NoMaskedUrlPaste",
+      "description": "Pasting a link while having text selected will not paste as masked URL",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoMiddleClickPaste",
+      "id": "NoMiddleClickPaste",
+      "source": "Equicord",
+      "name": "NoMiddleClickPaste",
+      "description": "Disable Linux middle-click paste - Linux only",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoMosaic",
+      "id": "NoMosaic",
+      "source": "Equicord",
+      "name": "NoMosaic",
+      "description": "Removes Discord image mosaic",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoNitroUpsell",
+      "id": "NoNitroUpsell",
+      "source": "Equicord",
+      "name": "NoNitroUpsell",
+      "description": "Removes all of Discord's nitro upsells by tricking the client into thinking you have nitro.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoOnboardingDelay",
+      "id": "NoOnboardingDelay",
+      "source": "Equicord",
+      "name": "NoOnboardingDelay",
+      "description": "Skips the slow and annoying onboarding delay",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoPendingCount",
+      "id": "NoPendingCount",
+      "source": "Equicord",
+      "name": "NoPendingCount",
+      "description": "Removes the ping count of incoming friend requests, message requests, and nitro offers.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoProfileThemes",
+      "id": "NoProfileThemes",
+      "source": "Equicord",
+      "name": "NoProfileThemes",
+      "description": "Completely removes Nitro profile themes from everyone but yourself",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoReplyMention",
+      "id": "NoReplyMention",
+      "source": "Equicord",
+      "name": "NoReplyMention",
+      "description": "Disables reply pings by default",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NormalizeMessageLinks",
+      "id": "NormalizeMessageLinks",
+      "source": "Equicord",
+      "name": "NormalizeMessageLinks",
+      "description": "Strip canary/ptb from message links",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoRoleHeaders",
+      "id": "NoRoleHeaders",
+      "source": "Equicord",
+      "name": "NoRoleHeaders",
+      "description": "We are all equal!! Removes the role headers in the member list.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoServerEmojis",
+      "id": "NoServerEmojis",
+      "source": "Equicord",
+      "name": "NoServerEmojis",
+      "description": "Do not show server emojis in the autocomplete menu.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NotificationVolume",
+      "id": "NotificationVolume",
+      "source": "Equicord",
+      "name": "NotificationVolume",
+      "description": "Save your ears and set a separate volume for notifications and in-app sounds",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoTypingAnimation",
+      "id": "NoTypingAnimation",
+      "source": "Equicord",
+      "name": "NoTypingAnimation",
+      "description": "Disables the CPU-intensive typing dots animation",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:NoUnblockToJump",
+      "id": "NoUnblockToJump",
+      "source": "Equicord",
+      "name": "NoUnblockToJump",
+      "description": "Allows you to jump to messages of blocked or ignored users and likely spammers without unblocking them",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:OnePingPerDM",
+      "id": "OnePingPerDM",
+      "source": "Equicord",
+      "name": "OnePingPerDM",
+      "description": "If unread messages are sent by a user in DMs multiple times, you'll only receive one audio ping. Read the messages to reset the limit",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:OpenInApp",
+      "id": "OpenInApp",
+      "source": "Equicord",
+      "name": "OpenInApp",
+      "description": "Open links in their respective apps instead of your browser",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:OrbolayBridge",
+      "id": "OrbolayBridge",
+      "source": "Equicord",
+      "name": "OrbolayBridge",
+      "description": "Bridge plugin to connect Orbolay to Discord",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:OverrideForumDefaults",
+      "id": "OverrideForumDefaults",
+      "source": "Equicord",
+      "name": "OverrideForumDefaults",
+      "description": "Allows you to override default forum layout/sort order. you can still change it on a per-channel basis",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PartyMode",
+      "id": "PartyMode",
+      "source": "Equicord",
+      "name": "PartyMode",
+      "description": "Allows you to use party mode cause the party never ends ✨",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PauseInvitesForever",
+      "id": "PauseInvitesForever",
+      "source": "Equicord",
+      "name": "PauseInvitesForever",
+      "description": "Brings back the option to pause invites indefinitely that stupit Discord removed.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PermissionFreeWill",
+      "id": "PermissionFreeWill",
+      "source": "Equicord",
+      "name": "PermissionFreeWill",
+      "description": "Disables the client-side restrictions for channel permission management.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PermissionsViewer",
+      "id": "PermissionsViewer",
+      "source": "Equicord",
+      "name": "PermissionsViewer",
+      "description": "View the permissions a user or channel has, and the roles of a server",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PetPet",
+      "id": "PetPet",
+      "source": "Equicord",
+      "name": "PetPet",
+      "description": "Adds a /petpet slash command to create headpet gifs from any image",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PictureInPicture",
+      "id": "PictureInPicture",
+      "source": "Equicord",
+      "name": "PictureInPicture",
+      "description": "Adds picture in picture to videos (next to the Download button)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PinDMs",
+      "id": "PinDMs",
+      "source": "Equicord",
+      "name": "PinDMs",
+      "description": "Allows you to pin private channels to the top of your DM list. To pin/unpin or re-order pins, right click DMs",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PingNotifications",
+      "id": "PingNotifications",
+      "source": "Equicord",
+      "name": "PingNotifications",
+      "description": "Customizable notifications with improved mention formatting",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PinIcon",
+      "id": "PinIcon",
+      "source": "Equicord",
+      "name": "PinIcon",
+      "description": "Adds a pin icon to pinned messages",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PlainFolderIcon",
+      "id": "PlainFolderIcon",
+      "source": "Equicord",
+      "name": "PlainFolderIcon",
+      "description": "Dont show the small guild icons in folders",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PlatformIndicators",
+      "id": "PlatformIndicators",
+      "source": "Equicord",
+      "name": "PlatformIndicators",
+      "description": "Adds platform indicators (Desktop, Mobile, Web...) to users",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PolishWording",
+      "id": "PolishWording",
+      "source": "Equicord",
+      "name": "PolishWording",
+      "description": "Tweaks your messages to make them look nicer and have better grammar. See settings",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PreviewHTML",
+      "id": "PreviewHTML",
+      "source": "Equicord",
+      "name": "PreviewHTML",
+      "description": "Open matching HTML attachments and pages in isolated XRay preview windows.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PreviewMessage",
+      "id": "PreviewMessage",
+      "source": "Equicord",
+      "name": "PreviewMessage",
+      "description": "Lets you preview your message before sending it.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:PreviewWebsite",
+      "id": "PreviewWebsite",
+      "source": "Equicord",
+      "name": "PreviewWebsite",
+      "description": "Open matching website links in isolated XRay preview windows.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ProfileSets",
+      "id": "ProfileSets",
+      "source": "Equicord",
+      "name": "ProfileSets",
+      "description": "Allows you to save and load different profile presets.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:QuickDM",
+      "id": "QuickDM",
+      "source": "Equicord",
+      "name": "QuickDM",
+      "description": "Adds a quick DM button to user profile popouts to open direct messages instantly.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:QuickMention",
+      "id": "QuickMention",
+      "source": "Equicord",
+      "name": "QuickMention",
+      "description": "Adds a quick mention button to the message actions bar",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:QuickReply",
+      "id": "QuickReply",
+      "source": "Equicord",
+      "name": "QuickReply",
+      "description": "Reply to (ctrl + up/down) and edit (ctrl + shift + up/down) messages via keybinds",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Quoter",
+      "id": "Quoter",
+      "source": "Equicord",
+      "name": "Quoter",
+      "description": "Adds the ability to create an inspirational quote image from a message.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RandomVoice",
+      "id": "RandomVoice",
+      "source": "Equicord",
+      "name": "RandomVoice",
+      "description": "Adds a button near mute to join a random voice channel.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReactErrorDecoder",
+      "id": "ReactErrorDecoder",
+      "source": "Equicord",
+      "name": "ReactErrorDecoder",
+      "description": "Replaces \"Minified React Error\" with the actual error.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReactionTimestamps",
+      "id": "ReactionTimestamps",
+      "source": "Equicord",
+      "name": "ReactionTimestamps",
+      "description": "Shows each reaction time in the reaction popout.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReadAllNotificationsButton",
+      "id": "ReadAllNotificationsButton",
+      "source": "Equicord",
+      "name": "ReadAllNotificationsButton",
+      "description": "Read all server notifications with a single button click!",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RealtimeTimestamps",
+      "id": "RealtimeTimestamps",
+      "source": "Equicord",
+      "name": "RealtimeTimestamps",
+      "description": "Replaces Discord timestamps (e.g. 15:31) with live seconds (e.g. 15:34:21), updated every second.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RecentDMSwitcher",
+      "id": "RecentDMSwitcher",
+      "source": "Equicord",
+      "name": "RecentDMSwitcher",
+      "description": "Ctrl+Tab between most recently used DMs (Ctrl+Shift+Tab reverse)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RelationshipNotifier",
+      "id": "RelationshipNotifier",
+      "source": "Equicord",
+      "name": "RelationshipNotifier",
+      "description": "Notifies you when a friend, group chat, or server removes you.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RemixRevived",
+      "id": "RemixRevived",
+      "source": "Equicord",
+      "name": "RemixRevived",
+      "description": "Revives Remix and brings it to Desktop",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RepeatMessages",
+      "id": "RepeatMessages",
+      "source": "Equicord",
+      "name": "RepeatMessages",
+      "description": "Allows you to repeat messages quickly. If you hold shift while clicking the Repeat option, it will reply to the message.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReplaceGoogleSearch",
+      "id": "ReplaceGoogleSearch",
+      "source": "Equicord",
+      "name": "ReplaceGoogleSearch",
+      "description": "Replaces the Google search with different Engine(s)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReplyPingControl",
+      "id": "ReplyPingControl",
+      "source": "Equicord",
+      "name": "ReplyPingControl",
+      "description": "Control whether to always or never get pinged on message replies, with whitelist and blacklist features",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReplyTimestamp",
+      "id": "ReplyTimestamp",
+      "source": "Equicord",
+      "name": "ReplyTimestamp",
+      "description": "Shows a timestamp on replied-message previews",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RevealAllSpoilers",
+      "id": "RevealAllSpoilers",
+      "source": "Equicord",
+      "name": "RevealAllSpoilers",
+      "description": "Reveal all spoilers in a message by Ctrl-clicking a spoiler, or in the chat with Ctrl+Shift-click",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReverseImageSearch",
+      "id": "ReverseImageSearch",
+      "source": "Equicord",
+      "name": "ReverseImageSearch",
+      "description": "Adds ImageSearch to image context menus",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ReviewDB",
+      "id": "ReviewDB",
+      "source": "Equicord",
+      "name": "ReviewDB",
+      "description": "Review other users (Adds a new settings to profiles)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RichMagnetLinks",
+      "id": "RichMagnetLinks",
+      "source": "Equicord",
+      "name": "RichMagnetLinks",
+      "description": "Renders magnet links like message links",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RichPresence",
+      "id": "RichPresence",
+      "source": "Equicord",
+      "name": "RichPresence",
+      "description": "Unified rich presence hub for AudioBookShelf, osu!, stats.fm, Jellyfin, Navidrome, and Gensokyo Radio.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RoleColorEverywhere",
+      "id": "RoleColorEverywhere",
+      "source": "Equicord",
+      "name": "RoleColorEverywhere",
+      "description": "Adds the top role color anywhere possible",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:RPCEditor",
+      "id": "RPCEditor",
+      "source": "Equicord",
+      "name": "RPCEditor",
+      "description": "Edit the type and content of any Rich Presence",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SaveFavoriteGIFs",
+      "id": "SaveFavoriteGIFs",
+      "source": "Equicord",
+      "name": "SaveFavoriteGIFs",
+      "description": "Export favorited GIF urls",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ScheduledMessages",
+      "id": "ScheduledMessages",
+      "source": "Equicord",
+      "name": "ScheduledMessages",
+      "description": "Schedule messages to be sent at a specific time or after a delay.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SearchFix",
+      "id": "SearchFix",
+      "source": "Equicord",
+      "name": "SearchFix",
+      "description": "Fixes the annoying \"We dropped the magnifying glass!\" error.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SecretRingToneEnabler",
+      "id": "SecretRingToneEnabler",
+      "source": "Equicord",
+      "name": "SecretRingToneEnabler",
+      "description": "Always play the secret version of the discord ringtone (except during special ringtone events)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SedEnhanced",
+      "id": "SedEnhanced",
+      "source": "Equicord",
+      "name": "SedEnhanced",
+      "description": "Expands on Discord's rudimentary `sed` support.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SekaiStickers",
+      "id": "SekaiStickers",
+      "source": "Equicord",
+      "name": "SekaiStickers",
+      "description": "Sekai Stickers built in discord originally from github.com/TheOriginalAyaka",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SelfDestruct",
+      "id": "SelfDestruct",
+      "source": "Equicord",
+      "name": "SelfDestruct",
+      "description": "Sends messages that are automatically deleted after a configurable delay. Red timer visible on each message.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SendTimestamps",
+      "id": "SendTimestamps",
+      "source": "Equicord",
+      "name": "SendTimestamps",
+      "description": "Send timestamps easily via chat box button & text shortcuts. Read the extended description!",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ServerInfo",
+      "id": "ServerInfo",
+      "source": "Equicord",
+      "name": "ServerInfo",
+      "description": "Allows you to view info about a server",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ServerListIndicators",
+      "id": "ServerListIndicators",
+      "source": "Equicord",
+      "name": "ServerListIndicators",
+      "description": "Add online friend count or server count in the server list",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ServerSearch",
+      "id": "ServerSearch",
+      "source": "Equicord",
+      "name": "ServerSearch",
+      "description": "Navigate your servers better with a quick search button",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowAllMessageButtons",
+      "id": "ShowAllMessageButtons",
+      "source": "Equicord",
+      "name": "ShowAllMessageButtons",
+      "description": "Always show all message buttons no matter if you are holding the shift key or not.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowBadgesInChat",
+      "id": "ShowBadgesInChat",
+      "source": "Equicord",
+      "name": "ShowBadgesInChat",
+      "description": "Shows the message author's badges beside their name in chat.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowConnections",
+      "id": "ShowConnections",
+      "source": "Equicord",
+      "name": "ShowConnections",
+      "description": "Show connected accounts in user popouts",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowHiddenChannels",
+      "id": "ShowHiddenChannels",
+      "source": "Equicord",
+      "name": "ShowHiddenChannels",
+      "description": "Show channels that you do not have access to view.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowHiddenThings",
+      "id": "ShowHiddenThings",
+      "source": "Equicord",
+      "name": "ShowHiddenThings",
+      "description": "Displays various hidden & moderator-only things regardless of permissions.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowID",
+      "id": "ShowID",
+      "source": "Equicord",
+      "name": "ShowID",
+      "description": "Shows the user ID in Discord profiles, below the 'Member Since' section.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowMessageEmbeds",
+      "id": "ShowMessageEmbeds",
+      "source": "Equicord",
+      "name": "ShowMessageEmbeds",
+      "description": "Adds a context menu option to show embeds for links that don't have one",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowMeYourName",
+      "id": "ShowMeYourName",
+      "source": "Equicord",
+      "name": "ShowMeYourName",
+      "description": "Display any permutation of custom nicknames, friend nicknames, server nicknames, display names, and usernames in chat.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowResourceChannels",
+      "id": "ShowResourceChannels",
+      "source": "Equicord",
+      "name": "ShowResourceChannels",
+      "description": "shows the channels hidden behind the server resources in the channel list",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowRolesInChat",
+      "id": "ShowRolesInChat",
+      "source": "Equicord",
+      "name": "ShowRolesInChat",
+      "description": "Shows a user's highest role next to their name in chat messages. Hide/show specific roles in their context menu (right-click).",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowSongName",
+      "id": "ShowSongName",
+      "source": "Equicord",
+      "name": "ShowSongName",
+      "description": "Shows song name instead of artist for Spotify activity",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ShowTimeoutDuration",
+      "id": "ShowTimeoutDuration",
+      "source": "Equicord",
+      "name": "ShowTimeoutDuration",
+      "description": "Shows how much longer a user's timeout will last, either in the timeout icon tooltip or next to it",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SidebarChat",
+      "id": "SidebarChat",
+      "source": "Equicord",
+      "name": "SidebarChat",
+      "description": "Open a channel or DM as a sidebar or a popout.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Signature",
+      "id": "Signature",
+      "source": "Equicord",
+      "name": "Signature",
+      "description": "Automated fingerprint/end text",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SilenceUsers",
+      "id": "SilenceUsers",
+      "source": "Equicord",
+      "name": "SilenceUsers",
+      "description": "Silences @mention pings and server badge counts from specific users. Regular messages and DMs are untouched.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SilentMessageToggle",
+      "id": "SilentMessageToggle",
+      "source": "Equicord",
+      "name": "SilentMessageToggle",
+      "description": "Adds a button to the chat bar to toggle sending a silent message.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SilentTyping",
+      "id": "SilentTyping",
+      "source": "Equicord",
+      "name": "SilentTyping",
+      "description": "Hide that you are typing",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SmartPingFilters",
+      "id": "SmartPingFilters",
+      "source": "Equicord",
+      "name": "SmartPingFilters",
+      "description": "Smartly filter pings by keywords or users.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SmoothType",
+      "id": "SmoothType",
+      "source": "Equicord",
+      "name": "SmoothType",
+      "description": "The plugin allows you to fully customize the cursor caret's visual settings, including adjustable transition delays and custom CSS animation effects.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Snowfall",
+      "id": "Snowfall",
+      "source": "Equicord",
+      "name": "Snowfall",
+      "description": "Let it snow on Discord",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SortFriends",
+      "id": "SortFriends",
+      "source": "Equicord",
+      "name": "SortFriends",
+      "description": "Sorts friend requests by date of receipt",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SplitLargeMessages",
+      "id": "SplitLargeMessages",
+      "source": "Equicord",
+      "name": "SplitLargeMessages",
+      "description": "Splits oversized messages into Discord-sized chunks before sending.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SpotifyCrack",
+      "id": "SpotifyCrack",
+      "source": "Equicord",
+      "name": "SpotifyCrack",
+      "description": "Free listen along, no auto-pausing in voice chat, and allows activity to continue playing when idling",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SpotifyShareCommands",
+      "id": "SpotifyShareCommands",
+      "source": "Equicord",
+      "name": "SpotifyShareCommands",
+      "description": "Share your current Spotify track, album or artist via slash command (/track, /album, /artist)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StartupTimings",
+      "id": "StartupTimings",
+      "source": "Equicord",
+      "name": "StartupTimings",
+      "description": "Adds Startup Timings to the Settings menu",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StatusPresets",
+      "id": "StatusPresets",
+      "source": "Equicord",
+      "name": "StatusPresets",
+      "description": "Allows you to remember your statuses and set them later",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SteamStatusSync",
+      "id": "SteamStatusSync",
+      "source": "Equicord",
+      "name": "SteamStatusSync",
+      "description": "Sync your status to Steam! (Online, Away, Invisible, or Offline.)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StickerBlocker",
+      "id": "StickerBlocker",
+      "source": "Equicord",
+      "name": "StickerBlocker",
+      "description": "Allows you to block stickers from being displayed.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StickerPaste",
+      "id": "StickerPaste",
+      "source": "Equicord",
+      "name": "StickerPaste",
+      "description": "Makes picking a sticker in the sticker picker insert it into the chatbox instead of instantly sending",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StopAutoUnread",
+      "id": "StopAutoUnread",
+      "source": "Equicord",
+      "name": "StopAutoUnread",
+      "description": "Stops Discord from automatically bumping a channels notification setting to \"All Messages\"",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Streaks",
+      "id": "Streaks",
+      "source": "Equicord",
+      "name": "Streaks",
+      "description": "Shows a streak next to a user when you exchange DMs with them on consecutive days.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StreamerModeOn",
+      "id": "StreamerModeOn",
+      "source": "Equicord",
+      "name": "StreamerModeOn",
+      "description": "Automatically enables streamer mode when you start streaming in Discord",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StreamingCodecDisabler",
+      "id": "StreamingCodecDisabler",
+      "source": "Equicord",
+      "name": "StreamingCodecDisabler",
+      "description": "Disable video codecs of your choice for streaming and cameras.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:StreamProof",
+      "id": "StreamProof",
+      "source": "Equicord",
+      "name": "StreamProof",
+      "description": "Hides messages, links, images, DMs, but not the screen share/voice grid. Toggle via chat bar button.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:SuperReactionTweaks",
+      "id": "SuperReactionTweaks",
+      "source": "Equicord",
+      "name": "SuperReactionTweaks",
+      "description": "Customize the limit of Super Reactions playing at once, and super react by default",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:TalkInReverse",
+      "id": "TalkInReverse",
+      "source": "Equicord",
+      "name": "TalkInReverse",
+      "description": "Reverses the message content before sending it.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:TextReplace",
+      "id": "TextReplace",
+      "source": "Equicord",
+      "name": "TextReplace",
+      "description": "Replace text in your messages. You can find pre-made rules in the #textreplace-rules channel in Vencord's Server",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ThemeAttributes",
+      "id": "ThemeAttributes",
+      "source": "Equicord",
+      "name": "ThemeAttributes",
+      "description": "Adds data attributes to various elements for theming purposes",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ThemeLibrary",
+      "id": "ThemeLibrary",
+      "source": "Equicord",
+      "name": "ThemeLibrary",
+      "description": "A library of themes for Vencord.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:TidalEmbeds",
+      "id": "TidalEmbeds",
+      "source": "Equicord",
+      "name": "TidalEmbeds",
+      "description": "Embeds TIDAL songs to make them playable in Discord.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Timezones",
+      "id": "Timezones",
+      "source": "Equicord",
+      "name": "Timezones",
+      "description": "Shows the local time of users in profiles and message headers",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Title",
+      "id": "Title",
+      "source": "Equicord",
+      "name": "Title",
+      "description": "Replaces the window title prefix",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ToastNotifications",
+      "id": "ToastNotifications",
+      "source": "Equicord",
+      "name": "ToastNotifications",
+      "description": "Show a pop-up toast notification, configurable for DMs, group, friends, or guild channels.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ToggleVideoBind",
+      "id": "ToggleVideoBind",
+      "source": "Equicord",
+      "name": "ToggleVideoBind",
+      "description": "Adds a customizable bind to toggle webcam.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ToneIndicators",
+      "id": "ToneIndicators",
+      "source": "Equicord",
+      "name": "ToneIndicators",
+      "description": "Show tooltips for tone indicators like /srs, /gen, etc. in sent messages.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Translate",
+      "id": "Translate",
+      "source": "Equicord",
+      "name": "Translate",
+      "description": "Translate messages with Google Translate, DeepL or Kagi.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Translate+",
+      "id": "Translate+",
+      "source": "Equicord",
+      "name": "Translate+",
+      "description": "Vencord's translate plugin but with support for artistic languages!",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:TypingIndicator",
+      "id": "TypingIndicator",
+      "source": "Equicord",
+      "name": "TypingIndicator",
+      "description": "Adds an indicator if someone is typing on a channel.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:TypingTweaks",
+      "id": "TypingTweaks",
+      "source": "Equicord",
+      "name": "TypingTweaks",
+      "description": "Show avatars and role colours in the typing indicator",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UI Optimisations",
+      "id": "UI Optimisations",
+      "source": "Equicord",
+      "name": "UI Optimisations",
+      "description": "Reduces resource consumption: animations, GIFs, message cache, background FPS.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UncompressedImages",
+      "id": "UncompressedImages",
+      "source": "Equicord",
+      "name": "UncompressedImages",
+      "description": "Hijacks client media caching to load full lossless images directly from CDN instead of compressed low-res thumbnails.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:Unindent",
+      "id": "Unindent",
+      "source": "Equicord",
+      "name": "Unindent",
+      "description": "Trims leading indentation from codeblocks",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UnitConverter",
+      "id": "UnitConverter",
+      "source": "Equicord",
+      "name": "UnitConverter",
+      "description": "Converts metric units to Imperal units and vice versa",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UniversalMention",
+      "id": "UniversalMention",
+      "source": "Equicord",
+      "name": "UniversalMention",
+      "description": "Mention any user, regardless of channel access.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UnlockedAvatarZoom",
+      "id": "UnlockedAvatarZoom",
+      "source": "Equicord",
+      "name": "UnlockedAvatarZoom",
+      "description": "Allows you to zoom in further in the image crop tool when changing your avatar",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UnreadCountBadge",
+      "id": "UnreadCountBadge",
+      "source": "Equicord",
+      "name": "UnreadCountBadge",
+      "description": "Shows unread message count badges on channels in the channel list",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UnsuppressEmbeds",
+      "id": "UnsuppressEmbeds",
+      "source": "Equicord",
+      "name": "UnsuppressEmbeds",
+      "description": "Allows you to unsuppress embeds in messages",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UrlHighlighter",
+      "id": "UrlHighlighter",
+      "source": "Equicord",
+      "name": "UrlHighlighter",
+      "description": "Highlights URLs in messages that match your patterns.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UserMessagesPronouns",
+      "id": "UserMessagesPronouns",
+      "source": "Equicord",
+      "name": "UserMessagesPronouns",
+      "description": "Adds pronouns to chat user messages",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UserPFP",
+      "id": "UserPFP",
+      "source": "Equicord",
+      "name": "UserPFP",
+      "description": "Allows you to set local static or animated avatars for yourself and other users",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:UserVoiceShow",
+      "id": "UserVoiceShow",
+      "source": "Equicord",
+      "name": "UserVoiceShow",
+      "description": "Shows an indicator when a user is in a Voice Channel",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:USRBG",
+      "id": "USRBG",
+      "source": "Equicord",
+      "name": "USRBG",
+      "description": "Displays user banners from USRBG, allowing anyone to get a banner without Nitro",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ValidReply",
+      "id": "ValidReply",
+      "source": "Equicord",
+      "name": "ValidReply",
+      "description": "Fixes \"Message could not be loaded\" upon hovering over the reply",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ValidUser",
+      "id": "ValidUser",
+      "source": "Equicord",
+      "name": "ValidUser",
+      "description": "Fix mentions for unknown users showing up as '@unknown-user' (hover over a mention to fix it)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VcNarrator",
+      "id": "VcNarrator",
+      "source": "Equicord",
+      "name": "VcNarrator",
+      "description": "Announces when users join, leave, or move voice channels via narrator",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VCPanelSettings",
+      "id": "VCPanelSettings",
+      "source": "Equicord",
+      "name": "VCPanelSettings",
+      "description": "Control voice settings right from the voice panel",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ViewIcons",
+      "id": "ViewIcons",
+      "source": "Equicord",
+      "name": "ViewIcons",
+      "description": "Makes avatars and banners in user profiles clickable, adds View Icon/Banner/Avatar Decoration entries in the user, server and group channel context menu.",
+      "recommended": true,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ViewRaw",
+      "id": "ViewRaw",
+      "source": "Equicord",
+      "name": "ViewRaw",
+      "description": "Copy and view the raw content/data of any message, channel or guild",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceButtons",
+      "id": "VoiceButtons",
+      "source": "Equicord",
+      "name": "VoiceButtons",
+      "description": "Quickly DM, mute, or deafen any user right from the voice-call panel.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceChatDoubleClick",
+      "id": "VoiceChatDoubleClick",
+      "source": "Equicord",
+      "name": "VoiceChatDoubleClick",
+      "description": "Join voice chats via double click instead of single click",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceChatUtilities",
+      "id": "VoiceChatUtilities",
+      "source": "Equicord",
+      "name": "VoiceChatUtilities",
+      "description": "This plugin allows you to perform multiple actions on an entire channel (move, mute, disconnect, etc.) (originally by dutake)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceDownload",
+      "id": "VoiceDownload",
+      "source": "Equicord",
+      "name": "VoiceDownload",
+      "description": "Adds a download to voice messages. (Opens a new browser tab)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceJoinMessages",
+      "id": "VoiceJoinMessages",
+      "source": "Equicord",
+      "name": "VoiceJoinMessages",
+      "description": "Recieve client-side ephemeral messages when your friends join voice channels",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceMessages",
+      "id": "VoiceMessages",
+      "source": "Equicord",
+      "name": "VoiceMessages",
+      "description": "Allows you to send voice messages like on mobile. To do so, right click the upload button and click Send Voice Message",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceMessagesInBackground",
+      "id": "VoiceMessagesInBackground",
+      "source": "Equicord",
+      "name": "VoiceMessagesInBackground",
+      "description": "Keeps voice messages playing across chats with a synchronized mini player.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VoiceRejoin",
+      "id": "VoiceRejoin",
+      "source": "Equicord",
+      "name": "VoiceRejoin",
+      "description": "Rejoins DM/Server call automatically when restarting Discord.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:VolumeBooster",
+      "id": "VolumeBooster",
+      "source": "Equicord",
+      "name": "VolumeBooster",
+      "description": "Allows you to set the user and stream volume above the default maximum",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WaitForSlot",
+      "id": "WaitForSlot",
+      "source": "Equicord",
+      "name": "WaitForSlot",
+      "description": "Automatically join a full voice channel when a slot opens.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WebContextMenus",
+      "id": "WebContextMenus",
+      "source": "Equicord",
+      "name": "WebContextMenus",
+      "description": "Re-adds context menus missing in the web version of Discord: Links & Images (Copy/Open Link/Image), Text Area (Copy, Cut, Paste, SpellCheck)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WebKeybinds",
+      "id": "WebKeybinds",
+      "source": "Equicord",
+      "name": "WebKeybinds",
+      "description": "Re-adds keybinds missing in the web version of Discord. Only works fully on Vesktop/Equibop/Legcord, not inside your browser",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WebpackTarball",
+      "id": "WebpackTarball",
+      "source": "Equicord",
+      "name": "WebpackTarball",
+      "description": "Converts Discord's webpack sources into a tarball.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WebPWA",
+      "id": "WebPWA",
+      "source": "Equicord",
+      "name": "WebPWA",
+      "description": "Makes Discord installable as an App (PWA). Enables notification badges, global key-binds and Discord's custom title bar.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WebRichPresence",
+      "id": "WebRichPresence",
+      "source": "Equicord",
+      "name": "WebRichPresence",
+      "description": "Client plugin for arRPC to enable RPC on Discord Web (experimental)",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WebScreenShare",
+      "id": "WebScreenShare",
+      "source": "Equicord",
+      "name": "WebScreenShare",
+      "description": "Adds a screenshare options menu. Allows for changing resolution, framerate, encoding hints, and system audio settings.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WebScreenShareFixes",
+      "id": "WebScreenShareFixes",
+      "source": "Equicord",
+      "name": "WebScreenShareFixes",
+      "description": "Removes 2500kbps bitrate cap on chromium and vesktop clients and fixes CPU usage growing endlessly while screensharing.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WhitelistedEmojis",
+      "id": "WhitelistedEmojis",
+      "source": "Equicord",
+      "name": "WhitelistedEmojis",
+      "description": "Adds the ability to disable all message emojis except for a whitelisted set.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WhoReacted",
+      "id": "WhoReacted",
+      "source": "Equicord",
+      "name": "WhoReacted",
+      "description": "Renders the avatars of users who reacted to a message",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WhosWatching",
+      "id": "WhosWatching",
+      "source": "Equicord",
+      "name": "WhosWatching",
+      "description": "Hover over the screenshare icon to view what users are watching your stream",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WigglyText",
+      "id": "WigglyText",
+      "source": "Equicord",
+      "name": "WigglyText",
+      "description": "Adds a new markdown formatting that makes text wiggly.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:WriteUpperCase",
+      "id": "WriteUpperCase",
+      "source": "Equicord",
+      "name": "WriteUpperCase",
+      "description": "Changes the first Letter of each Sentence in Message Inputs to Uppercase",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:XSOverlay",
+      "id": "XSOverlay",
+      "source": "Equicord",
+      "name": "XSOverlay",
+      "description": "Forwards discord notifications to XSOverlay, for easy viewing in VR",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "equicord:ZipPreview",
+      "id": "ZipPreview",
+      "source": "Equicord",
+      "name": "ZipPreview",
+      "description": "Previews ZIP contents inside file attachments.",
+      "recommended": false,
+      "minimal": false
+    }
+  ]
+}

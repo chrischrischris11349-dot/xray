@@ -13,6 +13,7 @@ import { invoke } from "../shell/bridge";
 import { h } from "./dom";
 import { icon } from "./icons";
 import { uiRoot } from "./root";
+import { addStyle, watchElements } from "../api/dom";
 
 const MIN = icon("minus", 16, 1.5);
 const MAX = icon("square", 13, 1.6);
@@ -31,13 +32,26 @@ const INTERACTIVE = 'button, a, input, textarea, select, [role="button"], [role=
 
 export function mountFrame(): void {
   const root = uiRoot();
+  addStyle(`${TOP_BAR} { box-sizing:border-box!important; padding-inline-end:168px!important; align-items:center!important; }
+    html[data-xray-vbar]:not([data-xray-presentation]) ${TOP_BAR} { padding-inline-end:288px!important; }
+    ${TOP_BAR} > [class*="trailing_"] { position:relative!important; inset:auto!important; transform:none!important; align-self:center!important; display:flex!important; align-items:center!important; }`);
+  let barObserver: ResizeObserver | undefined;
+  let measuredHeight = TOP_BAR_HEIGHT;
+  watchElements(TOP_BAR, bar => {
+    barObserver?.disconnect();
+    const measure = () => {
+      const height = bar.getBoundingClientRect().height;
+      if (height >= 24 && height <= 80) { measuredHeight = height; (root.host as HTMLElement).style.setProperty("--xr-titlebar-height", `${height}px`); }
+    };
+    barObserver = new ResizeObserver(measure); barObserver.observe(bar); measure();
+  });
 
   // Dragging: a press on an empty part of Discord's top bar moves the window.
   // No overlay, so Discord's own top-bar icons (inbox, help) keep their
   // clicks wherever they sit. xray's own controls live in its shadow root,
   // so their events reach here retargeted to the host, outside the bar.
   const onBar = (event: MouseEvent) => {
-    if (event.button !== 0 || event.clientY > TOP_BAR_HEIGHT || !(event.target instanceof Element)) return false;
+    if (event.button !== 0 || event.clientY > measuredHeight || !(event.target instanceof Element)) return false;
     const bar = document.querySelector(TOP_BAR);
     // Before the app mounts (loading, login) the whole top edge drags.
     if (bar ? !bar.contains(event.target) : event.target !== document.documentElement && event.target !== document.body && !event.target.closest("#app-mount")) return false;

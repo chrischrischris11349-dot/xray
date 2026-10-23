@@ -7,6 +7,8 @@ import { comfortPlugins } from "./comfort";
 import { decorationPlugins } from "./decorations";
 import fakeDeafen from "./fakeDeafen";
 import { lookPlugins } from "./look";
+import localMessageEdit from "./localMessageEdit";
+import messageModeration from "./messageModeration";
 import messageLogger from "./messageLogger";
 import { mediaPlugins } from "./media";
 import { messagingPlugins } from "./messaging";
@@ -19,6 +21,7 @@ import { readingPlugins } from "./reading";
 import { toolPlugins } from "./tools";
 import type { Plugin } from "./types";
 import voiceBar from "./voiceBar";
+import screenShare from "./screenShare";
 import { webMenuPlugins } from "./webMenus";
 import { utilityPlugins } from "./utility";
 
@@ -26,10 +29,13 @@ import { utilityPlugins } from "./utility";
 export const builtins: readonly Plugin<any>[] = [
   fakeDeafen,
   messageLogger,
+  localMessageEdit,
+  messageModeration,
   cleanLinks,
   translate,
   ...chatActionPlugins,
   voiceBar,
+  screenShare,
   ...webMenuPlugins,
   ...toolPlugins,
   ...readingPlugins,

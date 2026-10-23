@@ -12,6 +12,7 @@ use crate::hotkeys::Hotkeys;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ShellSettings {
+    pub zoom: f64,
     /// Closing the window hides it to the tray instead of quitting.
     pub close_to_tray: bool,
     /// When xray starts at login, stay in the tray instead of opening the window.
@@ -34,6 +35,7 @@ pub struct ShellSettings {
 impl Default for ShellSettings {
     fn default() -> Self {
         Self {
+            zoom: 1.0,
             close_to_tray: true,
             start_minimized: false,
             autostart_initialized: false,

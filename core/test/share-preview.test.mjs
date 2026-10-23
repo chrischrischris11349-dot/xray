@@ -1,0 +1,12 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { build } from 'esbuild';
+import { createRequire } from 'node:module';
+import { parseHTML } from 'linkedom';
+await build({entryPoints:['core/src/voice/sharePreview.ts'],outfile:'node_modules/.cache/xray/share-preview.cjs',bundle:true,platform:'node',format:'cjs'});
+const {confirmSharePreview}=createRequire(import.meta.url)('../../node_modules/.cache/xray/share-preview.cjs');
+function setup(){const {document}=parseHTML('<html><body></body></html>');globalThis.document=document;const create=document.createElement.bind(document);document.createElement=name=>{const el=create(name);if(name==='video'){el.play=()=>Promise.resolve();el.pause=()=>{};}if(name==='dialog')el.showModal=()=>{};return el;};return label=>[...document.querySelectorAll('button')].find(b=>b.textContent===label).click();}
+function stream(){const track=new EventTarget();Object.assign(track,{readyState:'live',label:'Test window',stopped:false,getSettings:()=>({width:1280,height:720}),stop(){this.stopped=true;}});return {track,getTracks:()=>[track],getVideoTracks:()=>[track]};}
+test('capture is held locally until explicit confirmation, then preserved',async()=>{const click=setup(),source=stream();let released=false;const result=confirmSharePreview(source,async()=>source).then(s=>{released=true;return s;});await Promise.resolve();assert.equal(released,false);assert.equal(document.querySelector('video').srcObject,source);click('Share this source');assert.equal(await result,source);assert.equal(source.track.stopped,false);assert.equal(document.querySelector('dialog'),null);});
+test('cancel stops current capture and any late replacement',async()=>{const click=setup(),source=stream(),replacement=stream();let resolve;const result=confirmSharePreview(source,()=>new Promise(r=>{resolve=r;}));const rejected=assert.rejects(result,{name:'NotAllowedError'});click('Choose another source');click('Cancel');resolve(replacement);await rejected;await Promise.resolve();assert.equal(source.track.stopped,true);assert.equal(replacement.track.stopped,true);});
+test('cancelled replacement preserves the previous approved source',async()=>{const click=setup(),source=stream();const result=confirmSharePreview(source,async()=>{throw new Error('cancel');});click('Choose another source');await new Promise(r=>setImmediate(r));assert.equal(source.track.stopped,false);click('Share this source');assert.equal(await result,source);});

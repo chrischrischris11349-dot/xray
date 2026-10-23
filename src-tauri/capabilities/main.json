@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The commands Discord's page may call: notify (a desktop notification), get/set_hotkeys (xray's own bindings), report_events (forward xray's own log events to your log server), sync_config (push/pull your own xray settings blob to your server) translate (send one message's text to Google's translate endpoint when you pick Translate) and web_fetch (the cross-site requests Equicord's plugins make, https only and never to your own machine or network). Anything granted here can be called by any script on discord.com, Discord's own included, so keep this list small and the commands narrow. notify caps text and drops bursts; set_hotkeys validates every binding, and the page never sees keystrokes, only which xray action fired. report_events and sync_config hold the server address and token on the Rust side and only reach your configured https server, so a hostile script could at most read or overwrite your own xray settings, never anyone else's data.",
+  "description": "Native commands available to the Discord WebView. document_store reads/writes bounded profile-history and moderation-audit documents on the operator's configured HTTPS server only, with revision checks, no redirects, no local disk cache, and credentials held in Rust. Any script on discord.com can call granted commands and could access these operator documents; this is not an isolated security boundary from Discord. Other grants cover notifications, hotkeys, own event reporting/config sync, translation, public HTTPS web requests, and the fixed local Oathnet helper's validated profile/history routes.",
   "windows": [
     "main"
   ],
@@ -13,16 +13,26 @@
   },
   "permissions": [
     "allow-notify",
+    "allow-set-notification-privacy",
     "allow-get-hotkeys",
     "allow-set-hotkeys",
     "allow-report-events",
     "allow-sync-config",
+    "allow-document-store",
     "allow-translate",
     "allow-web-fetch",
+    "allow-oathnet-lookup",
+    "allow-provider-keys",
+    "allow-open-provider-settings",
+    "allow-intel-request",
+    "allow-recording-transfer",
+    "allow-set-voice-controls",
+    "allow-change-zoom",
     "core:window:allow-minimize",
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
-    "core:window:allow-is-maximized"
+    "core:window:allow-is-maximized",
+    "allow-open-sandbox-preview"
   ]
 }

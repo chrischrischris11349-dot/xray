@@ -3,9 +3,9 @@
  * errors and your own voice and plugin events, so you can see when Discord
  * changed something under xray or when a plugin acted.
  *
- * What it does NOT keep: anything about other people. No other users, no
- * message content, no avatars, no history of anyone. xray never sends those,
- * and this server rejects any event field it doesn't expect (see `clean`).
+ * Logs never contain message bodies or image files. Separate opt-in account
+ * documents can contain profile notes/observations and moderation audits.
+ * See README.md for storage, retention and bearer-token access semantics.
  *
  * Storage is one SQLite file (node:sqlite, built into Node 22, no native
  * build). Rows older than the retention window are deleted on a timer and
@@ -24,6 +24,8 @@
 import { createServer } from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
+import { dirname,join } from "node:path";
+import { recordingStore } from "./recordings.mjs";
 
 const TOKEN = process.env.XRAY_LOG_TOKEN ?? "";
 const PORT = Number(process.env.XRAY_LOG_PORT ?? 8787);
@@ -91,12 +93,19 @@ export function openDb(path = DB_PATH) {
       value      TEXT NOT NULL,
       updated_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS documents (
+      ns TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      revision INTEGER NOT NULL
+    );
   `);
   return db;
 }
 
 /** Namespaces are plugin ids: short, and only safe characters. */
 const NS_PATTERN = /^[a-zA-Z0-9_.-]{1,64}$/;
+const DOCUMENT_NS = /^(profile-history|moderation-audit|server-monitors)\.\d{14,20}$/;
+const MAX_DOCUMENT_BYTES = 2_500_000;
 
 /** A tiny data layer, so the HTTP server and the tests share one path. */
 export function store(db, now = () => Date.now()) {
@@ -109,7 +118,19 @@ export function store(db, now = () => Date.now()) {
     INSERT INTO config (ns, value, updated_at) VALUES (?, ?, ?)
     ON CONFLICT(ns) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
   `);
+  const getDocument = db.prepare("SELECT value, revision FROM documents WHERE ns = ?");
+  const insertDocument = db.prepare("INSERT OR IGNORE INTO documents (ns,value,revision) VALUES (?,?,1)");
+  const updateDocument = db.prepare("UPDATE documents SET value=?,revision=revision+1 WHERE ns=? AND revision=?");
   return {
+    readDocument(ns) {
+      const row = getDocument.get(ns);
+      return row ?? { value: null, revision: 0 };
+    },
+    writeDocument(ns, value, revision) {
+      // One atomic statement prevents another device silently replacing newer data.
+      const result = revision === 0 ? insertDocument.run(ns, value) : updateDocument.run(value, ns, revision);
+      return Number(result.changes) === 1 ? { revision: revision + 1 } : null;
+    },
     add(events) {
       let added = 0;
       for (const raw of events.slice(0, MAX_BATCH)) {
@@ -164,7 +185,7 @@ function authorized(req) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function readBody(req) {
+function readBody(req, maxBytes = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let size = 0;
     let tooLarge = false;
@@ -174,7 +195,7 @@ function readBody(req) {
       size += chunk.length;
       // Stop collecting, but let the request drain so we can still send a 413
       // response instead of resetting the connection.
-      if (size > MAX_BODY_BYTES) {
+      if (size > maxBytes) {
         tooLarge = true;
         chunks.length = 0;
         reject(new Error("too large"));
@@ -193,11 +214,30 @@ function json(res, code, body) {
   res.end(text);
 }
 
-export function createApp(data) {
+export function createApp(data,recordings) {
   return async (req, res) => {
     const url = new URL(req.url, "http://localhost");
     try {
       if (!authorized(req)) return json(res, 401, { error: "unauthorized" });
+      if(url.pathname==="/recordings" && req.method==="POST") {
+        if(!recordings)return json(res,503,{error:"Recording storage unavailable"});
+        let payload;try{payload=JSON.parse(await readBody(req,200000));}catch{return json(res,400,{error:"Invalid recording request"});}
+        if(!["start","chunk","finish","list","read","abort"].includes(payload?.action))return json(res,400,{error:"Unknown recording action"});
+        try{return json(res,200,recordings[payload.action](payload));}catch(error){return json(res,400,{error:error.message});}
+      }
+      if (url.pathname === "/documents") {
+        const ns = url.searchParams.get("ns") ?? "";
+        if (!DOCUMENT_NS.test(ns)) return json(res, 400, { error: "bad document namespace" });
+        if (req.method === "GET") return json(res, 200, data.readDocument(ns));
+        if (req.method === "PUT") {
+          let payload;
+          try { payload = JSON.parse(await readBody(req, MAX_DOCUMENT_BYTES)); }
+          catch (error) { if (error.message === "too large") throw error; return json(res, 400, { error: "invalid JSON" }); }
+          if (typeof payload?.value !== "string" || !Number.isSafeInteger(payload.revision) || payload.revision < 0 || Buffer.byteLength(payload.value) > 2_000_000) return json(res, 400, { error: "expected a bounded document string and revision" });
+          const written = data.writeDocument(ns, payload.value, payload.revision);
+          return written ? json(res, 200, written) : json(res, 409, { error: "document changed on another device; reload before saving" });
+        }
+      }
       if (req.method === "POST" && url.pathname === "/ingest") {
         const body = await readBody(req);
         const payload = safeParse(body);
@@ -308,11 +348,11 @@ load();
 </script></body></html>`;
 
 /** Starts the HTTP server. Returned so tests can start it on an ephemeral port. */
-export function start({ db = openDb(), port = PORT, bind = BIND } = {}) {
+export function start({ db = openDb(), port = PORT, bind = BIND, recordings = recordingStore(process.env.XRAY_RECORDINGS_DIR ?? join(dirname(DB_PATH),"recordings")) } = {}) {
   const data = store(db);
-  const timer = setInterval(() => data.prune(), PRUNE_EVERY_MS);
+  const timer = setInterval(() => {data.prune();recordings.list();}, PRUNE_EVERY_MS);
   timer.unref?.();
-  const server = createServer(createApp(data));
+  const server = createServer(createApp(data,recordings));
   server.listen(port, bind, () => console.log(`xray log server on http://${bind}:${port} (keeping ${RETENTION_DAYS} days)`));
   return { server, db, data, stop: () => { clearInterval(timer); server.close(); db.close(); } };
 }

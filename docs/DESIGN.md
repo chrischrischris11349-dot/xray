@@ -1,4 +1,26 @@
-# xray design: mist and oak
+# XRay design
+
+The current default is Graphite: layered near-black surfaces, silver controls,
+fine borders and restrained static highlights. Space Gray, Silver and Off-white
+share the same semantic roles. `core/src/theme/palettes.ts` defines them;
+`core/src/ui/appearance.ts` applies them without duplicating component styles.
+Device indicators use a neutral tone with a small static glow; their tooltips
+retain device/status information. Increased contrast and reduced transparency
+remove the glow. Photographs and badge art keep their original colors.
+
+Halloween is an optional seasonal palette in the same Appearance selector. It
+reuses these surface, text, action and selection roles with near-black plum
+surfaces, soft orange actions and a lavender selection wash. Presence, errors,
+role badges and photographs retain their meaning and colors. The only extra
+decoration is an original outlined pumpkin and ghost beside the XRay settings
+title (`core/src/theme/seasonal.ts`): static vector artwork, with no image
+requests, emoji font or background animation. Increased contrast and forced
+colors hide this decorative mark. All palettes declare their native color
+scheme so operating-system dropdowns and form controls match the active theme.
+
+The implementation, current limits and companion roadmap are in
+`docs/COMPANION_PLAN.md`. The original Mist & Oak palette remains selectable;
+its foundational token reference follows below.
 
 xray's look, its tokens, and the extended profile view. The rules in
 `docs/ARCHITECTURE.md` still apply: the theme restyles Discord through its own

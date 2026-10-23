@@ -1,3 +1,4 @@
+import { formatDateTime, formatTime } from "../time";
 /**
  * Small additions to message headers and the channel list: a person's
  * @username next to their nickname, which devices they're on, whether
@@ -141,7 +142,7 @@ function icon(kind: string, color: string, title: string): SVGSVGElement {
 const platformIndicators = definePlugin({
   id: "platformIndicators",
   name: "Device Indicators",
-  description: "Small icons in chat show whether someone is on desktop, phone or web, colored by their status.",
+  description: "Clean monochrome icons show desktop, phone or web activity. Point at an icon for its status.",
   category: "Friends",
   impact: "light",
   impactReason: "Redraws visible headers when someone's status changes",
@@ -199,7 +200,7 @@ const userVoiceShow = definePlugin({
 
 function shortTime(date: Date): string {
   const today = new Date();
-  if (date.toDateString() === today.toDateString()) return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  if (date.toDateString() === today.toDateString()) return formatTime(date);
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", ...(date.getFullYear() !== today.getFullYear() ? { year: "numeric" } : {}) });
 }
 
@@ -222,7 +223,7 @@ const replyTimestamp = definePlugin({
       const replied = id ? stores.messages?.getMessage?.(ref.channel_id ?? ref.channelId ?? message.channel_id, id) : null;
       const time = replied?.timestamp ? new Date(String(replied.timestamp)) : null;
       if (!time || Number.isNaN(time.getTime())) return;
-      const label = span("xray-reply-time", shortTime(time), time.toLocaleString());
+      const label = span("xray-reply-time", shortTime(time), formatDateTime(time));
       const preview = reply.querySelector('[class*="repliedTextPreview_"]');
       if (preview) preview.insertAdjacentElement("afterend", label);
       else reply.append(label);

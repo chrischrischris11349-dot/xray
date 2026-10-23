@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-open-sandbox-preview"
+description = "Enables the open_sandbox_preview command without any pre-configured scope."
+commands.allow = ["open_sandbox_preview"]
+
+[[permission]]
+identifier = "deny-open-sandbox-preview"
+description = "Denies the open_sandbox_preview command without any pre-configured scope."
+commands.deny = ["open_sandbox_preview"]

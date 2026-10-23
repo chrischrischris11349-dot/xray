@@ -19,9 +19,19 @@ import square from "lucide-static/icons/square.svg";
 import videoOff from "lucide-static/icons/video-off.svg";
 import video from "lucide-static/icons/video.svg";
 import x from "lucide-static/icons/x.svg";
+import shield from "lucide-static/icons/shield.svg";
+import gamepad from "lucide-static/icons/gamepad-2.svg";
+import users from "lucide-static/icons/users.svg";
+import database from "lucide-static/icons/database.svg";
+import download from "lucide-static/icons/download.svg";
+import messageCircle from "lucide-static/icons/message-circle.svg";
+import imagePlus from "lucide-static/icons/image-plus.svg";
+import reply from "lucide-static/icons/reply.svg";
+import ellipsis from "lucide-static/icons/ellipsis.svg";
+import info from "lucide-static/icons/info.svg";
 
 const SOURCES = {
-  chevronRight, copy, glasses, headphoneOff, headphones, idCard, mic, micOff, minus, search, settings, square, video, videoOff, x,
+  chevronRight, copy, glasses, headphoneOff, headphones, idCard, mic, micOff, minus, search, settings, square, video, videoOff, x, shield, gamepad, users, database, download, messageCircle, imagePlus, reply, ellipsis, info,
 };
 
 export type IconName = keyof typeof SOURCES;

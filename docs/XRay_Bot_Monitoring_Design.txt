@@ -1,0 +1,659 @@
+XRAY: AUTHORIZED DISCORD MONITORING SERVICE
+Technical design, version 1.0
+Prepared October 22, 2026
+Status: design proposal; not an implemented or deployed bot
+
+1. PURPOSE AND BOUNDARIES
+
+Provide an accurate, guild-scoped activity log for authorized moderation and
+consented security testing. Administrators select eligible servers, channels
+and members; reviewers inspect observed changes and can stop collection.
+Describe observations neutrally. A username change or deleted message is not
+evidence that somebody is malicious; do not assign a "snake" or risk score.
+
+Use an official bot account installed in each participating guild. Never use
+a human account token, private client endpoints, profile scraping or a user
+account automation library to fill gaps in the bot API. The service cannot
+follow somebody into servers where the bot is absent or recover events that
+Discord never delivered.
+
+Policy gate: Discord's Developer Policy prohibits using API data to profile
+users, identities or relationships, and prohibits scraping. A personal,
+cross-server tracking dossier would conflict with that restriction. The
+recommendation here is a restricted moderation event log, not a general
+person-tracking database. Whether a particular longitudinal profile-history
+feature is permitted needs review against the stated functionality and, if
+uncertain, clarification from Discord before enabling it. Administrator
+permission or participant consent alone is not a blanket policy exception.
+Keep profile-history collection disabled pending that decision. [1]
+
+Explicit non-goals: collecting IP addresses, exposing private servers or DMs
+between other people, mapping friends/relationships, deanonymizing accounts,
+recovering stripped photo metadata, and automatically treating cosmetic
+changes as evidence of misconduct.
+
+2. FEASIBILITY AND DATA AVAILABILITY
+
+Username, global display name and global avatar:
+  Available when official user data is supplied in authorized guild events.
+  GUILD_MEMBER_UPDATE can include changed user information; it is not limited
+  to a nickname change. USER_UPDATE describes the bot's own account, so it
+  must not be used as a global stream of all human account changes. [2,3]
+
+Guild nickname and guild avatar:
+  Use the member data for that guild. Store these separately from global
+  username/avatar values. An avatar removal is different from an unknown
+  value. Member updates require the relevant member intent. [2,4]
+
+Bio/about-me:
+  Not a documented field of the ordinary bot User resource. Show
+  "Unavailable through the official bot API" and reject requests to enable
+  automatic bio monitoring. A member may submit their own application note;
+  label it self-reported, not a Discord bio observation. [3]
+
+Message changes:
+  Use MESSAGE_CREATE, MESSAGE_UPDATE, MESSAGE_DELETE and MESSAGE_DELETE_BULK
+  in authorized channels. Updates are partial and may concern embeds or
+  other metadata. A missing text field is not an empty message. Delete
+  payloads lack the deleted body and deleting actor. Previous text and
+  author attribution require a permitted, previously captured baseline. [2]
+
+Content access:
+  The MESSAGE_CONTENT privileged intent governs message text and additional
+  user-supplied fields, including attachments/embeds. Without eligible access,
+  keep metadata-only logs and show that content is unavailable. [5,6]
+
+Deletion attribution:
+  Default to "Message by this author was deleted; deleting actor unknown."
+  Guild audit records may describe moderator deletions, but their count and
+  channel/author context do not reliably identify each message. Do not match
+  the latest audit entry and claim certainty. An action performed by this
+  bot can have exact actor/message attribution from its own verified action
+  record; otherwise keep audit candidates separate from established facts. [7]
+
+Presence:
+  Not required for the requested feature. Leave GUILD_PRESENCES off by
+  default. If a separately reviewed feature needs it, enforce the privileged
+  intent and privacy restrictions; custom status is not a profile bio.
+
+Completeness:
+  Display observed coverage, unavailable fields and collection gaps. A count
+  means retained events observed in the selected authorized scope, not a
+  lifetime total or proof the author personally deleted those messages.
+
+3. ARCHITECTURE AND XRAY INTEGRATION
+
+Recommended initial deployment:
+
+  Discord Gateway -> bot worker -> normalized event transaction -> database
+                                    |                         |
+                                    +-> notification outbox -> delivery worker
+                                                              |
+  XRay companion/dashboard <-> authenticated monitoring API <--+
+
+Keep this service independent from the standard Discord client. Gateway
+collection runs on the VPS while XRay is closed. XRay is a viewer/control
+surface; it must not supply a human Discord login token to the bot service.
+
+Use TypeScript on a supported Node runtime compatible with the chosen
+maintained Discord SDK. Let the SDK manage heartbeats, REST buckets and
+Gateway session lifecycle. Pin and test the SDK version during implementation.
+Do not add a custom protocol stack without a demonstrated need.
+
+For one operator, deploy one bot/API service with SQLite in WAL mode and a
+bounded worker queue, assuming a local VPS filesystem and measured write
+throughput. For multiple writers, tenants or shards, use PostgreSQL with
+transactional job tables and indexes. Redis is optional for cache/fanout; it
+must not become a second authoritative copy of monitoring permissions.
+
+XRay 0.4 already has a personal settings/log/document server. Its one bearer
+token authorizes the whole personal service; account namespaces are storage
+keys, not multi-user authorization. Do not expose the new monitoring API to
+friends using that token or use a single whole-history JSON document for
+concurrent event writes. Preserve existing endpoints and add a separate
+authenticated /v1 monitoring service or independent application.
+
+Prefer a dedicated companion origin/window or external authenticated browser
+for sensitive logs. Scripts in the embedded Discord page can invoke granted
+native bridge commands. Keeping a token in Rust does not isolate returned
+record contents from that page. A future bridge integration must have narrow
+commands, short-lived app sessions and server-side authorization for every
+operation; no general authenticated URL fetch capability.
+
+4. TARGET SELECTION, ROLES AND INTENTS
+
+A tenant is one authorized guild, not a global user identity graph.
+
+A server monitor selects an explicit channel allowlist and event categories.
+It does not silently subscribe to every private channel. Broad member-change
+logging is a separately reviewed category. A user monitor requires BOTH a
+guild ID and member ID, with a reason/case reference and policy eligibility.
+Reject an arbitrary Discord ID outside the authorized guild context.
+
+Roles:
+  Owner: approve policy, designate moderator roles, retention and log channels.
+  Monitor manager: create/change monitors within the approved guild policy.
+  Log reviewer: read only permitted event categories/channels.
+  Participant: manage their own eligible opt-in and permitted withdrawal.
+  Service operator: deploy/maintain infrastructure; no automatic UI entitlement
+                    to every tenant's content solely from an app role.
+
+For manager operations, verify an explicit monitoring role and the chosen
+guild-management permission, with owner override according to product policy.
+Recheck actor membership, roles and channel overwrites on the server. A client
+toggle or OAuth guild-list entry is not proof of channel access. [8]
+
+For log reads, require the log-review role plus current channel access and,
+for retained message material, history access. If access cannot be verified,
+fail closed. Removed channels need an explicit restricted archive policy;
+do not make their logs visible to everyone remaining in the guild.
+
+Intents:
+  GUILDS: guild/channel configuration and access invalidation.
+  GUILD_MEMBERS: member changes where enabled and approved as required.
+  GUILD_MESSAGES: guild message events in accessible channels.
+  MESSAGE_CONTENT: optional, only for approved content-diff functionality.
+  GUILD_MODERATION: optional audit integration; also check VIEW_AUDIT_LOG.
+  DIRECT_MESSAGES and GUILD_PRESENCES: not enabled for the initial feature.
+
+Privileged-intent configuration and approval are separate from channel
+permissions. If an intent is unavailable, expose the reduced capability in
+the UI instead of retrying unauthorized APIs. [5]
+
+5. DATA MODEL
+
+Use decimal strings for Discord snowflakes in JSON/TypeScript. Do not convert
+them to floating-point numbers. Internal row IDs can be UUIDs. Timestamps are
+UTC; clients display local time with an optional 24-hour preference.
+
+guild_policies
+  guild_id PK
+  approved_categories, channel_allowlist
+  profile_history_review_state: disabled | approved | needs_review
+  content_mode: metadata_only | approved_short_retention
+  metadata_retention_days, content_retention_hours
+  reviewer_role_ids, manager_role_ids, notification_destination
+  policy_version, updated_by, updated_at
+
+monitors
+  id PK, guild_id FK
+  target_kind: guild | member
+  target_user_id nullable; required for member targets
+  categories, channels, reason_reference
+  status: initializing | active | paused | blocked | stopped
+  capability_status, blocked_reason
+  created_by, created_at, active_from, paused_at, stopped_at
+  epoch integer, version integer
+  policy_version, metadata_expires_at where appropriate
+
+monitor_intervals
+  monitor_id, epoch PK
+  started_at, ended_at, baseline_ready_at, baseline_source
+  Prevents comparing snapshots across pauses as if no collection gap existed.
+
+target_exclusions
+  guild_id, user_id PK; categories/scope, effective_at, reason, version
+  Checked before ALL monitor rules, including a covering server rule.
+
+member_baselines
+  guild_id, user_id, collection_generation PK
+  global_user_fields, guild_member_fields
+  per_field_known_mask, field_observed_at, source, expires_at
+  Store only whitelisted fields and eligible targets. Missing is not null.
+  Preserve raw observed values; display truncation must be marked explicitly.
+
+message_baselines
+  guild_id, channel_id, message_id PK
+  author_id nullable, message_created_at, last_observed_edit_at
+  collection_generation, first_observed_at, expires_at
+  content_state: unavailable | known | expired | purged
+  encrypted_content nullable; separate short-retention content table preferred
+  content_digest nullable, attachment_metadata nullable under content policy
+  Limit the cache by TTL, record count AND bytes. Digest is tenant-keyed HMAC,
+  not a public unsalted fingerprint; do not retain one after required erasure.
+
+events
+  id PK, guild_id, channel_id nullable, subject_user_id nullable
+  kind, observed_at, source_occurred_at nullable
+  field_path nullable; before/after with explicit known/unavailable states
+  author_id nullable, actor_id nullable, actor_attribution enum
+  message_id nullable, origin_event_key, coverage_status
+  policy_version, metadata_expires_at, content_reference nullable
+
+event_visibility
+  event_id, monitor_id, epoch PK
+  collection source and reviewer scope; overlapping monitors share one event.
+  An event is not exposed just because a reader can guess its ID.
+
+notification_outbox
+  id PK, event_id, monitor_id, epoch, destination, attempt_count
+  state: pending | sending | sent | canceled | expired
+  next_attempt_at, expires_at, last_error_code
+
+coverage_intervals
+  guild_id, shard_id, started_at, ended_at, reason
+  Reasons include disconnect, unavailable guild, revoked access and overload.
+
+control_audit
+  id, guild_id, actor_id, action, monitor_id, policy_version, occurred_at
+  No message bodies, secrets or unnecessary copied profile values.
+
+Indexes:
+  monitors(guild_id, status, target_kind, target_user_id)
+  events(guild_id, observed_at DESC, id DESC)
+  events(guild_id, subject_user_id, observed_at DESC, id DESC)
+  events(guild_id, channel_id, observed_at DESC, id DESC)
+  UNIQUE(origin_event_key) at the appropriate event/field granularity
+  outbox(state, next_attempt_at), and expiry indexes for purge jobs.
+  For large PostgreSQL installations, time-partition event/content tables.
+
+6. EVENT PROCESSING AND ACCURACY
+
+At intake, normalize only necessary fields. Configure the SDK so default
+message/member caches do not retain all guild content behind this design's
+allowlists. Partition processing by guild/member for profile events and by
+guild/channel/message for message events. Serialize updates within an entity.
+
+Maintain indexed sets/maps of active guild rules and member rules. Matching
+cost should depend on applicable rules, not all configured targets. Hydrate
+these from the database at startup and invalidate on committed policy changes.
+The database, not this cache, decides whether a write is still allowed.
+
+Profile/member processing, only when the policy gate permits it:
+
+  matches = activeRulesFor(guild, member) minus effective exclusions
+  if matches empty: discard payload without creating a personal record
+  patch = validateWhitelistedPresentFields(payload)
+  transaction:
+    lock applicable monitor rows; verify epochs, policy and active intervals
+    lock baseline for this guild/member/collection generation
+    for each supplied field:
+      if field was not known: establish baseline; do not invent a change
+      else if normalized value differs: append before/after event
+      update only that field and its observation time
+    bind event visibility to qualifying monitors
+    enqueue permitted notification intents in the same transaction
+
+Keep global avatar and guild avatar as distinct field paths. Do not infer an
+account change by comparing two different guild nicknames. An explicit null
+can mean removed; absent or redacted data must remain unavailable. The source
+time for a profile transition is generally an observation time, not a precise
+change timestamp. Record the preceding observation interval if useful.
+
+On activation/resume, initialize a new baseline using current eligible data
+with a rate-limited targeted fetch or subsequent authorized event. Show
+Initializing until ready. Never turn a difference after a gap into a change
+that supposedly happened at a known moment during the pause.
+
+Message handling:
+  CREATE: save minimal author/channel attribution for matching, authorized
+          targets; capture body only if the content policy allows it.
+  UPDATE: merge present fields into known data. Record a text diff only when
+          before and after text are genuinely known and authorized. Otherwise
+          record an observed edit marker or metadata update with unknown-before.
+          A later embed expansion alone must not be labeled a text edit.
+  DELETE: record the observation, previous author only if established, and
+          actor unknown. Default policy discards any cached body on deletion.
+          An explicitly permitted forensic-content mode needs separate review
+          and bounded retention; never quietly recover deleted bodies.
+  BULK: process IDs in bounded batches, preserving known attribution per ID.
+
+For an uncached deletion, a server rule may record an unattributed deletion
+in its channel. An individual-member rule cannot claim it belongs to that
+member. A deleted message cannot be fetched afterward to recover its author
+or body. Do not manufacture missing history by scraping old channels.
+
+An update for an old, uncached message may be enriched with a single bounded
+fetch if still accessible and necessary. It supplies only the current state,
+not a pre-edit version. Negative-cache failed lookups and show unknown-before.
+
+Use a session-scoped Gateway sequence key plus entity/field identity to dedupe
+replayed dispatches. For repeated deletes, also enforce entity/epoch dedupe.
+Transactionally commit event, baseline, visibility, outbox and application
+checkpoint. Do not mistake the SDK's last-received sequence for proof that
+the database committed it. Discord does not wait for a database acknowledgement.
+Resume can reduce gaps, but delivery is not a guarantee of exactly-once or
+complete historical recovery. Mark a gap whenever replay cannot be established.
+
+7. STOPPING AND RESUMING
+
+Distinguish three actions in both API and UI:
+  Pause this rule: stop new records for this monitor; retain its allowed history.
+  Stop collection for this member: create a guild exclusion overriding covering
+                                   server rules as well as individual rules.
+  Delete stored history: explicitly purge retained records/content/exports.
+
+Otherwise a user could pause one rule while a broad server rule continued
+collecting the same subject without their realizing it. Show every effective
+collection source in target management. Any exceptional moderation policy must
+be explicit and reviewed, not a silent override of a withdrawal control.
+
+Pause/stop transaction:
+  lock policy/monitor rows in a fixed order
+  change state; increment epoch/version; record cutoff and control audit
+  cancel queued notifications and release unnecessary target/cache references
+  commit before acknowledging success
+
+Each event writer rechecks active state, policy and epoch while holding the
+same row lock before it appends a visibility binding. Old queued jobs therefore
+cannot append to a stopped monitor after its stop transaction commits. The
+service may still receive guild events at the Gateway; it must filter rather
+than persist them for the stopped target. Other independently authorized rules
+remain subject to the effective exclusion policy.
+
+Delivery workers recheck epoch, permissions and cancellation immediately before
+sending. Already submitted Discord network requests can still arrive after the
+stop acknowledgement; document this small in-flight delivery exception instead
+of claiming an impossible remote recall guarantee. Do not initiate new delivery
+for an expired/stopped rule. Resume creates a fresh collection interval and
+baseline; it does not backfill the time while paused.
+
+8. APPLICATION API AND DISCORD COMMANDS
+
+These are proposed XRay application endpoints, not Discord API routes.
+
+POST /v1/guilds/{guildId}/monitors
+  Body: target_kind, target_user_id when applicable, channel_ids, categories,
+        reason_reference and requested retention within guild policy.
+  Require a fresh manager authorization and an Idempotency-Key.
+  Return 201 with monitor ID, version, capabilities and initializing/active state.
+
+GET /v1/guilds/{guildId}/monitors
+  List only rules the actor may manage/view, with effective covering rules.
+
+PATCH /v1/guilds/{guildId}/monitors/{id}
+  Require If-Match version. Revalidate scope; increasing scope starts a new epoch.
+
+POST /v1/guilds/{guildId}/monitors/{id}/pause
+POST /v1/guilds/{guildId}/monitors/{id}/resume
+  Require If-Match and an authorized actor. Return effective state/cutoff/version.
+
+PUT /v1/guilds/{guildId}/exclusions/{userId}
+  Stop effective collection across covering rules under the guild policy.
+
+GET /v1/guilds/{guildId}/events
+  Filters: subject, authorized channel, category, date range and opaque cursor.
+  Maximum 100 rows. Cursor uses observed_at plus ID; no large OFFSET queries.
+  Return per-row provenance/availability and coverage warnings, not false zeros.
+
+GET /v1/guilds/{guildId}/coverage
+  Return current capabilities and authorized collection-gap intervals.
+
+POST /v1/guilds/{guildId}/history/purge
+  Explicit target/category/time selection. Return 202 with an auditable job ID.
+  Hide affected data immediately, then remove underlying records, bodies,
+  cached media, generated exports and pending delivery in bounded work units.
+
+POST /v1/guilds/{guildId}/exports
+  Export the actor's authorized result set as JSONL or plain text. Short-lived
+  download entitlement; recheck access at download; revoke on purge/access loss.
+
+GET /v1/guilds/{guildId}/events/stream
+  Optional SSE invalidation stream. Prefer generic authorized "logs updated"
+  signals, then fetch through the normal ACL-checked API. Never broadcast
+  private-channel event bodies to every guild member and hide them in the UI.
+
+Errors: 400 invalid shape/ID; 401 missing session; 403 insufficient role;
+404 missing or intentionally concealed resource; 409 stale version;
+422 unsupported/policy-disabled category such as automatic bio monitoring;
+429 quota exceeded with retry advice; 503 unverifiable access or unavailable
+storage. Every ID lookup includes guild/tenant scope to prevent IDOR.
+
+Use Discord OAuth authorization-code login for the dashboard with minimal
+identify/guilds scopes as needed, backend token exchange and an application
+session. Bot installation is separate. Validate OAuth state, constrain redirect
+URIs, use secure HttpOnly cookies/CSRF protection, and keep the client secret
+and bot token on the server. OAuth identifies the actor; fresh guild/channel
+checks authorize each operation. [9]
+
+Equivalent slash commands:
+  /monitor add member:<member> categories:<selection> reason:<case>
+  /monitor server channels:<selection> categories:<selection>
+  /monitor list
+  /monitor pause id:<rule>
+  /monitor resume id:<rule>
+  /monitor stop-member member:<member>
+  /monitor logs member:<optional> category:<optional>
+  /monitor purge member:<member> range:<selection>
+
+Command permissions are a UI convenience, not the backend authorization layer.
+Buttons/custom IDs reference server records; recheck the clicking user's rights.
+Use private/ephemeral command responses for configuration and sensitive logs.
+
+9. USER INTERFACE
+
+Monitoring page:
+  Guild selector limited to eligible installations; Add server rule and Add
+  member controls. A searchable member picker includes the available avatar,
+  display name, username and ID, with scope/coverage information. An ID paste
+  is validated against the guild instead of treated as a global lookup.
+
+Setup sheet:
+  Show event categories, channel allowlist, collection purpose, retention and
+  notification destination. Explain unavailable capabilities inline. Bio is a
+  disabled option with its API explanation. Profile-history controls remain
+  disabled until their policy gate is approved. Metadata-only is the default;
+  approved content storage is a distinct, explicit setting with a short TTL.
+
+Target list:
+  Avatar, target ID, guild, category chips, effective covering rules, status,
+  observed-since time and history expiry. Status text distinguishes Active,
+  Initializing, Paused, Stopped and Blocked by permission/intent/storage.
+  Every row has View logs, Pause/Resume and Stop collection. Put history purge
+  in a separate, clearly labeled destructive action so Pause never erases data.
+
+Log timeline:
+  Newest-first, virtualized rows; cursor pagination, category/user/channel/date
+  filters. Expand a row for exact IDs, before/after fields, source, attribution,
+  missing-data explanation and observation interval. Display a current allowed
+  avatar; an old avatar hash is not a guaranteed permanent archived picture.
+  Diff text only when both versions are known. Distinguish deleted-message
+  author from deletion actor. Show 12-hour AM/PM times by default with a 24-hour
+  option and UTC ISO timestamp on expansion. Cosmetic formatting never changes
+  the server timestamps or infers an unobserved event time.
+
+Coverage banner:
+  "Observing since ...", current connected state and known gaps. Unavailable
+  counts render Unknown, not 0. No lifetime/deleted-by-author claim from a
+  partial event history. Resume shows its new interval boundary in the timeline.
+
+Notifications:
+  Optional per-category notifications or digests. Identify the available sender
+  or server with its permitted thumbnail and a neutral event label. Default
+  preview hides body text. Reuse XRay's privacy/Presentation behavior. Desktop
+  actions open an authenticated, authorized log view; clicking a notification
+  is not permission to read the underlying event. OS/app-icon fallback is honest
+  when a person/server image is missing; do not borrow another user's photo.
+
+Use XRay's existing graphite/silver theme variables, familiar Lucide controls,
+clear focus rings and accessible labels. Show collection state with text as
+well as color. Avoid decorative animation on every incoming log event. UI
+virtualization, notification batching and cached date formatters preserve
+responsiveness without reducing what an expanded event can show.
+
+10. RATE LIMITS, SCALE AND FAILURE HANDLING
+
+Operate event-first; do not poll every watched profile each second. Activation
+baseline fetches are deduplicated, bounded and queued. A server rule can remain
+Initializing while eligible members are seeded gradually; it must not trigger
+a sudden full-server dump or claim all members already have a baseline.
+
+Discord documents a normal global REST budget of 50 requests/second for bots,
+with independent per-route limits. Treat limits as server-controlled: use
+X-RateLimit headers/buckets and 429 retry_after, with jitter and coordinated
+global throttling across workers. Never assume each shard gets a new global
+budget. The Gateway's 120 outgoing events/60 seconds/connection is a distinct
+limit, not a cap of two incoming message events per second. [5,10]
+
+Honor Get Gateway Bot recommendations/session-start concurrency limits when
+sharding. Resume valid sessions; stagger reconnects. Handle 403 by disabling
+the affected capability, 404 as unavailable, and 5xx with bounded retries.
+Do not retry a forbidden lookup indefinitely or rotate accounts/IPs to evade
+limits. Audit enrichment and image loading are optional lower-priority work.
+
+Use bounded per-entity queues and database batches (initial tuning: 10-25 ms,
+at most 100 normalized events). These are implementation targets, not platform
+limits. Do not debounce away multiple real edits/avatar transitions. Coalesce
+notification presentation or redundant snapshots, while retaining eligible
+distinct events. Under pressure, shed optional enrichments first; record
+coverage loss if required events cannot be persisted. Never report complete
+coverage after silent drops. Keep heartbeats separate from database work.
+
+For a database outage, choose a small, encrypted, access-restricted VPS spool
+with a byte/age cap, or an explicit fail-closed collection gap. Never an
+unbounded RAM queue and never an invisible desktop-disk fallback. Validate
+current rule epochs and policy again during replay; expired/paused jobs are
+discarded. A single VPS is not highly available. PostgreSQL/sharding alone
+does not create high availability or guaranteed replay.
+
+11. STORAGE, RETENTION AND SERVER OPERATIONS
+
+All persistent monitoring data lives on the VPS. Desktop viewers use bounded
+in-memory pages and Cache-Control: no-store for sensitive responses. App files,
+small preferences and normal Discord/WebView caches still occupy local disk;
+zero local disk usage is not a realistic promise.
+
+Proposed defaults, subject to the actual policy review:
+  Event metadata: 7 days; optional explicitly approved extension up to 30.
+  Message attribution cache: at most 24 hours and explicit record/byte limits.
+  Message content: off; reviewed mode with at most 24-hour retention initially.
+  Avatar image archives and attachment downloads: off.
+  Configuration audit: a separately justified minimal retention, e.g. 30 days.
+  Export links: expire after minutes; stored exports expire within one hour.
+
+Enforce expiries on reads AND with scheduled purge jobs, including cached
+baselines, search indexes, replicas, exports, media and queues. Content must
+not remain indefinitely inside an event JSON column after its body table TTL.
+Backups have documented bounded retention and restore-time purge tombstones
+so a restore does not resurrect an already fulfilled deletion request.
+
+Capacity example, not a measurement: 100,000 events/day at an assumed average
+1 KB per normalized metadata record is about 0.7 GB for seven days before
+indexes, database overhead, WAL and backups. Measure real row sizes and budget
+several times the raw total. Content/media can dominate this estimate, which
+is why they are separate, capped features. Alert on actual free disk and
+tenant quotas well before exhaustion; the advertised disk size is not free
+capacity. Disable optional archives before critical service writes fail.
+
+Deployment information supplied by the operator: Contabo Linux VPS with a
+200 GB advertised disk. An existing local SSH key successfully authenticated
+to that server without a password prompt. Read-only inspection identified
+Ubuntu 24.04.4 LTS and Node v22.23.2. The named xray-log, xray, caddy and nginx
+systemd services were inactive at inspection time; this does not prove no
+equivalent manually run service exists. Subsequent checks found about 11 GiB
+RAM and 188 GiB free on the root volume at inspection time, plus an existing
+Tailscale HTTPS application. These are observations, not reserved capacity.
+The separate personal XRay storage service was deployed with an unprivileged
+systemd account and a distinct private HTTPS port, preserving the existing
+application route. No Discord bot or monitoring service was deployed; this
+document remains a proposed bot architecture. CPU capacity and production
+monitoring workload still require measurement.
+
+Use an unprivileged service account, root-owned/restricted secret files,
+systemd restart/limits, a TLS reverse proxy and a private database listener.
+Do not run the application permanently as root just because administrative
+SSH is available. Preserve existing applications and firewall rules during
+deployment. TLS can use an operator-controlled hostname or another verified
+trusted-certificate arrangement; do not disable certificate verification.
+
+12. SECURITY AND OBSERVABILITY
+
+Parameterize database queries, validate IDs/field sizes, escape displayed text
+and suppress allowed mentions in bot notifications. Never render a message or
+profile field as trusted HTML. Restrict optional image proxy requests to
+approved Discord CDN paths, size/time limits and no credential forwarding.
+
+Authenticate all administrative API paths; rate-limit configuration/export
+operations, restrict origins, rotate sessions and keep tokens out of logs.
+Encrypt backups and any approved body storage; restrict server operators and
+document incident/deletion procedures. No API keys or SSH private keys belong
+in the installer, public repository, plain-text design or chat transcript.
+
+Metrics: Gateway connectivity/heartbeat latency, receive-to-commit lag,
+queue bytes/age, failed/dropped events, blocked capabilities, 429s by bucket,
+database latency, purge lag, free disk, active targets and delivery backlog.
+Metrics are aggregated operational data, not target message contents or
+personal activity scores. Log who changed collection policy and when, with
+eventual purge under its own stated retention.
+
+Initial performance goal: most metadata events queryable within two seconds
+under the measured supported load. Validate this with synthetic events and
+consented test guilds; publish measured percentiles and sustainable throughput
+instead of claiming a particular VPS plan guarantees this target.
+
+13. IMPLEMENTATION ORDER AND ACCEPTANCE TESTS
+
+Phase 1: policy/intent review, bot installation, server-side roles/channel
+checks, metadata-only guild/member target management and storage migrations.
+
+Phase 2: partial-safe baselines, message attribution, event dedupe, coverage
+tracking, transactionally enforced stop/exclusion controls and retention jobs.
+
+Phase 3: authorized log UI, filters, export/purge and privacy-safe notifications.
+
+Phase 4: separately approved profile/content categories, optional audit
+enrichment, load testing and multi-writer/sharded deployment when measured
+requirements justify them. Bio monitoring remains unavailable through the
+normal official bot API; it is not a later scraping task.
+
+Required tests:
+  Known baseline -> changed field produces one event with accurate scope.
+  First observation, omitted fields and redacted values produce no false change.
+  Explicit nickname/avatar removal is distinct from unavailable data.
+  Guild nickname/avatar values never overwrite another guild's baseline.
+  Embed-only updates never claim a text edit; missing pre-edit text stays unknown.
+  Uncached deletes never invent an author, body or deleting actor.
+  Duplicate/resumed/bulk events are idempotent at their intended granularity.
+  Pausing during queued writes prevents new bindings after its commit.
+  Stop-member exclusion also defeats a covering server monitor.
+  Resume establishes a fresh interval without manufacturing gap history.
+  A stale client version cannot silently reactivate a stopped rule.
+  Revoked roles/channel access block reads, exports, SSE and notifications.
+  Altering guild/monitor/message IDs cannot disclose another tenant's logs.
+  429s honor server retry timing and do not block Gateway heartbeats.
+  Database failure bounds memory/spool and visibly records coverage loss.
+  Expired bodies are inaccessible even before the scheduled physical purge.
+  Purges reach exports/queues/backups according to the documented procedure.
+  Desktop does not write monitoring event/body snapshots to persistent storage.
+  Server-only mode is honest about unsaved data and remaining app/cache disk.
+  Synthetic load validates row sizes, indexes, latency, quotas and restart gaps.
+
+14. OFFICIAL REFERENCES
+
+Checked October 22, 2026. API capabilities and policies can change. Field
+availability above is based on the documented resources; implementation
+choices, defaults and capacity estimates are recommendations, not Discord
+guarantees or a claim that Discord has approved this application.
+
+[1] Discord Developer Policy, especially Handle Data with Care:
+https://support-dev.discord.com/hc/en-us/articles/8563934450327-Discord-Developer-Policy
+
+[2] Gateway Events; Guild Member Update, User Update and message events:
+https://docs.discord.com/developers/events/gateway-events
+
+[3] User resource; documented user fields:
+https://docs.discord.com/developers/resources/user
+
+[4] Guild resource; guild member object:
+https://docs.discord.com/developers/resources/guild
+
+[5] Gateway; privileged intents, Message Content and outgoing event limits:
+https://docs.discord.com/developers/events/gateway
+
+[6] Message resource and content-field availability:
+https://docs.discord.com/developers/resources/message
+
+[7] Audit logs; deletion options and message-ID attribution limitations:
+https://docs.discord.com/developers/resources/audit-log
+
+[8] Permissions; roles and channel overwrites:
+https://docs.discord.com/developers/topics/permissions
+
+[9] OAuth2; authorization code and application authentication:
+https://docs.discord.com/developers/topics/oauth2
+
+[10] REST rate limits; response-driven buckets and global limits:
+https://docs.discord.com/developers/topics/rate-limits
+
+[11] Contabo SSH setup; public/private key handling:
+https://help.contabo.com/en/support/solutions/articles/103000271398-how-do-i-setup-a-ssh-connection-

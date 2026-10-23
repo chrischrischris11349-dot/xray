@@ -6,6 +6,7 @@
  */
 import { h } from "./dom";
 import { onKey, uiRoot } from "./root";
+import { writeClipboard } from "./clipboard";
 
 export interface DialogAction {
   label: string;
@@ -22,6 +23,7 @@ export interface DialogOptions {
   /** Text shown in a monospace, copyable block. */
   code?: string;
   actions?: readonly DialogAction[];
+  onClose?: () => void;
 }
 
 let current: { scrim: HTMLElement; stopKeys: () => void; onClose?: () => void } | undefined;
@@ -90,7 +92,7 @@ export function showDialog(options: DialogOptions): void {
         : actions,
     ),
   );
-  open(h("div", { class: "dialog", attrs: { role: "dialog", "aria-label": options.title } }, ...parts.filter(Boolean)));
+  open(h("div", { class: "dialog", attrs: { role: "dialog", "aria-label": options.title } }, ...parts.filter(Boolean)), undefined, options.onClose);
 }
 
 /** Shows a ready-made sheet (like the extended profile) with the dialog's Escape and click-outside behavior. */
@@ -100,7 +102,7 @@ export function showSheet(sheet: HTMLElement, onClose?: () => void): void {
 
 /** Puts text on the clipboard. Failures are ignored: there's nothing useful to do about them. */
 export function copyText(text: string): void {
-  navigator.clipboard?.writeText(text).catch(() => {});
+  void writeClipboard(text,uiRoot().activeElement as HTMLElement|null).then(ok=>{if(!ok)showDialog({title:"Copy unavailable",body:"Select the text below and press Ctrl+C.",code:text});});
 }
 
 /** Asks for a line (or block) of text. Resolves to the text, or null if cancelled. */

@@ -1,3 +1,4 @@
+import { formatDateTime } from "../time";
 /**
  * Message tools from the right-click menu (convert units, decode Base64,
  * save a message as a file, open every attachment), color swatches next to
@@ -118,7 +119,7 @@ const exportMessage = definePlugin({
             const author = message.author?.globalName || message.author?.username || "unknown";
             const when = new Date(String(message.timestamp));
             const files = (message.attachments ?? []).map((a: any) => `\n[file] ${a.filename}: ${a.url}`).join("");
-            download(`message-${message.id}.txt`, `${author}, ${when.toLocaleString()}\n\n${message.content ?? ""}${files}\n`);
+            download(`message-${message.id}.txt`, `${author}, ${formatDateTime(when)}\n\n${message.content ?? ""}${files}\n`);
           },
         }),
       );

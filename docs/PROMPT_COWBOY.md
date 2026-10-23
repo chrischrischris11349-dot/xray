@@ -1,0 +1,5 @@
+# Actual XRay stack
+
+XRay is a Windows desktop client built with Rust and Tauri 2 using WebView2. Its custom interface is TypeScript with direct DOM rendering and CSS, and it bundles Equicord's React/TSX plugins. JavaScript/esbuild and Node scripts build the injected frontend. The shell uses HTML; configuration uses JSON and TOML. It is not a Next.js project.
+
+Optimize this existing architecture without changing the visuals or removing features. Prioritize measured startup and runtime bottlenecks, bounded caches, batching, retained DOM nodes, avoiding duplicate store subscriptions, and deferring optional UI work. Keep plugin start/stop cleanup, draft/channel isolation, native-upload failures and notification privacy intact. Preserve exact search ranking. Do not apply Next.js-specific route/image APIs or claim Discord comparisons without matched workloads, accounts, plugin selections and hardware. Record before/after bundle bytes and timings, run the existing TypeScript/Node/Rust tests, build the native NSIS installer, and clearly separate fixture tests from live Discord/voice/capture validation.

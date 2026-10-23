@@ -142,6 +142,15 @@ export function messageActions(): any {
   return lookup("message actions", () => find(hasRealMethod("sendMessage", "editMessage", "deleteMessage")));
 }
 
+export function pinActions(): any {
+  return lookup("pin actions", () => find(filters.byOwnMethods("pinMessage", "unpinMessage")));
+}
+
+/** Same upload object used by Discord's composer and Equicord's attachment actions. */
+export function cloudUploader(): (new (item: { file: File; platform: number }, channelId: string) => unknown) | undefined {
+  return lookup("image uploader", () => find(candidate => typeof candidate === "function" && typeof candidate.prototype?.trackUploadFinished === "function"));
+}
+
 /**
  * Discord's own HTTP client: `get/post/put/patch/del({ url, body })`, with
  * paths like "/channels/1/messages/2". It adds your login and handles rate

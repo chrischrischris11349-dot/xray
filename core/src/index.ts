@@ -16,8 +16,18 @@ import { command, palette, setPaletteCommands } from "./ui/palette";
 import { offerPickerOnFirstRun, showPicker } from "./ui/picker";
 import { isPanelOpen, mountUi, openPanel } from "./ui/panel";
 import { quickReply } from "./ui/quickReply";
+import { intelligence, openIntelligence } from "./ui/intelligence";
+import { isFeatureOn } from "./ui/features";
+import { isPresentationMode, setPresentationMode } from "./ui/presentation";
 import { installKeyRouter } from "./ui/root";
+import { openVoiceDiagnostics } from "./ui/voiceDiagnostics";
 import { hookWebpack, webpackStats } from "./webpack";
+import { startProfileHistory } from "./history";
+import { currentTimeFormat, setTimeFormat, synchronizeTimeFormat } from "./time";
+import { toggleVoiceControl } from "./plugins/voiceBar";
+import { installVoiceRecording } from "./voice/recorder";
+import { startMonitoring } from "./monitoring";
+import { installZoom } from "./shell/zoom";
 
 const DISCORD_HOSTS = new Set(["discord.com", "ptb.discord.com", "canary.discord.com"]);
 
@@ -27,23 +37,30 @@ function boot(): void {
 
   // First, so xray's keys are handled before any of Discord's listeners exist.
   installKeyRouter();
+  installZoom();
   installNotifications();
+  installVoiceRecording();
   installReporting();
   hookWebpack();
+  startProfileHistory();
+  startMonitoring();
   startPlugins();
   // Pull your settings from your server if sync is on (fails soft otherwise).
-  void initSync();
+  void initSync().then(synchronizeTimeFormat);
   // Before Discord paints anything, so it never flashes its own colors first.
   installTheme();
   // The UI needs a document to attach to; at document start there isn't one yet.
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startUi, { once: true });
   else startUi();
 
-  // A small read-only handle: the Rust side calls openPanel, notificationClicked
-  // and hotkey, and diagnostics help testing.
+  // A small integration handle: Rust calls the actions; the timestamp plugin
+  // shares the appearance preference through the narrow time-format methods.
   Object.defineProperty(window, "__xray", {
     value: Object.freeze({
       version: __XRAY_VERSION__,
+      timeFormat: currentTimeFormat,
+      setTimeFormat,
+      taskbarVoice: (action: "mute" | "deafen" | "leave") => { if(action === "mute" || action === "deafen" || action === "leave") toggleVoiceControl(action); },
       openPanel,
       notificationClicked,
       hotkey: handleHotkey,
@@ -65,6 +82,9 @@ function startUi(): void {
   setPaletteCommands(() => [
     command("Open xray panel", "Plugins, hotkeys and settings", openPanel),
     command("Choose plugins", "Every xray and Equicord plugin, with a switch each", showPicker),
+    command("Check voice audio", "Output volume, attenuation and participant volume settings", openVoiceDiagnostics),
+    command(isPresentationMode() ? "Turn off presentation mode" : "Turn on presentation mode", "Hide intelligence panels and new notification previews", () => setPresentationMode(!isPresentationMode())),
+    ...(isFeatureOn(intelligence) ? [command("Open intelligence workspace", "Live provider lookups, reports and server monitors", openIntelligence), command("Open VC recordings", "Record incoming VC audio with consent and save on your server", () => openIntelligence("Recordings"))] : []),
     ...(fakeVoice.available
       ? [command(fakeVoice.active ? "Turn off fake deafen" : "Turn on fake deafen", "Look deafened while you keep listening", () => fakeVoice.set(!fakeVoice.active))]
       : []),
@@ -76,6 +96,7 @@ function startUi(): void {
   ]);
   registerFeature(quickReply);
   registerFeature(palette);
+  registerFeature(intelligence);
   offerPickerOnFirstRun();
 }
 

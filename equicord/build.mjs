@@ -27,11 +27,13 @@ const shim = readFileSync(join(root, "equicord", "shim.js"), "utf8");
 const userplugins = JSON.parse(readFileSync(join(root, "equicord", "userplugins.json"), "utf8")).plugins;
 const userpluginsDir = process.env.XRAY_USERPLUGINS_DIR ?? join(homedir(), "Vencord", "src", "userplugins");
 const haveUserplugins = existsSync(userpluginsDir);
+// Repository-owned ports are always included, including on CI.
+const bundledPluginsDir = join(root, "equicord", "plugins");
+const bundledPlugins = readdirSync(bundledPluginsDir).filter(name => statSync(join(bundledPluginsDir, name)).isDirectory()).sort();
 
 /** A fingerprint of every file in the listed userplugins, so editing one triggers a rebuild. */
 function userpluginsHash() {
   const hash = createHash("sha256");
-  if (!haveUserplugins) return "none";
   const walk = (dir) => {
     for (const entry of readdirSync(dir).sort()) {
       const path = join(dir, entry);
@@ -40,10 +42,11 @@ function userpluginsHash() {
     }
   };
   for (const name of userplugins) if (existsSync(join(userpluginsDir, name))) walk(join(userpluginsDir, name));
+  for (const name of bundledPlugins) walk(join(bundledPluginsDir, name));
   return hash.digest("hex");
 }
 
-const stamp = createHash("sha256").update(COMMIT).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).digest("hex").slice(0, 16);
+const stamp = createHash("sha256").update(COMMIT).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).update(readFileSync(join(root,"equicord","patches","PluginCard.tsx"))).update(readFileSync(join(root,"equicord","patches","WebScreenShare.tsx"))).update(readFileSync(join(root,"core","src","voice","captureConstraints.ts"))).update(readFileSync(join(root,"core","src","voice","sharePreview.ts"))).digest("hex").slice(0, 16);
 if (!process.argv.includes("--force") && existsSync(out) && readFileSync(out, "utf8").includes(`xray-build:${stamp}`)) {
   console.log("equicord.js is up to date");
   process.exit(0);
@@ -73,6 +76,26 @@ for (const name of Object.keys(excluded)) {
  */
 const FIXUPS = [
   {
+    file: "src/api/MessageAccessories.tsx",
+    find: '<accessory.render {...props} />',
+    replace: '<div data-xray-plugin-ui style={{display:"contents"}}><accessory.render {...props} /></div>',
+  },
+  {
+    file: "src/api/HeaderBar.tsx",
+    find: 'className={classes(HeaderBarClasses.clickable, className)}',
+    replace: 'data-xray-plugin-ui className={classes(HeaderBarClasses.clickable, className)}',
+  },
+  {
+    file: "src/equicordplugins/moreUserTags/consts.ts",
+    find: 'import { GuildStore } from "@webpack/common";',
+    replace: 'import { GuildStore, React } from "@webpack/common";',
+  },
+  {
+    file: "src/equicordplugins/moreUserTags/consts.ts",
+    find: 'export const Tag = findLazy(m => m.Types?.[0] === "BOT") as RC<{ type?: number | null, className?: string, useRemSizes?: boolean; }> & { Types: Record<string, number>; };',
+    replace: 'const RawTag = findLazy(m => m.Types?.[0] === "BOT");\nexport const Tag = ((props: any) => React.createElement("span", {className:"xray-role-tag", "data-xray-role": tags[(props.type ?? 0)-101]?.name}, React.createElement(RawTag,props))) as RC<{type?:number|null,className?:string,useRemSizes?:boolean}> & {Types:Record<string,number>};\nObject.defineProperty(Tag,"Types",{get:()=>RawTag.Types});',
+  },
+  {
     file: "src/equicordplugins/channelTabs/components/ChannelTab.tsx",
     find: 'import { getActiveAutoCompletes } from "@equicordplugins/questify/utils/completion";',
     // Questify is removed, so no Quest is ever auto-completing.
@@ -85,6 +108,14 @@ for (const { file, find, replace } of FIXUPS) {
   if (source.split(find).length !== 2) throw new Error(`fix-up for ${file} no longer matches; update equicord/build.mjs`);
   writeFileSync(path, source.replace(find, () => replace));
 }
+
+// Keep plugin-origin badges self-contained. The pinned card used externally
+// hosted PNGs, which Discord CSP/offline requests can block.
+cpSync(join(root, "equicord", "patches", "PluginCard.tsx"), join(vendor, "src/components/settings/tabs/plugins/PluginCard.tsx"));
+// Bound capture work to the selected share budget; retain Discord's encoder limits.
+cpSync(join(root, "equicord", "patches", "WebScreenShare.tsx"), join(vendor, "src/plugins/webScreenShare.browser/index.tsx"));
+cpSync(join(root, "core", "src", "voice", "captureConstraints.ts"), join(vendor, "src/plugins/webScreenShare.browser/captureConstraints.ts"));
+cpSync(join(root, "core", "src", "voice", "sharePreview.ts"), join(vendor, "src/plugins/webScreenShare.browser/sharePreview.ts"));
 
 // Your own userplugins, only the listed ones. A clean checkout has none of its own.
 if (haveUserplugins) {
@@ -102,12 +133,18 @@ if (haveUserplugins) {
   console.warn(`no userplugins folder at ${userpluginsDir}; building without them`);
 }
 
+// Bundled ports take precedence over optional external copies.
+for (const name of bundledPlugins) {
+  cpSync(join(bundledPluginsDir, name), join(vendor, "src", "userplugins", name), { recursive: true });
+}
+
 run("pnpm", ["install", "--frozen-lockfile"]);
 run("pnpm", ["buildWeb"]);
 
 const userscript = readFileSync(join(vendor, "dist", "Equicord.user.js"), "utf8");
 const notice = `/*! Equicord (https://github.com/Equicord/Equicord) at ${COMMIT}, GPL-3.0-or-later.
  * Built for xray with these plugins removed: ${Object.keys(excluded).join(", ")}.
+ * Bundled ports included: ${bundledPlugins.join(", ")}.
  * Your userplugins included: ${haveUserplugins ? userplugins.filter((n) => !n.startsWith("_")).join(", ") : "none"}.
  * xray-build:${stamp} */\n`;
 writeFileSync(out, notice + shim.replace("/*USERSCRIPT*/", () => userscript));

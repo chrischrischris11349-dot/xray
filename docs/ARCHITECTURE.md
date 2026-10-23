@@ -104,6 +104,52 @@ shell/                placeholder page Tauri needs to bundle; never shown
 
 ## Plugins
 
+Quick reply renders image attachments, GIF/video embeds, audio controls, file
+links and sizes, link previews, Discord invite links, and local message times.
+Media uses Discord's CDN/proxies or the Tenor/Giphy CDNs; executable URLs and
+raw HTML are rejected. Spoiler previews require a click to reveal. GIF playback
+respects reduced-motion preferences. No embed iframe or remote page is injected.
+
+### Local message editing
+
+Local Message Edit adds **Edit Locally** to every message's context menu,
+including messages from other users and FakeDM entries. It dispatches a
+client-side message update; it never calls Discord's edit API. Session edits
+are reapplied when messages load or update. **Reset Local Edit** restores the
+latest real text, and disabling the plugin restores all locally edited text.
+Edits are cleared when xray restarts.
+
+### Oathnet profile lookup
+
+The full profile sheet includes an on-demand Oathnet lookup. `oathnet_lookup`
+is a narrow native bridge to the existing helper at `127.0.0.1:43991`:
+only `/profile/<Discord ID>` and `/history/<Discord ID>` are allowed. IDs
+are validated, redirects are rejected, and requests have time and size caps.
+The API key stays in the helper, outside Discord. The general `web_fetch`
+command still rejects local addresses. The profile loads summary and history
+on click, preserves partial success, and reports helper/API failures with a retry.
+Opening a profile alone does not send a lookup.
+
+Profile details show the user ID, creation date, presence, relationship, account
+type, explicit legacy username, mutual counts, Nitro start date, server nickname,
+join date and server boost date. Missing fields say Unavailable; confirmed zero
+mutuals remain zero. Explicit nulls from Discord clear stale premium and nickname
+values. Badge names and icons come from Discord's response. The Oathnet report
+sits before mutual lists and has a footer shortcut plus all returned fields.
+
+Start the helper once with `OATHNET_API_KEY` set in its environment. The
+existing helper in `~/Vencord/src/userplugins/oathnetProfile/oathnet-proxy.mjs`
+is compatible. If port 43991 is already serving `/health`, reuse that helper.
+No new helper process is launched by xray.
+
+Saved Oathnet HTML exports can be converted by reading only their
+`script#oathnet-report-data[type=application/json]` block. Saved report JSON
+lives in the app config folder at `oathnet-reports/<Discord ID>.json`, outside
+the executable and source tree. The `imported` variant of `oathnet_lookup`
+reads only this fixed filename after ID validation, caps the file size, and
+requires `metadata.query` to match. The UI renders every supplied record field
+as text and labels the report with its export date; export scripts never run.
+
 ```ts
 definePlugin({
   id, name, description, category,

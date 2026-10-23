@@ -9,6 +9,7 @@ export interface Feature {
   id: string;
   name: string;
   description: string;
+  enabledByDefault?: boolean;
   start(): void;
   stop(): void;
 }
@@ -18,7 +19,7 @@ const listeners = new Set<() => void>();
 
 export function registerFeature(feature: Feature): void {
   registered.push(feature);
-  if (featureEnabled(feature.id)) feature.start();
+  if (featureEnabled(feature.id, feature.enabledByDefault ?? true)) feature.start();
 }
 
 export function features(): readonly Feature[] {
@@ -26,7 +27,7 @@ export function features(): readonly Feature[] {
 }
 
 export function isFeatureOn(feature: Feature): boolean {
-  return featureEnabled(feature.id);
+  return featureEnabled(feature.id, feature.enabledByDefault ?? true);
 }
 
 export function setFeature(feature: Feature, on: boolean): void {

@@ -1,6 +1,6 @@
 [package]
 name = "xray"
-version = "0.1.0"
+version = "0.5.3"
 description = "xray — a lightweight Discord client"
 authors = ["xray"]
 edition = "2021"
@@ -35,6 +35,15 @@ winreg = "0.56.0"
 # Hotkey hooks (hotkeys.rs). Same version Tauri's windowing already links, so no second copy is compiled.
 windows = { version = "0.62", features = [
     "Win32_Foundation",
+    "Win32_Security_Cryptography",
+    "Win32_System_Memory",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_UI_Controls",
+    "Win32_Graphics_Gdi",
     "Win32_System_LibraryLoader",
     "Win32_System_Threading",
     "Win32_UI_Input_KeyboardAndMouse",

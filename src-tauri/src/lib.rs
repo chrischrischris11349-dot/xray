@@ -3,8 +3,15 @@
 //! badge, the tray, single-instance handling and launch at login.
 
 mod badge;
+mod documents;
 mod hotkeys;
+mod installer;
+mod intelligence;
+mod recordings;
+mod taskbar;
+mod sandbox;
 mod notify;
+mod oathnet;
 mod report;
 mod settings;
 mod sync;
@@ -37,22 +44,30 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_opener::init())
         // Every command Discord's page may call (see capabilities/main.json).
-        .invoke_handler(tauri::generate_handler![notify::notify, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, translate::translate, webfetch::web_fetch])
+        .invoke_handler(tauri::generate_handler![notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
             sync_autostart(handle, &mut shell);
             notify::register(handle);
             let at_login = std::env::args().any(|arg| arg == window::AUTOSTART_ARG);
-            window::create(handle, !(at_login && shell.start_minimized))?;
+            let visible = !(at_login && shell.start_minimized);
             let bindings = shell.hotkeys.clone();
+            // Register settings before the WebView restores zoom or its injected
+            // core invokes a native command during document-start.
             app.manage(Shell(Mutex::new(shell)));
+            window::create(handle, visible)?;
+            taskbar::register_shortcut(handle);
+            taskbar::install(handle);
             hotkeys::start(handle, bindings);
             tray::build(handle)?;
             Ok(())
         })
         .on_window_event(|win, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
+                // Auxiliary windows must actually close: hidden sandboxes retain
+                // their WebView and consume the bounded preview-window allowance.
+                if win.label() != window::MAIN { return; }
                 let shell = win.app_handle().state::<Shell>();
                 let to_tray = shell.0.lock().map(|s| s.close_to_tray).unwrap_or(true);
                 if to_tray {
