@@ -2,7 +2,7 @@ import { conversationLabel } from "./messageHistory";
 import { imageLink } from "./imageViewer";
 import { exportControls, resultReport } from "./reportExport";
 import { formatDateTime } from "../time";
-import { captureProfile, clearProfileHistory, configureHistory, historyError, historyFor, historyStorageLabel, removeProfileHistory, saveProfileNote, subscribeHistory } from "../history";
+import { retryHistoryLoad, captureProfile, clearProfileHistory, configureHistory, historyError, historyFor, historyStorageLabel, removeProfileHistory, saveProfileNote, subscribeHistory } from "../history";
 import { categories, type Category, type HistoryEvent } from "../history/model";
 import { copyText } from "./dialog";
 import { h } from "./dom";
@@ -71,7 +71,7 @@ export function profileJournal(initial: ProfileData): { element: HTMLElement; up
     const disabled=controls.map(control=>control.disabled);controls.forEach(control=>{control.disabled=true;});
     void Promise.resolve().then(action).then(()=>{status.textContent=historyError() || `${message} Storage: ${historyStorageLabel()}.`;}).catch(error=>{status.textContent=historyError() || (error instanceof Error?error.message:"Could not save.");}).finally(()=>{busy=false;controls.forEach((control,i)=>{control.disabled=disabled[i];});});
   };
-  let timelineKey = "";
+  let timelineKey = "",shownEvents=40;
   const draw = () => {
     if(historyError()) status.textContent=historyError();
     const record = historyFor(data.id);
@@ -80,14 +80,15 @@ export function profileJournal(initial: ProfileData): { element: HTMLElement; up
     if(!historyError() && !busy) status.textContent=`Storage: ${historyStorageLabel()}.`;
     const deleted = record?.events.filter(e => e.kind === "messageDeleted").length ?? 0;
     summary.textContent = `${data.relationship ?? "Relationship unavailable"} · ${data.presence} · ${data.mutualServers.state === "ready" ? `${data.mutualServers.value.length} shared servers` : "Shared servers loading/unavailable"}${data.joinedServerAt ? ` · Joined ${data.serverName ?? "this server"} ${data.joinedServerAt.toLocaleDateString()}` : ""}.`;
-    const nextKey=JSON.stringify([record?.enabled,record?.startedAt,record?.retentionDays,record?.events.length,record?.events.at(-1)?.id]);
+    const nextKey=JSON.stringify([record?.enabled,record?.startedAt,record?.retentionDays,record?.events.length,record?.events.at(-1)?.id,shownEvents,historyError()]);
     if(nextKey===timelineKey)return;
     timelineKey=nextKey;
-    timeline.replaceChildren(h("h4",{class:"pf-title",text:record?.enabled?"History · observing":"History · off"}),
-      h("p",{class:"pf-note",text:record?`${record.events.length} retained events · ${deleted} of their messages observed deleted · retention ${record.retentionDays} days. Record created ${formatDateTime(new Date(record.startedAt))}.` : "No history yet. Expand Set up history to choose what XRay records."}),
+    timeline.replaceChildren(h("h4",{class:"pf-title",text:record?.enabled?"History · observing":record?"History · off":historyError()?"History · loading or unavailable":"History · not configured"}),
+      h("p",{class:"pf-note",text:record?`${record.events.length} retained events · ${deleted} of their messages observed deleted · retention ${record.retentionDays} days. Record created ${formatDateTime(new Date(record.startedAt))}.` : historyError()?"History has not loaded. Existing data is not shown yet; check the status above and retry.":"No history yet. Expand Set up history to choose what XRay records."}),
       h("p",{class:"pf-note",text:"Only events delivered while XRay is connected are observable. Message history retains up to 4,000 characters of previously visible text, four file names and four Discord image links. Images load when expanded; links can expire. Files themselves are not archived. Older entries may have no text. Actors are unknown. Profile-change values are limited to 300 characters."}),
-      ...(record?.events.length ? [h("ol",{class:"pf-timeline"},...record.events.slice(-40).reverse().map(event=>h("li",{}, h("time",{attrs:{datetime:new Date(event.at).toISOString()},text:formatDateTime(new Date(event.at))}),h("span",{text:displayEvent(event)+(event.kind==="messageObserved" && record.events.some(e=>e.kind==="messageDeleted" && e.messageId===event.messageId && e.channelId===event.channelId) ? "\nLater observed deleted" : "")}), ...(event.messageImages?.length ? [historyImages(event.messageImages)] : []))))] : []),
-      ...(record && record.events.length > 40 ? [h("p",{class:"pf-note",text:"Latest 40 shown. Copy report and history includes all retained events."})] : []));
+      ...(!record && historyError()?[h("button",{class:"btn ghost",text:"Retry loading history",on:{click:retryHistoryLoad}})]:[]),
+      ...(record?.events.length ? [h("ol",{class:"pf-timeline"},...record.events.slice(-shownEvents).reverse().map(event=>h("li",{}, h("time",{attrs:{datetime:new Date(event.at).toISOString()},text:formatDateTime(new Date(event.at))}),h("span",{text:displayEvent(event)+(event.kind==="messageObserved" && record.events.some(e=>e.kind==="messageDeleted" && e.messageId===event.messageId && e.channelId===event.channelId) ? "\nLater observed deleted" : "")}), ...(event.messageImages?.length ? [historyImages(event.messageImages)] : []))))] : []),
+      ...(record && record.events.length > shownEvents ? [h("button",{class:"btn ghost",text:`Show older history (${record.events.length-shownEvents} remaining)`,on:{click:()=>{shownEvents+=40;draw();}}})] : []));
   };
   const saved = historyFor(data.id);
   enable.checked = saved?.enabled ?? false;

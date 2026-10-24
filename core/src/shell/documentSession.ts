@@ -25,7 +25,7 @@ export class DocumentSession {
         const verified = await this.transport.read(this.ns);
         if (verified.value !== this.original || verified.revision !== this.revision) throw new Error("Server migration could not be verified. The local copy was kept.");
       }
-    })();
+    })().catch(error=>{this.ready=undefined;throw error;});
   }
   /** Called only after every account document has migrated and the mode flag is durable. */
   removeMigratedLocal(): void {

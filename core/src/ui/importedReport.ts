@@ -52,24 +52,24 @@ export function renderImportedReport(report: any, userId: string, fallbackAvatar
   if (report?.metadata?.query !== userId || !Array.isArray(report?.records)) throw new Error("The imported report does not match this Discord ID.");
   if (report.records.length > 1000) throw new Error("Open a report with at most 1,000 records.");
   const date = new Date(report.metadata.generatedAt);
-  const heading = `Imported ${typeof report.metadata.source === "string" ? `${report.metadata.source} ` : ""}search report`;
+  const heading = `${report.metadata.live ? "Live" : "Imported"} ${typeof report.metadata.source === "string" ? `${report.metadata.source} ` : ""}search report`;
   const block = h("section", { attrs: { "aria-label": heading } },
     h("h3", { class: "pf-title", text: heading }),
-    h("p", { class: "pf-note", text: `${report.records.length} records · ${report.metadata.importedAt ? "Imported" : "Exported"} ${Number.isFinite(date.getTime()) ? formatDateTime(date) : "date unavailable"}. This is a saved report, not a live lookup.` }));
+    h("p", { class: "pf-note", text: `${report.records.length} records · ${report.metadata.importedAt ? "Imported" : "Returned"} ${Number.isFinite(date.getTime()) ? formatDateTime(date) : "date unavailable"}. ${report.metadata.live?"Live API result page.":"This is a saved report, not a live lookup."}` }));
   block.append(exportControls(()=>resultReport(heading,report.records,report)));
   const groups = new Map<string, { glyph: IconName; subtitle: string; records: any[] }>();
   for (const record of report.records.filter((r: any) => r && typeof r === "object")) {
     const source = String(record.source ?? "");
     const gaming = /steam|xbox|minecraft|gaming/i.test(source), discord = /discord/i.test(source);
     const name = gaming ? "Gaming profiles" : discord ? "Discord profiles" : "Report records";
-    if (!groups.has(name)) groups.set(name, { glyph: gaming ? "gamepad" : discord ? "users" : "database", subtitle: gaming ? "Steam · Xbox · Minecraft" : discord ? "Accounts · badges · profile fields" : "Imported source records", records: [] });
+    if (!groups.has(name)) groups.set(name, { glyph: gaming ? "gamepad" : discord ? "users" : "database", subtitle: gaming ? "Steam · Xbox · Minecraft" : discord ? "Accounts · badges · profile fields" : report.metadata.live ? "Returned source records" : "Imported source records", records: [] });
     groups.get(name)!.records.push(record);
   }
   for (const [name, group] of groups) {
     block.append(h("details", { class: "intel-group", attrs: { open: "" } },
       h("summary", { class: "intel-group-heading" }, h("span", { class: "intel-group-icon", trustedHtml: icon(group.glyph, 18) }),
         h("span", { class: "intel-heading-copy" }, h("strong", { text: name }), h("span", { class: "pf-item-sub", text: group.subtitle })),
-        h("span", { class: "intel-count", text: `${group.records.length} ${group.records.length === 1 ? "profile" : "profiles"}` })),
+        h("span", { class: "intel-count", text: `${group.records.length} ${name === "Report records" ? group.records.length === 1 ? "record" : "records" : group.records.length === 1 ? "profile" : "profiles"}` })),
       ...group.records.slice(0,50).map(record => recordCard(record, /discord/i.test(String(record.source)) ? fallbackAvatar : null))));
     if(group.records.length>50){const container=block.lastElementChild!;let shown=50;const more=h("button",{class:"btn ghost",text:"Load next 50 records",on:{click:()=>{const rows=group.records.slice(shown,shown+50);for(const row of rows)more.before(recordCard(row,fallbackAvatar));shown+=rows.length;more.hidden=shown>=group.records.length;}}});container.append(more);}
   }

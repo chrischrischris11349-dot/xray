@@ -1,5 +1,6 @@
 import { exportControls, resultReport } from "./reportExport";
 import { rememberReport } from "./reportCache";
+import { oathnetSearch } from "./oathnetSearch";
 import { invoke } from "../shell/bridge";
 import { h } from "./dom";
 import { linkedText } from "./reportText";
@@ -19,6 +20,7 @@ const kinds:Record<LiveProvider,[string,string][]>= {
 };
 export function liveIntel(provider:LiveProvider):{element:HTMLElement;close():void} {
   let active=true,busy=false,searchId="",allRecords:any[]=[],payload:any;
+  let closePaged:(()=>void)|undefined;
   const element=h("section",{class:"intel-live"});
   const mode=h("select",{class:"dialog-input",attrs:{"aria-label":`${provider} operation`}},...modes[provider].map(([id,label])=>h("option",{attrs:{value:id},text:label})));
   const kind=h("select",{class:"dialog-input",attrs:{"aria-label":`${provider} search type`}},...kinds[provider].map(([id,label])=>h("option",{attrs:{value:id},text:label})));
@@ -51,6 +53,11 @@ export function liveIntel(provider:LiveProvider):{element:HTMLElement;close():vo
       const data:any=await invoke("intel_request",{provider:provider.toLowerCase(),operation,query:term,kind:kind.value});
       if(!active)return;
       if(provider==="IntelX" && operation==="search") {searchId=data.id??"";allRecords=[];if(!searchId)throw Error("IntelX did not return a search ID.");status.textContent="Search started. Load results to see the next page.";more.hidden=cancel.hidden=false;await renderFirstPage();}
+      else if(provider==="Oathnet" && operation==="search"){
+        closePaged?.();
+        const view=oathnetSearch(term,async(cursor)=>cursor?invoke("intel_request",{provider:"oathnet",operation:"search",query:term,kind:"discord",cursor}):data,report=>{const id=subject.value.trim()||term;if(/^\d{14,20}$/.test(id))rememberReport(id,{...report,metadata:{...report.metadata,query:id}});});
+        output.replaceChildren(view.element);closePaged=view.close;await view.load();status.textContent="Oathnet search loaded below; use Next search page for remaining results.";
+      }
       else if(operation==="terminate"){more.hidden=cancel.hidden=true;status.textContent="Search stopped.";}
       else {display(data);if(provider==="IntelX" && operation==="result"){resultStatus(data);}else status.textContent="Lookup complete. Results are provider observations; availability depends on your plan.";}
     }catch(error){if(active)status.textContent=String((error as Error)?.message??error);}
@@ -68,9 +75,9 @@ export function liveIntel(provider:LiveProvider):{element:HTMLElement;close():vo
     const noQuery=["account","stats"].includes(mode.value);kind.hidden=noQuery || provider==="Oathnet";query.hidden=noQuery;
     query.placeholder=provider==="Oathnet"?({profile:"Discord ID",history:"Discord ID",steam:"Steam ID",xbox:"Xbox XUID",roblox:"Roblox username",ip:"IP address",search:"Breach search query"}[mode.value]??"Lookup query"):"Enter the selected search term";
   }
-  mode.onchange=()=>{configureForm();output.replaceChildren();status.textContent="";};configureForm();
+  mode.onchange=()=>{closePaged?.();closePaged=undefined;configureForm();output.replaceChildren();status.textContent="";};configureForm();
   search.onclick=()=>void run();query.addEventListener("keydown",event=>{if(event.key==="Enter")void run();});
   controls.append(search,more,cancel,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Provider keys",on:{click:()=>void invoke("open_provider_settings").catch(e=>status.textContent=String(e))}}));
   element.append(h("h2",{text:`${provider} live lookup`}),h("p",{class:"pf-note",text:provider==="IntelX"?"IntelX accepts supported selectors, not raw Discord IDs or usernames. Use Oathnet for Discord IDs. Searches use your API credits.":provider==="Snusbase"?"Choose a supported field. Snusbase has no dedicated Discord-ID search type; use Oathnet for Discord IDs.":"Discord profile and username history accept Discord IDs. Other lookup modes use their respective IDs or search terms."}),mode,kind,query,subject,controls,status,output);
-  return{element,close(){active=false;}};
+  return{element,close(){active=false;closePaged?.();}};
 }

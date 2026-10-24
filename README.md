@@ -13,6 +13,7 @@ tokens) and the extended profile view.
 
 See [the 0.5.2 polish notes](docs/RELEASE_0.5.2.md) for zoom, taskbar Leave VC, profile alignment, image history, screen-share confirmation and sandbox fixes.
 See [the 0.5.3 report notes](docs/RELEASE_0.5.3.md) for in-app images, paged message searches, DM labels, exports, clipboard fixes and remaining data limits.
+See [the 0.5.4 report fixes](docs/RELEASE_0.5.4.md) for full returned Oathnet fields, search-result paging, older history and recovery after a failed server read.
 See [the 0.5.1 polish notes](docs/RELEASE_0.5.1.md) for dropdown fixes and Halloween.
 See [the 0.5 release notes](docs/RELEASE_0.5.md) for live provider setup,
 server recordings, mini-chat controls, monitoring limits and verification.

@@ -1,9 +1,10 @@
+import { oathnetSearch } from "./oathnetSearch";
 import { exportControls, resultReport } from "./reportExport";
 import { invoke } from "../shell/bridge";
 import { h } from "./dom";
 import { linkedText } from "./reportText";
 import { safeImage, stores } from "../discord";
-import { renderImportedReport } from "./importedReport";
+import { recordCard, renderImportedReport } from "./importedReport";
 
 type RecordData = Record<string, unknown>;
 type Lookup = (kind: "profile" | "history", id: string) => Promise<RecordData>;
@@ -44,6 +45,7 @@ export function oathnetSection(userId: string, request: Lookup = lookup): { elem
   let busy = false;
   let profile: RecordData | undefined;
   let history: RecordData | undefined;
+  const breach=oathnetSearch(userId);
   const output = h("div");
   const imported = h("div");
   const status = h("p", { class: "pf-note", attrs: { role: "status", "aria-live": "polite" } });
@@ -51,7 +53,7 @@ export function oathnetSection(userId: string, request: Lookup = lookup): { elem
   const element = h("section", { class: "pf-block wide", attrs: { "aria-label": "Oathnet profile" } },
     h("h3", { class: "pf-title", text: "Full Oathnet report" }),
     h("p", { class: "pf-note", text: "Look up this Discord ID with Oathnet to view profile details and username history." }),
-    imported, output, status, button);
+    imported, output, status, button,breach.element);
 
   // Saved imports are local reads; opening the sheet does not run a remote search.
   void Promise.resolve().then(() => invoke("oathnet_lookup", { kind: "imported", userId })).then(response => {
@@ -68,6 +70,8 @@ export function oathnetSection(userId: string, request: Lookup = lookup): { elem
     if (profile) {
       const fields: [string, string][] = [["id", "Discord ID"], ["username", "Username"], ["global_name", "Display name"], ["creation_date", "Account created"]];
       output.append(h("dl", { class: "pf-facts" }, ...fields.flatMap(([key, label]) => [h("dt", { text: label }), h("dd", { text: typeof profile![key] === "string" ? String(profile![key]) : "Unavailable" })])));
+      const complete=recordCard({source:"Discord Profiles",title:"All returned profile fields",fields:Object.entries(profile).map(([key,value])=>({key,label:key,value}))});
+      (complete as HTMLDetailsElement).open=true;output.append(complete);
       if (Array.isArray(profile.badges)) {
         output.append(h("h4", { class: "pf-title", text: "Badges" }));
         const badges = profile.badges.flatMap(b => {
@@ -114,9 +118,10 @@ export function oathnetSection(userId: string, request: Lookup = lookup): { elem
       status.textContent = error instanceof Error ? error.message : String(error);
       button.textContent = profile ? "Retry username history" : "Retry Oathnet lookup";
     } finally {
+      if(active && !breach.loaded())await breach.load();
       busy = false;
       if (active) { button.disabled = false; element.setAttribute("aria-busy", "false"); }
     }
   });
-  return { element, close: () => { active = false; } };
+  return { element, close: () => { active = false;breach.close(); } };
 }

@@ -82,6 +82,10 @@ function changed(id: string): void {
   notify(id);
 }
 export function historyFor(id: string) { const model = current(); model?.prune(false); return model?.get(id); }
+export function retryHistoryLoad(): void {
+  if(loading || pending || flight || engine)return;
+  account=undefined;current();notify();
+}
 export function historyError(): string { return error || (loading ? "Loading history from your server…" : pending ? "Saving… Keep XRay open until this finishes." : ""); }
 export function historyStorageLabel(): string { return serverDataEnabled() ? "your server" : "this device"; }
 function writable(): ProfileHistory {

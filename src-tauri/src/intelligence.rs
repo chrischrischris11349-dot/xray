@@ -86,7 +86,20 @@ pub fn request_plan(provider:&str,operation:&str,query:&str,kind:&str)->Result<(
     }
 }
 pub fn transfer(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:&str)->Result<Value,String> {
-    let (path,body)=request_plan(provider,operation,query,kind)?;
+    transfer_paged(app,provider,operation,query,kind,None)
+}
+fn paged_plan(provider:&str,operation:&str,query:&str,kind:&str,cursor:Option<&str>)->Result<(String,Option<Value>),String>{
+    let (mut path,body)=request_plan(provider,operation,query,kind)?;
+    if let Some(cursor)=cursor.filter(|c|!c.is_empty()) {
+        if provider!="oathnet" || operation!="search" || cursor.len()>4096 || cursor.contains(['\r','\n']) {return Err("Unsupported or invalid pagination cursor".into());}
+        let mut url=tauri::Url::parse(&format!("https://oathnet.org{path}")).map_err(|_|"Invalid provider route")?;
+        url.query_pairs_mut().append_pair("cursor",cursor);
+        path=url.as_str().trim_start_matches("https://oathnet.org").to_owned();
+    }
+    Ok((path,body))
+}
+fn transfer_paged(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:&str,cursor:Option<&str>)->Result<Value,String> {
+    let (path,body)=paged_plan(provider,operation,query,kind,cursor)?;
     {let mut requests=REQUESTS.lock().map_err(|_|"Provider queue unavailable")?;requests.retain(|t|t.elapsed()<Duration::from_secs(60));if requests.len()>=30{return Err("Please wait before starting more lookups".into());}requests.push(Instant::now());}
 
     let vault=load(app)?;let key=vault.keys.get(provider).ok_or("Open Provider keys and configure this provider first")?;
@@ -107,8 +120,8 @@ pub fn transfer(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:&str
     Ok(body)
 }
 #[tauri::command]
-pub async fn intel_request(app:AppHandle,provider:String,operation:String,query:String,kind:String)->Result<Value,String> {
-    tauri::async_runtime::spawn_blocking(move||transfer(&app,&provider,&operation,&query,&kind)).await.map_err(|_|"Lookup task failed".to_string())?
+pub async fn intel_request(app:AppHandle,provider:String,operation:String,query:String,kind:String,cursor:Option<String>)->Result<Value,String> {
+    tauri::async_runtime::spawn_blocking(move||transfer_paged(&app,&provider,&operation,&query,&kind,cursor.as_deref())).await.map_err(|_|"Lookup task failed".to_string())?
 }
 #[cfg(test)]
 mod tests {use super::*;
@@ -118,6 +131,12 @@ mod tests {use super::*;
  assert!(request_plan("snusbase","combo","synthetic-user","username").is_ok());
  assert_eq!(request_plan("snusbase","hash","synthetic-password","password").unwrap().1.unwrap()["types"][0],"password");
  let body=request_plan("snusbase","ip","1.1.1.1","lastip").unwrap().1.unwrap();assert!(body.get("types").is_none());assert!(body.get("group_by").is_none());
+}
+#[test]fn search_cursor_is_encoded_only_on_the_fixed_oath_route(){
+ let (path,_)=paged_plan("oathnet","search","300760994454437890","discord",Some("a+/=&cursor=evil")).unwrap();
+ let url=tauri::Url::parse(&format!("https://oathnet.org{path}")).unwrap();let pairs=url.query_pairs().collect::<Vec<_>>();
+ assert_eq!(pairs.iter().filter(|(k,_)|k=="cursor").count(),1);assert_eq!(pairs.iter().find(|(k,_)|k=="cursor").unwrap().1,"a+/=&cursor=evil");
+ assert!(paged_plan("snusbase","search","user","username",Some("x")).is_err());
 }
 #[test]fn vault_round_trip(){let input=b"synthetic-test-key";let encrypted=crypt(input,true).unwrap();assert_ne!(encrypted,input);assert_eq!(crypt(&encrypted,false).unwrap(),input);}
 }
