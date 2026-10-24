@@ -3,7 +3,7 @@ import { http, stores } from "../discord";
 import { historyFor } from "../history";
 import { h } from "./dom";
 import { channelList, collectionArray, conversationLabel, queryAvailableMessages } from "./messageHistory";
-import { historyEventText, historyImages } from "./profileJournal";
+import { historyEventDetail, historyImages } from "./profileJournal";
 import { exportControls, resultReport } from "./reportExport";
 
 export function availableMessages(userId:string):HTMLElement {
@@ -47,7 +47,7 @@ export function availableMessages(userId:string):HTMLElement {
       h("p",{class:"pf-note",text:`Message ${row.id}${row.deleted?" · Deleted (observed)":""}${row.timestamp?` · Sent ${row.timestamp}`:" · Sent time unavailable"}`}),
       h("p",{class:"pf-report-data",text:row.content??"Text was not retained."}),
       ...(row.images.length?[historyImages(row.images)]:[]),
-      ...row.events.map(event=>h("details",{},h("summary",{text:`${new Date(event.at).toLocaleString()} · ${event.kind} (observed)`}),h("pre",{class:"pf-report-data",text:historyEventText(event)})))
+      ...row.events.map(event=>historyEventDetail(event))
     )));
     status.textContent=records.length?`Page ${page+1} of ${Math.ceil(records.length/25)}`:"No messages loaded or retained for this user.";
     previous.disabled=page===0;next.disabled=(page+1)*25>=records.length;

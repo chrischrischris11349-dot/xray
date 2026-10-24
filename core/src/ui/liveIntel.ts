@@ -1,4 +1,4 @@
-import { exportControls, resultReport } from "./reportExport";
+import { exportControls, resultReport, reportSummary } from "./reportExport";
 import { rememberReport } from "./reportCache";
 import { oathnetSearch } from "./oathnetSearch";
 import { invoke } from "../shell/bridge";
@@ -44,8 +44,9 @@ export function liveIntel(provider:LiveProvider):{element:HTMLElement;close():vo
     filter.addEventListener("input",()=>{visible=100;draw();});draw();
     const next=h("button",{class:"btn ghost",text:"Show next 100 records",on:{click:()=>{visible+=100;draw();next.disabled=visible>=records.length;}}});
     const attachedSubject=subject.value.trim()||query.value.trim();
-    if(/^\d{14,20}$/.test(attachedSubject))rememberReport(attachedSubject,{metadata:{query:attachedSubject,generatedAt:new Date().toISOString(),source:provider,summary:data?.summary??data?.metadata?.summary},records:records.map(row=>({source:row?.source??provider,fields:Object.entries(row??{}).map(([key,value])=>({key,label:key,value}))}))});
-    output.append(exportControls(()=>resultReport(`${provider} results`,records,payload)),filter,list,next,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Copy returned JSON",on:{click:()=>copyText(JSON.stringify(payload,null,2))}}),h("details",{class:"pf-report-details"},h("summary",{text:"Complete provider response"}),h("pre",{class:"pf-report-data"},linkedText(data))));
+    if(/^\d{14,20}$/.test(attachedSubject))rememberReport(attachedSubject,{metadata:{live:true,query:attachedSubject,generatedAt:new Date().toISOString(),source:provider,summary:data?.summary??data?.metadata?.summary??data?.data?.summary},totals:data?.totals??data?.data?.totals,response:data,records:records.map(row=>({source:row?.source??provider,fields:Object.entries(row??{}).map(([key,value])=>({key,label:key,value}))}))});
+    const report=resultReport(`${provider} results`,records,payload);
+    output.append(reportSummary(report),exportControls(()=>report),filter,list,next,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Copy returned JSON",on:{click:()=>copyText(JSON.stringify(payload,null,2))}}),h("details",{class:"pf-report-details"},h("summary",{text:"Complete provider response"}),h("pre",{class:"pf-report-data"},linkedText(data))));
   }
   async function run(operation=mode.value,term=query.value.trim()):Promise<void> {
     if(busy)return;busy=true;mode.disabled=kind.disabled=query.disabled=search.disabled=more.disabled=cancel.disabled=true;status.textContent="Contacting provider…";

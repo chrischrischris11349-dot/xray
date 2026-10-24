@@ -1,4 +1,4 @@
-import { exportControls, resultReport } from "./reportExport";
+import { exportControls, resultReport, reportSummary } from "./reportExport";
 import { formatDateTime } from "../time";
 import { h } from "./dom";
 import { icon, type IconName } from "./icons";
@@ -18,7 +18,7 @@ export function recordCard(record: any, fallbackAvatar?: string | null): HTMLEle
   const fields: any[] = Array.isArray(record?.fields) ? record.fields : [];
   const title = String(record.title ?? record.source ?? "Record");
   const avatar = findReportAvatar(record) ?? reportAvatar(fallbackAvatar);
-  const photo = reportPhoto(avatar,title,"intel-avatar");
+  const photo = avatar ? reportPhoto(avatar,title,"intel-avatar") : h("span",{class:"intel-avatar intel-record-icon",trustedHtml:icon(/discord/i.test(String(record.source))?"users":/steam|xbox|minecraft|gaming/i.test(String(record.source))?"gamepad":"database",20)});
   return h("details", { class: "pf-report-details pf-report-card" },
     h("summary", { class: "intel-record-heading" }, photo,
       h("span", { class: "intel-heading-copy" }, h("strong", { text: title }), h("span", { class: "pf-item-sub", text: String(record.source ?? "Unknown source") })),
@@ -55,8 +55,9 @@ export function renderImportedReport(report: any, userId: string, fallbackAvatar
   const heading = `${report.metadata.live ? "Live" : "Imported"} ${typeof report.metadata.source === "string" ? `${report.metadata.source} ` : ""}search report`;
   const block = h("section", { attrs: { "aria-label": heading } },
     h("h3", { class: "pf-title", text: heading }),
-    h("p", { class: "pf-note", text: `${report.records.length} records · ${report.metadata.importedAt ? "Imported" : "Returned"} ${Number.isFinite(date.getTime()) ? formatDateTime(date) : "date unavailable"}. ${report.metadata.live?"Live API result page.":"This is a saved report, not a live lookup."}` }));
-  block.append(exportControls(()=>resultReport(heading,report.records,report)));
+    h("p", { class: "pf-note", text: `${report.records.length} ${report.records.length===1?"record":"records"} · ${report.metadata.importedAt ? "Imported" : "Returned"} ${Number.isFinite(date.getTime()) ? formatDateTime(date) : "date unavailable"}. ${report.metadata.live?"Live API result page.":"This is a saved report, not a live lookup."}` }));
+  const result=resultReport(heading,report.records,report);
+  block.append(reportSummary(result),exportControls(()=>result));
   const groups = new Map<string, { glyph: IconName; subtitle: string; records: any[] }>();
   for (const record of report.records.filter((r: any) => r && typeof r === "object")) {
     const source = String(record.source ?? "");

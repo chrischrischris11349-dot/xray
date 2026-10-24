@@ -392,6 +392,27 @@ select.opt-input option { background: var(--raised); color: var(--text); }
 .pf-timeline { list-style:none; margin:12px 0 0; padding:0; }
 .pf-timeline li { display:flex; flex-direction:column; gap:4px; border-left:1px solid var(--line2); padding:4px 0 14px 14px; overflow-wrap:anywhere; font-size:13px; }
 .pf-timeline time { font-size:11px; color:var(--faint); }
+.history-event { border:1px solid var(--line); border-radius:${radius.m}; background:var(--inset); }
+.history-event > summary { min-height:30px; padding:${space.s2}; display:flex; align-items:flex-start; gap:${space.s2}; cursor:pointer; }
+.history-event-heading { min-width:0; display:flex; flex-direction:column; gap:${space.s1}; }
+.history-event-icon { flex:none; display:flex; margin-top:2px; color:var(--muted); }
+.history-event-preview { color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.history-event-body { padding:0 ${space.s3} ${space.s3}; }
+.history-event-body > pre { margin:0; }
+.history-event > summary::after { content:"›"; margin-left:auto; color:var(--muted); transform:rotate(0deg); transition:transform ${motion.fast} var(--ease); }
+.history-event[open] > summary::after { transform:rotate(90deg); }
+.report-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(180px,100%),1fr)); gap:${space.s2}; margin:${space.s3} 0; }
+.report-metrics > div { min-width:0; padding:${space.s3}; border:1px solid var(--line); border-radius:${radius.m}; background:var(--inset); }
+.report-metrics dt { color:var(--muted); font-size:12px; }
+.report-metrics dd { margin:${space.s1} 0 0; font-size:20px; font-weight:${type.heavy}; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.report-metrics dd.report-metric-unavailable { font-size:13px; font-weight:500; color:var(--muted); }
+.report-summary > details > summary { min-height:28px; cursor:pointer; }
+.report-summary > details svg { vertical-align:middle; }
+.intel-record-icon { display:grid; place-items:center; color:var(--muted); }
+.pf-body,.intel-workspace-body,.panel,.qr-list { overscroll-behavior:contain; scrollbar-gutter:stable; }
+.history-event > summary:hover,.intel-record-heading:hover { background:var(--hover); }
+.history-event > summary,.intel-record-heading { transition:background-color ${motion.fast} var(--ease); }
+@media (prefers-reduced-motion:reduce) { .history-event > summary::after { transition:none; } }
 .pf-server-context { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
 .pf-server-context select { width:min(100%,320px); }
 .pf-report-card { padding: 12px; border-radius: ${radius.m}; border: 1px solid var(--line); background: var(--inset); }

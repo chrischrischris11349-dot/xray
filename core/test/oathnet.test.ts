@@ -4,6 +4,9 @@ import { test } from "node:test";
 import { parseHTML } from "linkedom";
 import { oathnetHistory, oathnetSection, parseOathnetResponse } from "../src/ui/oathnet";
 import { renderImportedReport, reportAvatar } from "../src/ui/importedReport";
+import { historyEventDetail } from "../src/ui/profileJournal";
+import { parseLocalReport } from "../src/ui/intelligence";
+import { resultReport } from "../src/ui/reportExport";
 
 (globalThis as any).document = parseHTML("<html><body></body></html>").document;
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -16,7 +19,7 @@ test("imported reports preserve all supplied fields and match only their Discord
   ] };
   const rendered = renderImportedReport(report, id);
   assert.equal(rendered.querySelectorAll(".pf-report-card").length, 2);
-  assert.equal(rendered.querySelectorAll("dd").length, 3);
+  assert.equal(rendered.querySelectorAll(".pf-report-card dd").length, 3);
   assert.match(rendered.textContent!, /saved report, not a live lookup/);
   assert.match(rendered.textContent!, /linked/);
   assert.equal(rendered.querySelector("script"), null);
@@ -114,4 +117,29 @@ test("retrying a failed Oathnet next page preserves its cursor and current resul
  assert.match(view.element.textContent!,/first-source/);assert.match(view.element.textContent!,/Temporary failure/);
  [...view.element.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent==="Retry search page")!.click();await tick();
  assert.deepEqual(cursors,[undefined,"next-page","next-page"]);assert.match(view.element.textContent!,/second-source/);view.close();
+});
+
+test("report summaries expose source IP counts and each source record has a bundled icon",()=>{
+ const view=renderImportedReport({metadata:{query:"300760994454437890"},totals:{records:31,ips:1},records:[{source:"Breach",fields:[{key:"ip",value:"192.0.2.1"}]}]},"300760994454437890");
+ assert.match(view.querySelector('[aria-label="Report summary"]')!.textContent!,/IP addresses1/);
+ assert.equal(view.querySelectorAll(".intel-record-icon svg").length,1);
+ const details=view.querySelector<HTMLDetailsElement>(".pf-report-card")!;details.open=true;assert.match(details.textContent!,/192.0.2.1/);
+});
+
+test("history detail lazily reveals complete text, fields and images with safe links",()=>{
+ const dom=parseHTML("<html><body></body></html>");(globalThis as any).document=dom.document;
+ const event={id:"synthetic-event",at:Date.now(),kind:"messageDeleted" as const,messageText:"Full observed text https://example.com/details",messageImages:["https://cdn.discordapp.com/attachments/123/456/image.png"]};
+ const detail=historyEventDetail(event);assert.equal(detail.querySelector("pre"),null);assert.ok(detail.querySelector("svg"));
+ (detail as HTMLDetailsElement).open=true;detail.dispatchEvent(new dom.Event("toggle"));
+ assert.match(detail.querySelector("pre")!.textContent!,/Full observed text/);assert.match(detail.textContent!,/Images \(1\)/);
+ assert.equal(detail.querySelector("a")!.getAttribute("rel"),"noopener noreferrer");
+ assert.match(detail.textContent!,/synthetic-event/);
+});
+
+test("generic imported exports retain totals and the original payload for profile reports",()=>{
+ const raw={totals:{records:31,ips:1},records:[{ip:"192.0.2.1"}]};
+ const imported=parseLocalReport(JSON.stringify(raw),"Reports","300760994454437890");
+ const report=resultReport("Imported",imported.records,imported);
+ assert.equal(report.summary.totalFound,31);assert.equal(report.summary.ipAddresses,1);assert.equal(report.summary.returnedIpAddresses,1);
+ assert.deepEqual(imported.response,raw);
 });

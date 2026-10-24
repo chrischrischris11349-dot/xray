@@ -55,8 +55,10 @@ test("profile history exposes failed-load retry and every retained timeline page
  const retry=[...journal.element.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent==="Retry loading history");assert.ok(retry);
  offline=false;retry.click();await new Promise(resolve=>setTimeout(resolve,0));
  assert.equal(journal.element.querySelectorAll(".pf-timeline li").length,40);
+ const firstEvent=journal.element.querySelector<HTMLDetailsElement>(".history-event")!;firstEvent.open=true;
  let more=[...journal.element.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.startsWith("Show older history"));assert.ok(more);more.click();
  assert.equal(journal.element.querySelectorAll(".pf-timeline li").length,80);
+ assert.equal(journal.element.querySelector(".history-event"),firstEvent);assert.equal(firstEvent.open,true,"paging retains expanded event DOM");
  more=[...journal.element.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.startsWith("Show older history"));assert.ok(more);more.click();
  assert.equal(journal.element.querySelectorAll(".pf-timeline li").length,85);journal.close();
 });

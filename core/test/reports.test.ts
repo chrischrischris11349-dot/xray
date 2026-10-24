@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { channelList, conversationLabel, queryAvailableMessages } from "../src/ui/messageHistory";
 import { searchMessagePage, searchDmPage } from "../src/ui/messageSearch";
-import { resultReport, reportCsv, printableReport, csvCell } from "../src/ui/reportExport";
+import { resultReport, reportCsv, printableReport, csvCell, returnedIpAddresses } from "../src/ui/reportExport";
 import { pasteText, writeClipboard } from "../src/ui/clipboard";
 import { viewerUrl } from "../src/ui/imageViewer";
 import { ProfileHistory } from "../src/history/model";
@@ -55,4 +55,18 @@ test("observed edits retain before/after text and sent time when explicitly enab
   o.handle({type:"MESSAGE_CREATE",message:{id:msg,channel_id:dm,author:{id:user},content:"original",timestamp:"2026-10-23T12:00:00Z"}});
   o.handle({type:"MESSAGE_UPDATE",message:{id:msg,channel_id:dm,content:"edited",edited_timestamp:"2026-10-23T12:01:00Z"}});
   const e=new ProfileHistory(h.serialize()).get(user)!.events.at(-1)!;assert.equal(e.messageBefore,"original");assert.equal(e.messageText,"edited");assert.equal(e.messageSentAt,"2026-10-23T12:00:00.000Z");
+});
+
+test("Oathnet totals and nested IP fields survive summaries and every export format",()=>{
+  const records=[{source:"Breach",fields:[{key:"ip",value:"192.0.2.1"},{label:"IP addresses",value:["192.0.2.1","2001:db8::1"]},{key:"raw_data",value:'{"lastip":"198.51.100.2"}'},{key:"username",value:"203.0.113.1"},{key:"ip",value:"999.1.1.1"}]}];
+  assert.equal(returnedIpAddresses(records),3);
+  const report=resultReport("Search report",records,{totals:{records:31,ips:4,emails:25,domains:30,breach:10,credential:3,victim:2}});
+  assert.equal(report.summary.totalFound,31);assert.equal(report.summary.ipAddresses,4);assert.equal(report.summary.returnedIpAddresses,3);
+  assert.equal(report.summary.securityBreaches,10);assert.equal(report.summary.infectedMachines,null,"victim records do not establish infected machine counts");
+  assert.equal(report.summary.emails,25);assert.equal(report.summary.domains,30);
+  const json=JSON.parse(JSON.stringify(report));assert.equal(json.summary.ipAddresses,4);assert.deepEqual(json.records,records);
+  assert.match(reportCsv(report),/"summary","","ipAddresses","4"/);assert.match(reportCsv(report),/192\.0\.2\.1/);
+  assert.match(printableReport(report),/ipAddresses/);assert.match(printableReport(report),/2001:db8::1/);
+  assert.equal(resultReport("Unloaded page",[],{totals:{records:31,ips:1}}).summary.ipAddresses,1);
+  assert.equal(resultReport("Missing totals",records).summary.ipAddresses,3);
 });

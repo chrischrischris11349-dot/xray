@@ -9,6 +9,9 @@ import { h } from "./dom";
 import type { ProfileData } from "./profile";
 import { stores } from "../discord";
 import { deletionExcerpt, imageLinks } from "../history/model";
+import { icon, type IconName } from "./icons";
+import { linkedText } from "./reportText";
+import { reconcileChildren, StableRows } from "./reconcile";
 
 const labels: Record<Category,string> = { profile: "Username, display name, avatar, banner and global bio", presence: "Visible online / idle / DND / offline changes", membership: "Explicit shared-server member add/remove events", deletions: "Deleted messages · visible text excerpt and file names", edits: "Observed edits (content requires Observed messages)", messages: "Observed messages, text and image links (starts when enabled)" };
 const eventNames: Record<string,string> = { username:"Username changed", displayName:"Display name changed", avatar:"Profile picture changed", banner:"Banner changed", bio:"Global bio changed", presence:"Presence observed", memberAdded:"Server membership added", memberRemoved:"Server membership removed (left, kicked or banned)", messageDeleted:"Message deleted · actor unknown", messageEdited:"Message edited", messageObserved:"Message observed" };
@@ -27,6 +30,17 @@ export function historyEventText(event: HistoryEvent): string {
     if(event.messageFiles?.length)text+=`\nFiles: ${event.messageFiles.join(", ")}`;
   }
   return text;
+}
+/** Native disclosure keeps long text and attachment work off the initial render. */
+export function historyEventDetail(event:HistoryEvent,text=historyEventText(event),laterDeleted=false):HTMLElement {
+  const glyph:IconName=event.kind==="messageDeleted"?"x":event.kind==="messageEdited"?"reply":event.kind==="messageObserved"?"messageCircle":event.kind==="presence"?"info":event.kind.startsWith("member")?"users":"idCard";
+  const excerpt=(event.messageText??event.after??event.before??"").replace(/\s+/g," ").slice(0,120);
+  const details=h("details",{class:"history-event"},h("summary",{},h("span",{class:"history-event-icon",trustedHtml:icon(glyph,16)}),h("span",{class:"history-event-heading"},h("strong",{text:(eventNames[event.kind]??event.kind)+(laterDeleted?" · Later observed deleted":"")}),h("time",{attrs:{datetime:new Date(event.at).toISOString()},text:formatDateTime(new Date(event.at))}),...(excerpt?[h("span",{class:"history-event-preview",text:excerpt})]:[]))));
+  details.addEventListener("toggle",()=>{
+    if(!details.open || details.childElementCount>1)return;
+    details.append(h("div",{class:"history-event-body"},h("pre",{class:"pf-report-data"},linkedText(text)),...(event.messageImages?.length?[historyImages(event.messageImages)]:[]),h("details",{class:"pf-report-details"},h("summary",{text:"All observed event fields"}),h("pre",{class:"pf-report-data"},linkedText(event)))));
+  });
+  return details;
 }
 export function profileReport(data: ProfileData, now = new Date()): string {
   const history = historyFor(data.id);
@@ -52,6 +66,7 @@ export function profileJournal(initial: ProfileData): { element: HTMLElement; up
   note.value = historyFor(data.id)?.notes ?? "";
   const status = h("p", {class:"pf-note",attrs:{role:"status"}});
   const timeline = h("div");
+  const eventList=h("ol",{class:"pf-timeline"}),eventRows=new StableRows();
   const setup = h("details", {class:"pf-history-setup"});
   const enable = h("input", {attrs:{type:"checkbox","aria-label":"Enable history for this profile"}});
   setup.addEventListener("change",()=>{setupDirty=true;});
@@ -80,14 +95,21 @@ export function profileJournal(initial: ProfileData): { element: HTMLElement; up
     if(!historyError() && !busy) status.textContent=`Storage: ${historyStorageLabel()}.`;
     const deleted = record?.events.filter(e => e.kind === "messageDeleted").length ?? 0;
     summary.textContent = `${data.relationship ?? "Relationship unavailable"} · ${data.presence} · ${data.mutualServers.state === "ready" ? `${data.mutualServers.value.length} shared servers` : "Shared servers loading/unavailable"}${data.joinedServerAt ? ` · Joined ${data.serverName ?? "this server"} ${data.joinedServerAt.toLocaleDateString()}` : ""}.`;
-    const nextKey=JSON.stringify([record?.enabled,record?.startedAt,record?.retentionDays,record?.events.length,record?.events.at(-1)?.id,shownEvents,historyError()]);
+    const nextKey=JSON.stringify([record?.enabled,record?.startedAt,record?.retentionDays,record?.events.length,record?.events.at(-1)?.id,shownEvents,record?null:historyError()]);
     if(nextKey===timelineKey)return;
     timelineKey=nextKey;
+    const deletedMessages=new Set(record?.events.filter(e=>e.kind==="messageDeleted").map(e=>`${e.channelId}:${e.messageId}`));
+    const visibleEvents=record?.events.slice(-shownEvents).reverse()??[];
+    eventRows.retain(new Set(visibleEvents.map(event=>event.id)));
+    reconcileChildren(eventList,visibleEvents.map(event=>{
+      const text=displayEvent(event),laterDeleted=event.kind==="messageObserved" && deletedMessages.has(`${event.channelId}:${event.messageId}`);
+      return eventRows.get(event.id,JSON.stringify([event,text,laterDeleted]),()=>h("li",{},historyEventDetail(event,text,laterDeleted)));
+    }));
     timeline.replaceChildren(h("h4",{class:"pf-title",text:record?.enabled?"History · observing":record?"History · off":historyError()?"History · loading or unavailable":"History · not configured"}),
       h("p",{class:"pf-note",text:record?`${record.events.length} retained events · ${deleted} of their messages observed deleted · retention ${record.retentionDays} days. Record created ${formatDateTime(new Date(record.startedAt))}.` : historyError()?"History has not loaded. Existing data is not shown yet; check the status above and retry.":"No history yet. Expand Set up history to choose what XRay records."}),
       h("p",{class:"pf-note",text:"Only events delivered while XRay is connected are observable. Message history retains up to 4,000 characters of previously visible text, four file names and four Discord image links. Images load when expanded; links can expire. Files themselves are not archived. Older entries may have no text. Actors are unknown. Profile-change values are limited to 300 characters."}),
       ...(!record && historyError()?[h("button",{class:"btn ghost",text:"Retry loading history",on:{click:retryHistoryLoad}})]:[]),
-      ...(record?.events.length ? [h("ol",{class:"pf-timeline"},...record.events.slice(-shownEvents).reverse().map(event=>h("li",{}, h("time",{attrs:{datetime:new Date(event.at).toISOString()},text:formatDateTime(new Date(event.at))}),h("span",{text:displayEvent(event)+(event.kind==="messageObserved" && record.events.some(e=>e.kind==="messageDeleted" && e.messageId===event.messageId && e.channelId===event.channelId) ? "\nLater observed deleted" : "")}), ...(event.messageImages?.length ? [historyImages(event.messageImages)] : []))))] : []),
+      ...(record?.events.length ? [eventList] : []),
       ...(record && record.events.length > shownEvents ? [h("button",{class:"btn ghost",text:`Show older history (${record.events.length-shownEvents} remaining)`,on:{click:()=>{shownEvents+=40;draw();}}})] : []));
   };
   const saved = historyFor(data.id);

@@ -38,7 +38,7 @@ export function parseLocalReport(text: string, provider: string, subject: string
   if (!/^\d{14,19}$/.test(subject)) throw new Error("Enter the matching Discord subject ID before importing this export.");
   const rows: any[] = Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : Array.isArray(data?.records) ? data.records : [data];
   if (rows.length > 1000) throw new Error("Import at most 1,000 records per report.");
-  return { metadata: { query: subject, generatedAt: new Date().toISOString(), source: provider, importedAt: true },
+  return { metadata: { query: subject, generatedAt: new Date().toISOString(), source: provider, importedAt: true,summary:data?.summary??data?.metadata?.summary??data?.data?.summary },totals:data?.totals??data?.data?.totals,response:data,
     records: rows.filter(row => row && typeof row === "object").map((row, index) => ({ source: provider, title: `Record ${index + 1}`, fields: Object.entries(row).map(([key,value]) => ({ key, label: key, value })) })) };
 }
 
