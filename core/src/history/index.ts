@@ -3,6 +3,7 @@ import { myId, stores } from "../discord";
 import { storage } from "../env";
 import { ProfileHistory, type Category, type Snapshot } from "./model";
 import { HistoryObserver } from "./observer";
+import { customStatusSnapshot } from "./customStatus";
 import { accountDocument, onStorageModeChanged, serverDataEnabled, storageSwitching } from "../shell/serverStorage";
 import type { DocumentSession } from "../shell/documentSession";
 
@@ -113,6 +114,10 @@ export function captureProfile(id: string): void {
   if (profile?.bio === null || typeof profile?.bio === "string") snapshot.bio = profile.bio;
   const status = stores.presences?.getStatus?.(id);
   if (["online","idle","dnd","offline"].includes(status)) snapshot.presence = status;
+  if (["online","idle","dnd"].includes(status)) {
+    const customStatus = customStatusSnapshot(stores.presences?.getActivities?.(id));
+    if (customStatus !== undefined) snapshot.customStatus = customStatus;
+  }
   model.observe(id,snapshot,true);
 }
 export function observeProfileResponse(id: string, body: any): void {

@@ -1,5 +1,12 @@
 # xray log server
 
+For the 0.5.7 optional always-on Discord bot collector, deploy all four runtime
+modules together and follow [VPS bot setup](../docs/VPS_BOT_SETUP.md). It uses
+an official bot token, requires server installation/intents and exposes a
+separate read-only `bot-history.<accountId>` document. Desktop-only and VPS
+observations remain separate. Global bios/private account DMs are not supplied
+by the bot gateway.
+
 A small service for your VPS that keeps **xray's own errors** and **your own
 voice and plugin events** (fake deafen and server deafen on/off, which server,
 plugin switches), so you can see when Discord changed something under xray or

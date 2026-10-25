@@ -337,7 +337,7 @@ const detailData = mergeProfile(profile({ relationship: "Friend", premiumSince: 
 const detailFacts = Object.fromEntries(section(profileSections(detailData, NOW), "dates")!.facts);
 check("profile reports confirmed relationship and mutual count without needing the names", detailFacts.Relationship === "Friend" && detailFacts["Mutual friends"] === "6");
 check("profile distinguishes confirmed zero mutual servers from unavailable data", detailFacts["Mutual servers"] === "0" && Object.fromEntries(section(sparse, "dates")!.facts)["Mutual servers"] === "Loading…");
-check("profile shows legacy names and clears stale premium, nicknames and badges", detailFacts["Legacy username"] === "old-name#1234" && detailFacts["Premium since"] === "Unavailable" && detailFacts["Server nickname"] === "Unavailable" && detailData.badges.length === 0);
+check("profile shows legacy names and clears stale premium, nicknames and badges", detailFacts["Legacy username"] === "old-name#1234" && detailFacts["Premium since"] === "No premium date shared" && detailFacts["Server nickname"] === "Choose a shared server above" && detailData.badges.length === 0);
 const none = profileSections(mergeProfile(profile(), { mutual_guilds: [], mutual_friends: [], connected_accounts: [] }), NOW);
 check("no mutuals says so plainly", section(none, "servers")?.note === "No servers in common." && section(none, "friends")?.note === "No friends in common.");
 check("no connections leaves the section out", !section(none, "connections"));

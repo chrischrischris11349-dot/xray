@@ -36,3 +36,10 @@ Equicord and Vencord (GPL-3.0-or-later) by Vendicated, the Equicord team and
 their contributors; xray builds them from source, minus the plugins listed in
 [equicord/excluded.json](equicord/excluded.json). Icons are
 [Lucide](https://lucide.dev) (ISC).
+
+Custom-status observations: see [the 0.5.6 release notes](docs/RELEASE_0.5.6.md)
+and [custom-status history](docs/CUSTOM_STATUS_HISTORY.md) for setup and PC-off coverage.
+
+See [0.5.7 live results and VPS support](docs/RELEASE_0.5.7.md) and
+[always-on bot setup](docs/VPS_BOT_SETUP.md) for multi-source searches and
+permitted shared-server history while the PC is off.

@@ -1,6 +1,6 @@
 import { exportControls, resultReport, reportSummary } from "./reportExport";
 import { rememberReport } from "./reportCache";
-import { oathnetSearch } from "./oathnetSearch";
+import { oathnetFullReport } from "./oathnetFullReport";
 import { invoke } from "../shell/bridge";
 import { h } from "./dom";
 import { linkedText } from "./reportText";
@@ -11,7 +11,7 @@ export type LiveProvider="IntelX"|"Snusbase"|"Oathnet";
 const modes:Record<LiveProvider,[string,string][]>={
   IntelX:[["search","Search"],["account","Account, quota and available buckets"]],
   Snusbase:[["search","Database search"],["count","Count matches"],["combo","Combo lookup"],["hash","Hash lookup"],["ip","IP WHOIS"],["domain","Domain WHOIS"],["stats","Database statistics"]],
-  Oathnet:[["profile","Discord profile"],["history","Discord username history"],["search","Breach search"],["ip","IP information"],["steam","Steam profile"],["xbox","Xbox profile"],["roblox","Roblox profile"]],
+  Oathnet:[["search","Full live search report"],["profile","Discord profile"],["history","Discord username history"],["ip","IP information"],["steam","Steam profile"],["xbox","Xbox profile"],["roblox","Roblox profile"]],
 };
 const kinds:Record<LiveProvider,[string,string][]>= {
   IntelX:[["email","Email"],["domain","Domain"],["url","URL"],["ip","IP address"],["cidr","CIDR"],["phone","Phone (+country code)"],["bitcoin","Bitcoin address"],["mac","MAC address"],["uuid","UUID"],["ipfs","IPFS hash"],["simhash","Simhash"]],
@@ -51,14 +51,13 @@ export function liveIntel(provider:LiveProvider):{element:HTMLElement;close():vo
   async function run(operation=mode.value,term=query.value.trim()):Promise<void> {
     if(busy)return;busy=true;mode.disabled=kind.disabled=query.disabled=search.disabled=more.disabled=cancel.disabled=true;status.textContent="Contacting provider…";
     try {
+      if(provider==="Oathnet" && operation==="search"){
+        closePaged?.();const view=oathnetFullReport(term,{onReport:report=>{const id=subject.value.trim()||term;if(/^\d{14,20}$/.test(id))rememberReport(id,{...report,metadata:{...report.metadata,query:id}});}});
+        output.replaceChildren(view.element);closePaged=view.close;await view.load();status.textContent="Live source results and any incomplete sources are shown below.";return;
+      }
       const data:any=await invoke("intel_request",{provider:provider.toLowerCase(),operation,query:term,kind:kind.value});
       if(!active)return;
       if(provider==="IntelX" && operation==="search") {searchId=data.id??"";allRecords=[];if(!searchId)throw Error("IntelX did not return a search ID.");status.textContent="Search started. Load results to see the next page.";more.hidden=cancel.hidden=false;await renderFirstPage();}
-      else if(provider==="Oathnet" && operation==="search"){
-        closePaged?.();
-        const view=oathnetSearch(term,async(cursor)=>cursor?invoke("intel_request",{provider:"oathnet",operation:"search",query:term,kind:"discord",cursor}):data,report=>{const id=subject.value.trim()||term;if(/^\d{14,20}$/.test(id))rememberReport(id,{...report,metadata:{...report.metadata,query:id}});});
-        output.replaceChildren(view.element);closePaged=view.close;await view.load();status.textContent="Oathnet search loaded below; use Next search page for remaining results.";
-      }
       else if(operation==="terminate"){more.hidden=cancel.hidden=true;status.textContent="Search stopped.";}
       else {display(data);if(provider==="IntelX" && operation==="result"){resultStatus(data);}else status.textContent="Lookup complete. Results are provider observations; availability depends on your plan.";}
     }catch(error){if(active)status.textContent=String((error as Error)?.message??error);}

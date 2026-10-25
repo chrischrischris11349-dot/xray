@@ -1,12 +1,25 @@
+import { historyEventText } from "../src/ui/profileJournal";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { ProfileHistory } from "../src/history/model";
 import { HistoryObserver } from "../src/history/observer";
 import { discordDate, memberJoinedAt } from "../src/ui/memberDates";
-import { mergeProfileMember, type ProfileData } from "../src/ui/profile";
+import { gatherProfile, mergeProfile, mergeProfileMember, profileSections, type ProfileData } from "../src/ui/profile";
 import { deleteMessageAuthorized, mayEnableModeration, messageAllowed } from "../src/plugins/messageModeration";
 import { notificationIdentity } from "../src/shell/notificationIdentity";
 const person="300760994454437890", actor="300760994454437891", channel="300760994454437892", messageId="300760994454437893";
+
+test("profile distinguishes loading, absent fields, failed reads and missing server context",()=>{
+ const base=gatherProfile({id:person,username:"tester"});
+ const facts=(data:ProfileData)=>Object.fromEntries((profileSections(data).find(s=>s.id==="dates") as any).facts);
+ assert.equal(facts(base)["Premium since"],"Loading from Discord…");assert.equal(facts(base)["Joined this server"],"Choose a shared server above");
+ const loaded=mergeProfile(base,{user_profile:{},premium_since:null,legacy_username:null,mutual_guilds:[],mutual_friends:[],connected_accounts:[]});
+ assert.equal(facts(loaded)["Premium since"],"No premium date shared");assert.equal(facts(loaded)["Legacy username"],"No legacy username shared");
+ const server={...base,guildId:"one",memberState:"loading" as const};assert.equal(facts(server)["Joined this server"],"Loading member details…");
+ const member={...server,...mergeProfileMember(server,{guild_id:"one",user:{id:person},joined_at:"2026-06-20T17:30:01Z",nick:null,premium_since:null})};
+ assert.match(facts(member)["Joined this server"],/20 June 2026/);assert.equal(facts(member)["Server nickname"],"No server nickname");assert.equal(facts(member)["Boosting since"],"Not boosting this server");
+ assert.match(facts({...server,memberState:"failed",memberError:"Permission denied"})["Joined this server"],/Permission denied/);
+});
 
 test("server join dates accept native/raw forms and never cross server/user context",()=>{
   const iso="2026-06-20T17:30:01.123Z";
@@ -124,4 +137,10 @@ test("restored image links reject credentials, scripts and arbitrary hosts",()=>
  const h=new ProfileHistory();h.configure(person,true,["messages"]);
  h.add(person,"messages",{id:"one",kind:"messageObserved",messageImages:["javascript:alert(1)","https://cdn.discordapp.com.evil.test/attachments/x/y/a.png","https://user:pass@cdn.discordapp.com/attachments/x/y/a.png","https://media.discordapp.net/attachments/x/y/a.png"]});
  assert.deepEqual(new ProfileHistory(h.serialize()).get(person)!.events[0].messageImages,["https://media.discordapp.net/attachments/x/y/a.png"]);
+});
+
+
+test("custom status history displays previous/new text and explicit clearing",()=>{
+  const rendered=historyEventText({id:"custom:1",at:Date.now(),kind:"customStatus",before:"At work",after:"(empty)"});
+  assert.match(rendered,/Custom status changed/);assert.match(rendered,/At work/);assert.match(rendered,/\(empty\)/);
 });

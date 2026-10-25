@@ -50,7 +50,6 @@ export function findReportAvatar(value:any,depth=0):string|null {
 /** Render data extracted from the JSON block; never execute the export's HTML/scripts. */
 export function renderImportedReport(report: any, userId: string, fallbackAvatar?: string | null): HTMLElement {
   if (report?.metadata?.query !== userId || !Array.isArray(report?.records)) throw new Error("The imported report does not match this Discord ID.");
-  if (report.records.length > 1000) throw new Error("Open a report with at most 1,000 records.");
   const date = new Date(report.metadata.generatedAt);
   const heading = `${report.metadata.live ? "Live" : "Imported"} ${typeof report.metadata.source === "string" ? `${report.metadata.source} ` : ""}search report`;
   const block = h("section", { attrs: { "aria-label": heading } },

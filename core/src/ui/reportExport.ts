@@ -4,7 +4,7 @@ import { icon } from "./icons";
 /** Count unique, explicitly identified IP values without inferring addresses from IDs. */
 export function returnedIpAddresses(records:unknown[]):number {
   const addresses=new Set<string>();let visited=0;
-  const field=/^(?:ip|ips|ip_address(?:es)?|ipaddress(?:es)?|lastip|last_ip|ipv[46]|selector)$/i;
+  const field=/^(?:ip|ips|ip_address(?:es)?|ipaddress(?:es)?|lastip|last_ip|ipv[46]|victim_ip|client_ip|selector)$/i;
   const add=(value:string)=>{
     for(const part of value.split(/[\s,;]+/)){
       if(/^\d{1,3}(?:\.\d{1,3}){3}$/.test(part) && part.split(".").every(n=>Number(n)<=255))addresses.add(part.split(".").map(Number).join("."));

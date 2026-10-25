@@ -2,9 +2,23 @@ import { searchMessagePage, searchDmPage, type SearchScope } from "./messageSear
 import { http, stores } from "../discord";
 import { historyFor } from "../history";
 import { h } from "./dom";
-import { channelList, collectionArray, conversationLabel, queryAvailableMessages } from "./messageHistory";
-import { historyEventDetail, historyImages } from "./profileJournal";
+import { channelList, collectionArray, conversationLabel, queryAvailableMessages, type AvailableMessage } from "./messageHistory";
+import { historyEventDetail } from "./profileJournal";
 import { exportControls, resultReport } from "./reportExport";
+import { renderChatMessage } from "./chatMessage";
+
+/** Reuse mini-chat's safe native image/video/embed renderer in the full report. */
+export function renderAvailableMessage(row:AvailableMessage,channel?:any):HTMLElement {
+  const attachments=[...row.attachments],seen=new Set(attachments.flatMap(a=>[a.url,a.proxy_url]));
+  for(const [kind,urls]of [["image",row.images],["video",row.videos]] as const)for(const url of urls){
+    if(seen.has(url))continue;seen.add(url);
+    let filename=kind==="image"?"Observed image":"Observed video";try{filename=decodeURIComponent(new URL(url).pathname.split("/").pop()??filename);}catch{/* Keep the descriptive label. */}
+    attachments.push({url,filename,content_type:`${kind}/${kind==="image"?"png":"mp4"}`});
+  }
+  const message=renderChatMessage({id:row.id,timestamp:row.timestamp,deleted:row.deleted,attachments,embeds:row.embeds},false,row.content??"Text was not retained.");
+  const marker=message.querySelector(".qr-deleted-label");if(marker)marker.textContent="Deleted · retained observation";
+  return h("article",{class:"pf-block pf-message"},h("h4",{class:"pf-title",text:conversationLabel(channel,row.channelId)}),h("p",{class:"pf-note",text:`Message ${row.id}${row.deleted?" · Deleted (observed)":""}`}),message,...row.events.map(event=>historyEventDetail(event)));
+}
 
 export function availableMessages(userId:string):HTMLElement {
   const events=historyFor(userId)?.events??[];
@@ -42,13 +56,7 @@ export function availableMessages(userId:string):HTMLElement {
   section.append(h("p",{class:"pf-note",text:"Remote search is manual and paged. One request per click; no background scan. Permission and indexing limits apply. Deleted content comes only from retained observations."}),fetchNext,skip,searchStatus);
   const list=h("div"),status=h("span",{class:"pf-note"});let page=0;
   const draw=()=>{
-    list.replaceChildren(...records.slice(page*25,page*25+25).map(row=>h("article",{class:"pf-block"},
-      h("h4",{class:"pf-title",text:conversationLabel(stores.channels?.getChannel?.(row.channelId),row.channelId)}),
-      h("p",{class:"pf-note",text:`Message ${row.id}${row.deleted?" · Deleted (observed)":""}${row.timestamp?` · Sent ${row.timestamp}`:" · Sent time unavailable"}`}),
-      h("p",{class:"pf-report-data",text:row.content??"Text was not retained."}),
-      ...(row.images.length?[historyImages(row.images)]:[]),
-      ...row.events.map(event=>historyEventDetail(event))
-    )));
+    list.replaceChildren(...records.slice(page*25,page*25+25).map(row=>renderAvailableMessage(row,stores.channels?.getChannel?.(row.channelId))));
     status.textContent=records.length?`Page ${page+1} of ${Math.ceil(records.length/25)}`:"No messages loaded or retained for this user.";
     previous.disabled=page===0;next.disabled=(page+1)*25>=records.length;
   };

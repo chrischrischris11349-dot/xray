@@ -4,12 +4,12 @@ use tauri::{AppHandle, Runtime};
 
 fn valid_ns(ns: &str) -> bool {
     let Some((kind, id)) = ns.split_once('.') else { return false; };
-    matches!(kind, "profile-history" | "moderation-audit" | "server-monitors") && (14..=20).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_digit())
+    matches!(kind, "profile-history" | "moderation-audit" | "server-monitors" | "bot-history") && (14..=20).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_digit())
 }
 
 #[tauri::command]
 pub async fn document_store<R: Runtime>(app: AppHandle<R>, ns: String, value: Option<String>, revision: Option<u64>) -> Result<Value, String> {
-    if !valid_ns(&ns) || value.as_ref().is_some_and(|v| v.len() > 2_000_000) || value.is_some() && revision.is_none() {
+    if !valid_ns(&ns) || ns.starts_with("bot-history.") && value.is_some() || value.as_ref().is_some_and(|v| v.len() > 2_000_000) || value.is_some() && revision.is_none() {
         return Err("Invalid document or revision".into());
     }
     // Reload this file so adding the server address does not need an app restart.

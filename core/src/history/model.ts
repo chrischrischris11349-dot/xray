@@ -1,22 +1,25 @@
 /** Opt-in observations. Deleted-message excerpts contain only previously visible data. */
 export type Category = "profile" | "presence" | "membership" | "deletions" | "edits" | "messages";
 export const categories: readonly Category[] = ["profile", "presence", "membership", "deletions", "edits", "messages"];
-export type Snapshot = Partial<Record<"username" | "displayName" | "avatar" | "banner" | "bio" | "presence", string | null>>;
-export interface HistoryEvent { id: string; at: number; kind: string; before?: string; after?: string; guildId?: string; channelId?: string; messageId?: string; messageText?: string; messageFiles?: string[]; messageImages?: string[]; messageBefore?: string; messageSentAt?: string }
+export type Snapshot = Partial<Record<"username" | "displayName" | "avatar" | "banner" | "bio" | "customStatus" | "presence", string | null>>;
+export interface HistoryEvent { id: string; at: number; kind: string; before?: string; after?: string; guildId?: string; channelId?: string; messageId?: string; messageText?: string; messageFiles?: string[]; messageImages?: string[]; messageVideos?: string[]; messageBefore?: string; messageSentAt?: string }
 export interface HistoryRecord { enabled: boolean; startedAt: number; retentionDays: number; categories: Category[]; notes: string; events: HistoryEvent[] }
 export interface HistoryDocument { version: 1; people: Record<string, HistoryRecord> }
 const DAY = 864e5;
 const validId = (value: string) => /^\d{14,20}$/.test(value);
 const text = (value: unknown, limit = 300) => typeof value === "string" ? value.length > limit ? `${value.slice(0,limit-1)}…` : value : undefined;
-export function deletionExcerpt(message: any): Pick<HistoryEvent, "messageText" | "messageFiles" | "messageImages" | "messageBefore" | "messageSentAt"> {
-  return { messageSentAt: sentAt(message?.timestamp), messageImages: imageLinks(Array.isArray(message?.attachments) ? message.attachments.filter((f:any)=>/^image\//.test(f.content_type ?? f.contentType ?? "") || /\.(png|jpe?g|gif|webp|avif)$/i.test(f.filename ?? f.fileName ?? "")).map((f:any)=>f.url ?? f.proxy_url ?? f.proxyURL) : []), messageText: text(message?.content, 4000), messageFiles: Array.isArray(message?.attachments) ? message.attachments.slice(0, 4).map((file: any) => text(file?.filename ?? file?.fileName, 80)).filter((name: unknown): name is string => typeof name === "string") : undefined };
+export function deletionExcerpt(message: any): Pick<HistoryEvent, "messageText" | "messageFiles" | "messageImages" | "messageVideos" | "messageBefore" | "messageSentAt"> {
+  const attachments=Array.isArray(message?.attachments)?message.attachments:undefined;
+  const media=(kind:string,extension:RegExp)=>attachments?imageLinks(attachments.filter((file:any)=>String(file.content_type??file.contentType??"").startsWith(`${kind}/`) || extension.test(file.filename??file.fileName??"")).map((file:any)=>file.url??file.proxy_url??file.proxyURL)):undefined;
+  return {messageSentAt:sentAt(message?.timestamp),messageImages:media("image",/\.(png|jpe?g|gif|webp|avif)$/i),messageVideos:media("video",/\.(mp4|webm|mov)$/i),messageText:text(message?.content,4000),messageFiles:attachments?.slice(0,4).map((file:any)=>text(file.filename??file.fileName,80)).filter((name:unknown):name is string=>typeof name==="string")};
 }
+
 function sentAt(value:any):string|undefined {
  try {const date=new Date(value?.toDate?.() ?? value);return value && Number.isFinite(date.getTime())?date.toISOString():undefined;}catch{return undefined;}
 }
-function cleanExcerpt(event: Partial<HistoryEvent>): Pick<HistoryEvent, "messageText" | "messageFiles" | "messageImages" | "messageBefore" | "messageSentAt"> {
+function cleanExcerpt(event: Partial<HistoryEvent>): Pick<HistoryEvent, "messageText" | "messageFiles" | "messageImages" | "messageVideos" | "messageBefore" | "messageSentAt"> {
   if (!["messageDeleted","messageObserved","messageEdited"].includes(event.kind ?? "")) return {};
-  return { messageBefore: text(event.messageBefore,4000), messageSentAt: sentAt(event.messageSentAt), messageImages: imageLinks(event.messageImages), messageText: text(event.messageText, 4000), messageFiles: Array.isArray(event.messageFiles) ? event.messageFiles.slice(0,4).map(name => text(name,80)).filter((name): name is string => name !== undefined) : undefined };
+  return { messageBefore: text(event.messageBefore,4000), messageSentAt: sentAt(event.messageSentAt), messageImages: imageLinks(event.messageImages), messageVideos: imageLinks(event.messageVideos), messageText: text(event.messageText, 4000), messageFiles: Array.isArray(event.messageFiles) ? event.messageFiles.slice(0,4).map(name => text(name,80)).filter((name): name is string => name !== undefined) : undefined };
 }
 
 /** Only Discord attachment images, without arbitrary tracker/image hosts. Links can expire. */
@@ -67,7 +70,7 @@ export class ProfileHistory {
     const record = this.get(id);
     if (!record?.enabled) return;
     const previous = this.baselines.get(id) ?? {};
-    for (const key of ["username", "displayName", "avatar", "banner", "bio", "presence"] as const) {
+    for (const key of ["username", "displayName", "avatar", "banner", "bio", "customStatus", "presence"] as const) {
       const value = patch[key];
       if (value !== null && typeof value !== "string") continue;
       if (seedOnly && Object.hasOwn(previous,key)) continue;
@@ -79,7 +82,7 @@ export class ProfileHistory {
   add(id: string, category: Category, event: Omit<HistoryEvent, "at">): boolean {
     const record = this.get(id);
     if (!record?.enabled || !record.categories.includes(category) || record.events.some(e => e.id === event.id)) return false;
-    record.events.push({ ...event, messageText: undefined, messageFiles: undefined, messageImages: undefined, ...cleanExcerpt(event), before: text(event.before), after: text(event.after), at: this.clock() });
+    record.events.push({ ...event, messageText: undefined, messageFiles: undefined, messageImages: undefined, messageVideos: undefined, ...cleanExcerpt(event), before: text(event.before), after: text(event.after), at: this.clock() });
     this.prune(true); return true;
   }
   prune(force = true): void {

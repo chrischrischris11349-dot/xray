@@ -26,6 +26,7 @@ import { timingSafeEqual } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { dirname,join } from "node:path";
 import { recordingStore } from "./recordings.mjs";
+import { startDiscordBot } from "./discord-bot.mjs";
 
 const TOKEN = process.env.XRAY_LOG_TOKEN ?? "";
 const PORT = Number(process.env.XRAY_LOG_PORT ?? 8787);
@@ -104,7 +105,7 @@ export function openDb(path = DB_PATH) {
 
 /** Namespaces are plugin ids: short, and only safe characters. */
 const NS_PATTERN = /^[a-zA-Z0-9_.-]{1,64}$/;
-const DOCUMENT_NS = /^(profile-history|moderation-audit|server-monitors)\.\d{14,20}$/;
+const DOCUMENT_NS = /^(profile-history|moderation-audit|server-monitors|bot-history)\.\d{14,20}$/;
 const MAX_DOCUMENT_BYTES = 2_500_000;
 
 /** A tiny data layer, so the HTTP server and the tests share one path. */
@@ -230,6 +231,7 @@ export function createApp(data,recordings) {
         if (!DOCUMENT_NS.test(ns)) return json(res, 400, { error: "bad document namespace" });
         if (req.method === "GET") return json(res, 200, data.readDocument(ns));
         if (req.method === "PUT") {
+          if(ns.startsWith("bot-history."))return json(res,403,{error:"VPS bot observations are read-only"});
           let payload;
           try { payload = JSON.parse(await readBody(req, MAX_DOCUMENT_BYTES)); }
           catch (error) { if (error.message === "too large") throw error; return json(res, 400, { error: "invalid JSON" }); }
@@ -363,5 +365,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.error("Set XRAY_LOG_TOKEN to a secret of at least 16 characters before starting the server.");
     process.exit(1);
   }
-  start();
+  const running=start();
+  void startDiscordBot(running.db,running.data).then(bot=>{const timer=setInterval(()=>{try{bot.history.prune();}catch{console.error("Could not prune VPS bot history");}},PRUNE_EVERY_MS);timer.unref?.();const stop=()=>{clearInterval(timer);bot.stop();running.stop();};process.once("SIGTERM",stop);process.once("SIGINT",stop);}).catch(()=>console.error("VPS bot collector could not start"));
 }

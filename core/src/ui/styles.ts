@@ -380,6 +380,9 @@ select.opt-input option { background: var(--raised); color: var(--text); }
 .pf-badges { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
 .pf-badge { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: ${radius.s}; border: 1px solid var(--line2); font-size: 12px; font-weight: 600; color: var(--muted); }
 .pf-report-data { user-select:text; -webkit-user-select:text; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; color: var(--muted); }
+.pf-message .msg { width:100%; max-width:100%; margin-top:${space.s2}; }
+.pf-message .qr-media { max-width:100%; max-height:360px; object-fit:contain; }
+.pf-message .qr-media-link { max-width:100%; }
 .pf-report-details { margin-top: 12px; }
 .pf-report-details summary { cursor: pointer; color: var(--text); }
 .pf-journal-actions { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }

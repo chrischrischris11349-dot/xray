@@ -1,4 +1,4 @@
-import { oathnetSearch } from "./oathnetSearch";
+import { oathnetFullReport } from "./oathnetFullReport";
 import { exportControls, resultReport } from "./reportExport";
 import { invoke } from "../shell/bridge";
 import { h } from "./dom";
@@ -45,7 +45,7 @@ export function oathnetSection(userId: string, request: Lookup = lookup): { elem
   let busy = false;
   let profile: RecordData | undefined;
   let history: RecordData | undefined;
-  const breach=oathnetSearch(userId);
+  const breach=oathnetFullReport(userId,{includeProfiles:false});
   const output = h("div");
   const imported = h("div");
   const status = h("p", { class: "pf-note", attrs: { role: "status", "aria-live": "polite" } });

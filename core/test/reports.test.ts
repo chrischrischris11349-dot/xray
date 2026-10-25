@@ -7,6 +7,8 @@ import { pasteText, writeClipboard } from "../src/ui/clipboard";
 import { viewerUrl } from "../src/ui/imageViewer";
 import { ProfileHistory } from "../src/history/model";
 import { HistoryObserver } from "../src/history/observer";
+import { parseHTML } from "linkedom";
+import { renderAvailableMessage } from "../src/ui/messageBrowser";
 const user="300760994454437890",guild="300760994454437891",dm="300760994454437892",msg="300760994454437893";
 
 test("nested channel wrappers, maps, DMs and retained deletions merge without duplicates",()=>{
@@ -69,4 +71,29 @@ test("Oathnet totals and nested IP fields survive summaries and every export for
   assert.match(printableReport(report),/ipAddresses/);assert.match(printableReport(report),/2001:db8::1/);
   assert.equal(resultReport("Unloaded page",[],{totals:{records:31,ips:1}}).summary.ipAddresses,1);
   assert.equal(resultReport("Missing totals",records).summary.ipAddresses,3);
+});
+
+test("loaded profile messages embed image/video attachments and video embeds inline",()=>{
+ const previous=globalThis.document;(globalThis as any).document=parseHTML("<html><body></body></html>").document;
+ try{
+  const image="https://cdn.discordapp.com/attachments/123/456/photo.png?ex=123",video="https://cdn.discordapp.com/attachments/123/457/clip.mp4?ex=123",embedded="https://media.discordapp.net/attachments/123/458/other.webm";
+  const rows=queryAvailableMessages(user,[{id:dm,type:1}],()=>[{id:msg,author:{id:user},content:"Photo and video",attachments:[{url:image,filename:"photo.png",content_type:"image/png"},{url:video,filename:"clip.mp4",content_type:"video/mp4"}],embeds:[{type:"video",video:{url:embedded}}]}],[]);
+  const rendered=renderAvailableMessage(rows[0],{id:dm,type:1});
+  assert.equal(rendered.querySelector("img")?.getAttribute("src"),image);assert.equal(rendered.querySelector("img")?.closest("details"),null);
+  assert.equal(rendered.querySelectorAll("video").length,2);for(const player of rendered.querySelectorAll("video")){assert.equal(player.hasAttribute("controls"),true);assert.equal(player.hasAttribute("autoplay"),false);assert.equal(player.getAttribute("preload"),"none");}
+  assert.match(rendered.textContent!,/Photo and video/);
+ }finally{(globalThis as any).document=previous;}
+});
+
+test("retained videos survive observation, deletion, serialization and inline rendering",()=>{
+ const previous=globalThis.document;(globalThis as any).document=parseHTML("<html><body></body></html>").document;
+ try{
+  const video="https://cdn.discordapp.com/attachments/123/456/clip.webm";
+  const history=new ProfileHistory();history.configure(user,true,["messages","deletions"]);const observer=new HistoryObserver(history);
+  observer.handle({type:"MESSAGE_CREATE",message:{id:msg,channel_id:dm,author:{id:user},content:"Video",attachments:[{url:video,filename:"clip.webm",content_type:"video/webm"}]}});
+  observer.handle({type:"MESSAGE_UPDATE",message:{id:msg,channel_id:dm,content:"Edited caption",edited_timestamp:"2026-10-25T10:00:00Z"}});
+  observer.handle({type:"MESSAGE_DELETE",channelId:dm,id:msg});
+  const events=new ProfileHistory(history.serialize()).get(user)!.events;assert.deepEqual(events.at(-1)?.messageVideos,[video]);
+  const rows=queryAvailableMessages(user,[],()=>[],events),rendered=renderAvailableMessage(rows[0]);assert.equal(rendered.querySelector("video")?.getAttribute("src"),video);assert.match(rendered.textContent!,/Deleted · retained observation/);
+ }finally{(globalThis as any).document=previous;}
 });

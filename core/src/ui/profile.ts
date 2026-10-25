@@ -94,6 +94,12 @@ export interface ProfileData {
   mutualFriends: Loaded<string[]>;
   mutualFriendUsers?: ProfileFriend[];
   connections: Loaded<ProfileConnection[]>;
+  profileState?:"loading"|"ready"|"failed";
+  memberState?:"loading"|"ready"|"failed";
+  profileError?:string;
+  memberError?:string;
+  profileFields?:{legacyUsername:boolean;premiumSince:boolean};
+  memberFields?:{joined:boolean;boosting:boolean;nickname:boolean};
 }
 
 const PRESENCE_LABEL: Record<Presence, string> = { online: "Online", idle: "Idle", dnd: "Do Not Disturb", offline: "Offline", unknown: "Status unknown" };
@@ -158,6 +164,9 @@ export function gatherProfile(user: any, guildId?: string | null): ProfileData {
     mutualServers: { state: "loading" },
     mutualFriends: { state: "loading" },
     connections: { state: "loading" },
+    profileState:"loading",memberState:guildId?"loading":undefined,
+    profileFields:{legacyUsername:hasAny(profile,["legacyUsername","legacy_username"]),premiumSince:hasAny(profile,["premiumSince","premium_since"])},
+    memberFields:{joined:hasAny(member,["joinedAt","joined_at"]),boosting:hasAny(member,["premiumSince","premium_since"]),nickname:hasAny(member,["nick"])},
   };
 }
 
@@ -201,6 +210,8 @@ export function mergeProfile(data: ProfileData, body: any): ProfileData {
   const badges = Array.isArray(body.badges) ? body.badges.map((b: any) => nonEmpty(b?.description)).filter(Boolean) : [];
   return {
     ...data,
+    profileState:"ready",profileError:undefined,
+    profileFields:{legacyUsername:data.profileFields?.legacyUsername===true||hasAny(body,["legacy_username"])||hasAny(profile,["legacy_username"])||hasAny(body.user,["legacy_username"]),premiumSince:data.profileFields?.premiumSince===true||hasAny(body,["premium_since"])||hasAny(profile,["premium_since"])},
     avatar: safeImage(body.user?.avatar_url) ?? (typeof body.user?.avatar === "string" && /^[a-zA-Z0-9_]+$/.test(body.user.avatar) ? safeImage(`https://cdn.discordapp.com/avatars/${data.id}/${body.user.avatar}.png?size=128`) : null) ?? data.avatar,
     bio: nonEmpty(guildProfile.bio) ?? nonEmpty(profile.bio) ?? data.bio,
     pronouns: nonEmpty(guildProfile.pronouns) ?? nonEmpty(profile.pronouns) ?? data.pronouns,
@@ -214,7 +225,7 @@ export function mergeProfile(data: ProfileData, body: any): ProfileData {
       return name && icon ? [[name, icon]] : [];
     })) : data.badgeIcons,
     ...mergeProfileMember(data, member),
-    legacyUsername: nonEmpty(body.legacy_username ?? profile.legacy_username ?? body.user?.legacy_username) ?? data.legacyUsername,
+    legacyUsername: Object.hasOwn(body,"legacy_username")?nonEmpty(body.legacy_username):Object.hasOwn(profile,"legacy_username")?nonEmpty(profile.legacy_username):hasAny(body.user,["legacy_username"])?nonEmpty(body.user.legacy_username):data.legacyUsername,
     premiumSince: body.premium_since !== undefined ? dateOrNull(body.premium_since) : profile.premium_since !== undefined ? dateOrNull(profile.premium_since) : data.premiumSince,
     mutualFriendCount: validCount(body.mutual_friends_count) ?? (friends ? friends.length : data.mutualFriendCount),
     mutualServers: servers ? { state: "ready", value: servers } : { state: "failed" },
@@ -225,10 +236,13 @@ export function mergeProfile(data: ProfileData, body: any): ProfileData {
 }
 
 /** Member dates belong to the selected server, never the account or guild creation date. */
-export function mergeProfileMember(data: ProfileData, member: any): Pick<ProfileData,"joinedServerAt" | "boostingSince" | "serverNickname"> {
-  const unchanged = { joinedServerAt:data.joinedServerAt, boostingSince:data.boostingSince, serverNickname:data.serverNickname };
+export function mergeProfileMember(data: ProfileData, member: any): Pick<ProfileData,"joinedServerAt" | "boostingSince" | "serverNickname"|"memberState"|"memberError"|"memberFields"> {
+  const unchanged = { joinedServerAt:data.joinedServerAt, boostingSince:data.boostingSince, serverNickname:data.serverNickname,memberState:data.memberState,memberError:data.memberError,memberFields:data.memberFields };
   if (!member || typeof member !== "object" || member.guild_id && data.guildId && member.guild_id !== data.guildId || member.guildId && data.guildId && member.guildId !== data.guildId || member.user?.id && member.user.id !== data.id || member.userId && member.userId !== data.id) return unchanged;
   return {
+    memberState:hasAny(member,["joined_at","joinedAt","premium_since","premiumSince","nick"])?"ready":data.memberState,
+    memberError:hasAny(member,["joined_at","joinedAt","premium_since","premiumSince","nick"])?undefined:data.memberError,
+    memberFields:{joined:data.memberFields?.joined===true||hasAny(member,["joined_at","joinedAt"]),boosting:data.memberFields?.boosting===true||hasAny(member,["premium_since","premiumSince"]),nickname:data.memberFields?.nickname===true||hasAny(member,["nick"])},
     joinedServerAt: (data.guildId || data.serverName) && ("joined_at" in member || "joinedAt" in member) ? memberJoinedAt(member) : data.joinedServerAt,
     boostingSince: "premium_since" in member || "premiumSince" in member ? discordDate(member.premium_since ?? member.premiumSince) : data.boostingSince,
     serverNickname: "nick" in member ? nonEmpty(member.nick) : data.serverNickname,
@@ -237,7 +251,7 @@ export function mergeProfileMember(data: ProfileData, member: any): Pick<Profile
 
 function markFailed(data: ProfileData): ProfileData {
   const fail = <T,>(l: Loaded<T>): Loaded<T> => (l.state === "loading" ? { state: "failed" } : l);
-  return { ...data, mutualServers: fail(data.mutualServers), mutualFriends: fail(data.mutualFriends), connections: fail(data.connections) };
+  return { ...data, profileState:"failed",mutualServers: fail(data.mutualServers), mutualFriends: fail(data.mutualFriends), connections: fail(data.connections) };
 }
 
 // ---------- 2. decide ----------
@@ -267,18 +281,18 @@ export function profileSections(data: ProfileData, now = new Date()): ProfileSec
     ["Presence", PRESENCE_LABEL[data.presence]],
     ["Relationship", data.relationship ?? "Unavailable"],
     ["Account type", data.bot ? "Bot" : "User"],
-    ["Legacy username", data.legacyUsername ?? "Unavailable"],
+    ["Legacy username", data.legacyUsername ?? missingProfileField(data,"legacyUsername","No legacy username shared")],
     ["Mutual friends", data.mutualFriendCount != null ? String(data.mutualFriendCount) : countLabel(data.mutualFriends)],
     ["Mutual servers", countLabel(data.mutualServers)],
-    ["Premium since", data.premiumSince ? dated(data.premiumSince, now) : "Unavailable"],
-    ["Server nickname", data.serverNickname ?? "Unavailable"],
+    ["Premium since", data.premiumSince ? dated(data.premiumSince, now) : missingProfileField(data,"premiumSince","No premium date shared")],
+    ["Server nickname", data.serverNickname ?? missingMemberField(data,"nickname","No server nickname")],
   ];
   if (data.joinedServerAt) facts.push([data.serverName ? `Joined ${data.serverName}` : "Joined this server", dated(data.joinedServerAt, now)]);
   if (data.joinedServerAt) facts.push(["Server join timestamp", `${formatDateTime(data.joinedServerAt)} · ${Intl.DateTimeFormat().resolvedOptions().timeZone} · ${data.joinedServerAt.toISOString()}`]);
   if (data.friendsSince) facts.push(["Friends since", dated(data.friendsSince, now)]);
   if (data.boostingSince) facts.push(["Boosting since", dated(data.boostingSince, now)]);
-  else facts.push(["Boosting since", "Unavailable"]);
-  if (!data.joinedServerAt) facts.push(["Joined this server", "Unavailable"]);
+  else facts.push(["Boosting since", missingMemberField(data,"boosting","Not boosting this server")]);
+  if (!data.joinedServerAt) facts.push(["Joined this server", missingMemberField(data,"joined","No join date returned")]);
   sections.push({ id: "dates", title: "Profile details", facts });
 
   sections.push(listSection("servers", "Mutual servers", data.mutualServers, "No servers in common.", (servers) => ({ servers })));
@@ -466,7 +480,7 @@ export function showProfile(user: any, guildId?: string | null): void {
   // A popout can omit guildId even when opened from a server message.
   if (!guildId) {
     const selected = safely(() => stores.selectedChannel?.getChannelId?.());
-    const context = selected ? safely(() => stores.channels?.getChannel?.(selected)?.guild_id) : null;
+    const context = selected ? safely(() => {const channel=stores.channels?.getChannel?.(selected);return channel?.guild_id??channel?.guildId??channel?.getGuildId?.();}) : null;
     if (context) guildId = context;
   }
   let data = gatherProfile(user, guildId);
@@ -537,13 +551,15 @@ export function showProfile(user: any, guildId?: string | null): void {
   // One explicit member read for the selected server fills dates missing in the cache.
   if (guildId) void Promise.resolve().then(()=>client.get({url:`/guilds/${guildId}/members/${user.id}`})).then((response:any)=>{
     if (!open) return;
+    if(response?.status>=400 || !response?.body || !hasAny(response.body,["joined_at","joinedAt","nick","premium_since"]))throw Error("Discord did not return readable member details for this server");
     data={...data,...mergeProfileMember(data,{...response?.body,guild_id:response?.body?.guild_id ?? guildId})}; draw();
-  }).catch(()=>{ /* The profile keeps cached/returned data; lack of access is not a date. */ });
+  }).catch(()=>{if(open){data={...data,memberState:"failed",memberError:"Discord could not load member details in this server"};draw();}});
   Promise.resolve().then(()=>client.get({ url: `/users/${user.id}/profile`, query: { with_mutual_guilds: true, with_mutual_friends: true, ...(guildId ? { guild_id: guildId } : {}) } }))
-    .then((response: any) => { if (!open) return; data = mergeProfile(data, response?.body); observeProfileResponse(user.id,response?.body); })
+    .then((response: any) => { if (!open) return;if(response?.status>=400 || !response?.body)throw Error("Discord profile request failed"); data = mergeProfile(data, response?.body); observeProfileResponse(user.id,response?.body); })
     .catch((err: unknown) => {
       warn("couldn't load a profile", err);
       data = markFailed(data);
+      data.profileError="Discord could not load the profile";
     })
     .finally(() => {
       if (!open) return;
@@ -564,6 +580,16 @@ function safely<T>(read: () => T): T | undefined {
   } catch {
     return undefined;
   }
+}
+function hasAny(value:any,keys:string[]):boolean{return !!value && typeof value==="object" && keys.some(key=>Object.hasOwn(value,key));}
+function missingProfileField(data:ProfileData,key:"legacyUsername"|"premiumSince",empty:string):string {
+  if(data.profileFields?.[key])return empty;
+  return data.profileState==="loading"?"Loading from Discord…":data.profileState==="failed"?data.profileError??"Profile request failed · reopen to retry":"Not returned by Discord";
+}
+function missingMemberField(data:ProfileData,key:"joined"|"boosting"|"nickname",empty:string):string {
+  if(!data.guildId&&!data.serverName)return "Choose a shared server above";
+  if(data.memberFields?.[key])return empty;
+  return data.memberState==="loading"?"Loading member details…":data.memberState==="failed"?data.memberError??"Member request failed · reopen to retry":"Not returned for this server";
 }
 
 function nonEmpty(value: unknown): string | null {

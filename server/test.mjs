@@ -114,6 +114,10 @@ check("recording route reads exact audio",Buffer.from((await (await record({acti
 const monitorPath="/documents?ns=server-monitors.300760994454437890";
 check("monitor namespace is supported",(await call(monitorPath,{method:"PUT",headers:auth(),body:JSON.stringify({value:'{"version":1,"servers":[]}',revision:0})})).status===200);
 check("monitor namespace honors stale revisions",(await call(monitorPath,{method:"PUT",headers:auth(),body:JSON.stringify({value:"stale",revision:0})})).status===409);
+const botPath="/documents?ns=bot-history.300760994454437890";
+check("VPS bot history requires authentication",(await call(botPath)).status===401);
+check("VPS bot history can be read",(await call(botPath,{headers:auth()})).status===200);
+check("VPS bot history is read-only through the API",(await call(botPath,{method:"PUT",headers:auth(),body:JSON.stringify({value:'{}',revision:0})})).status===403);
 server.close();
 rmSync(recordingsDir,{recursive:true,force:true});
 liveDb.close();

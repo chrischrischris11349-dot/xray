@@ -1,8 +1,9 @@
 import { deletionExcerpt, ProfileHistory, type HistoryEvent, type Snapshot } from "./model";
+import { customStatusSnapshot } from "./customStatus";
 
 /** Passive, bounded cache. Excerpts are persisted only on an opted-in deletion. */
 export class HistoryObserver {
-  private messages = new Map<string, { userId: string; channelId: string; guildId?: string } & Pick<HistoryEvent,"messageText"|"messageFiles"|"messageImages"|"messageSentAt">>();
+  private messages = new Map<string, { userId: string; channelId: string; guildId?: string } & Pick<HistoryEvent,"messageText"|"messageFiles"|"messageImages"|"messageVideos"|"messageSentAt">>();
   constructor(readonly history: ProfileHistory, private getMessage: (channel: string, id: string) => any = () => null) {}
   clear(): void { this.messages.clear(); }
   private remember(message: any): void {
@@ -12,7 +13,7 @@ export class HistoryObserver {
     const old = this.messages.get(key);
     const excerpt = this.history.get(userId)?.categories.some(c=>c==="deletions"||c==="messages"||c==="edits") ? deletionExcerpt(message) : {};
     this.messages.delete(key); this.messages.set(key, { userId, channelId, guildId: message.guild_id ?? message.guildId ?? old?.guildId,
-      messageText: excerpt.messageText ?? old?.messageText, messageFiles: excerpt.messageFiles ?? old?.messageFiles, messageImages: excerpt.messageImages ?? old?.messageImages, messageSentAt: excerpt.messageSentAt ?? old?.messageSentAt });
+      messageText: excerpt.messageText ?? old?.messageText, messageFiles: excerpt.messageFiles ?? old?.messageFiles, messageImages: excerpt.messageImages ?? old?.messageImages, messageVideos: excerpt.messageVideos ?? old?.messageVideos, messageSentAt: excerpt.messageSentAt ?? old?.messageSentAt });
     if (this.messages.size > 5000) this.messages.delete(this.messages.keys().next().value!);
   }
   handle(action: any): Set<string> {
@@ -27,6 +28,11 @@ export class HistoryObserver {
       for (const presence of action.updates ?? action.presences ?? [action]) {
         const id = presence.user?.id ?? presence.userId ?? presence.user_id;
         if (["online", "offline", "idle", "dnd"].includes(presence.status)) observe(id, { presence: presence.status });
+        // Offline activities are hidden; this does not prove a status was cleared.
+        if (presence.status !== "offline" && presence.status !== "invisible") {
+          const customStatus = customStatusSnapshot(presence.activities);
+          if (customStatus !== undefined) observe(id, { customStatus });
+        }
       }
     }
     if (action.type === "USER_UPDATE" || action.type === "USER_PROFILE_FETCH_SUCCESS") {
@@ -62,7 +68,7 @@ export class HistoryObserver {
       const metadata = this.messages.get(`${channelId}:${message.id}`);
       if (action.type === "MESSAGE_CREATE" && metadata && this.history.add(metadata.userId,"messages",{id:`message:${channelId}:${message.id}`,kind:"messageObserved",messageId:message.id,channelId,guildId:metadata.guildId,...deletionExcerpt(message)})) changed.add(metadata.userId);
       const edited = message.edited_timestamp ?? message.editedTimestamp;
-      if (action.type === "MESSAGE_UPDATE" && metadata && edited != null && this.history.add(metadata.userId, "edits", { id: `edit:${channelId}:${message.id}:${String(edited)}`, kind: "messageEdited", messageId: message.id, channelId, guildId: metadata.guildId, ...(this.history.get(metadata.userId)?.categories.includes("messages") ? {messageText:metadata.messageText,messageBefore:previous?.messageText ?? (typeof existing?.content==="string"?existing.content:undefined),messageSentAt:metadata.messageSentAt,messageFiles:metadata.messageFiles,messageImages:metadata.messageImages} : {}) })) changed.add(metadata.userId);
+      if (action.type === "MESSAGE_UPDATE" && metadata && edited != null && this.history.add(metadata.userId, "edits", { id: `edit:${channelId}:${message.id}:${String(edited)}`, kind: "messageEdited", messageId: message.id, channelId, guildId: metadata.guildId, ...(this.history.get(metadata.userId)?.categories.includes("messages") ? {messageText:metadata.messageText,messageBefore:previous?.messageText ?? (typeof existing?.content==="string"?existing.content:undefined),messageSentAt:metadata.messageSentAt,messageFiles:metadata.messageFiles,messageImages:metadata.messageImages,messageVideos:metadata.messageVideos} : {}) })) changed.add(metadata.userId);
     }
     if (action.type === "MESSAGE_DELETE" || action.type === "MESSAGE_DELETE_BULK") {
       const channelId = action.channelId ?? action.channel_id;
@@ -71,7 +77,7 @@ export class HistoryObserver {
         const key = `${channelId}:${id}`;
         if (!this.messages.has(key)) this.remember(this.getMessage(channelId, id));
         const metadata = this.messages.get(key);
-        if (metadata && this.history.add(metadata.userId, "deletions", { id: `delete:${key}`, kind: "messageDeleted", messageId: id, channelId, guildId: metadata.guildId ?? action.guildId ?? action.guild_id, messageText: metadata.messageText, messageSentAt:metadata.messageSentAt, messageFiles: metadata.messageFiles, messageImages: metadata.messageImages })) changed.add(metadata.userId);
+        if (metadata && this.history.add(metadata.userId, "deletions", { id: `delete:${key}`, kind: "messageDeleted", messageId: id, channelId, guildId: metadata.guildId ?? action.guildId ?? action.guild_id, messageText: metadata.messageText, messageSentAt:metadata.messageSentAt, messageFiles: metadata.messageFiles, messageImages: metadata.messageImages,messageVideos:metadata.messageVideos })) changed.add(metadata.userId);
         this.messages.delete(key);
       }
     }

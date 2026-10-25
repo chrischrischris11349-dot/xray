@@ -7,14 +7,17 @@ import { categories, type Category, type HistoryEvent } from "../history/model";
 import { copyText } from "./dialog";
 import { h } from "./dom";
 import type { ProfileData } from "./profile";
-import { stores } from "../discord";
+import { myId, stores } from "../discord";
 import { deletionExcerpt, imageLinks } from "../history/model";
 import { icon, type IconName } from "./icons";
 import { linkedText } from "./reportText";
 import { reconcileChildren, StableRows } from "./reconcile";
+import { invoke } from "../shell/bridge";
+import { serverDataEnabled } from "../shell/serverStorage";
+import { ProfileHistory } from "../history/model";
 
-const labels: Record<Category,string> = { profile: "Username, display name, avatar, banner and global bio", presence: "Visible online / idle / DND / offline changes", membership: "Explicit shared-server member add/remove events", deletions: "Deleted messages · visible text excerpt and file names", edits: "Observed edits (content requires Observed messages)", messages: "Observed messages, text and image links (starts when enabled)" };
-const eventNames: Record<string,string> = { username:"Username changed", displayName:"Display name changed", avatar:"Profile picture changed", banner:"Banner changed", bio:"Global bio changed", presence:"Presence observed", memberAdded:"Server membership added", memberRemoved:"Server membership removed (left, kicked or banned)", messageDeleted:"Message deleted · actor unknown", messageEdited:"Message edited", messageObserved:"Message observed" };
+const labels: Record<Category,string> = { profile: "Username, display name, avatar, banner, global bio and custom status text/emoji", presence: "Visible online / idle / DND / offline changes", membership: "Explicit shared-server member add/remove events", deletions: "Deleted messages · visible text excerpt and file names", edits: "Observed edits (content requires Observed messages)", messages: "Observed messages, text and image links (starts when enabled)" };
+const eventNames: Record<string,string> = { username:"Username changed", displayName:"Display name changed", avatar:"Profile picture changed", banner:"Banner changed", bio:"Global bio changed", customStatus:"Custom status changed", presence:"Presence observed", memberAdded:"Server membership added", memberRemoved:"Server membership removed (left, kicked or banned)", messageDeleted:"Message deleted · actor unknown", messageEdited:"Message edited", messageObserved:"Message observed" };
 export function historyEventText(event: HistoryEvent): string {
   const parts=[eventNames[event.kind]??event.kind];
   if(event.before!==undefined || event.after!==undefined)parts.push(`${event.before??""} → ${event.after??""}`);
@@ -38,7 +41,7 @@ export function historyEventDetail(event:HistoryEvent,text=historyEventText(even
   const details=h("details",{class:"history-event"},h("summary",{},h("span",{class:"history-event-icon",trustedHtml:icon(glyph,16)}),h("span",{class:"history-event-heading"},h("strong",{text:(eventNames[event.kind]??event.kind)+(laterDeleted?" · Later observed deleted":"")}),h("time",{attrs:{datetime:new Date(event.at).toISOString()},text:formatDateTime(new Date(event.at))}),...(excerpt?[h("span",{class:"history-event-preview",text:excerpt})]:[]))));
   details.addEventListener("toggle",()=>{
     if(!details.open || details.childElementCount>1)return;
-    details.append(h("div",{class:"history-event-body"},h("pre",{class:"pf-report-data"},linkedText(text)),...(event.messageImages?.length?[historyImages(event.messageImages)]:[]),h("details",{class:"pf-report-details"},h("summary",{text:"All observed event fields"}),h("pre",{class:"pf-report-data"},linkedText(event)))));
+    details.append(h("div",{class:"history-event-body"},h("pre",{class:"pf-report-data"},linkedText(text)),...(event.messageImages?.length?[historyImages(event.messageImages)]:[]),...(event.messageVideos?.length?[historyVideos(event.messageVideos)]:[]),h("details",{class:"pf-report-details"},h("summary",{text:"All observed event fields"}),h("pre",{class:"pf-report-data"},linkedText(event)))));
   });
   return details;
 }
@@ -127,9 +130,32 @@ export function profileJournal(initial: ProfileData): { element: HTMLElement; up
   element.append(h("h3",{class:"pf-title",text:"Profile report"}),summary,h("p",{class:"pf-note",text:"A factual snapshot of available Discord data, with your notes and observations. No inferred risk score or hidden account data."}),
     h("div",{class:"pf-journal-actions"},h("button",{class:"btn ghost",attrs:{type:"button"},text:"Copy profile report",on:{click:()=>copyText(report())}}),h("button",{class:"btn ghost",attrs:{type:"button"},text:"Copy report and history",on:{click:()=>copyText(`${report()}\n\nRetained observations (observation times):\n${historyFor(data.id)?.events.map(e=>`${new Date(e.at).toISOString()} ${displayEvent(e)}`).join("\n") || "None"}`)}})),
     h("label",{class:"pf-title",text:"Your notes"}),note,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Save notes",on:{click:()=>run(async()=>{await saveProfileNote(data.id,note.value);noteDirty=false;},"Notes saved.")}}),status,setup,exportControls(()=>resultReport(`Profile history - ${data.username}`,[{profile:profileReport(data)},...historyFor(data.id)?.events??[]],{},"Opt-in observations only; missing edits, deletions and membership events cannot be reconstructed.")),timeline,erase);
+  const vps=vpsProfileHistory(data.id);element.append(vps.element);
   const stop=subscribeHistory(id=>{if(id==="*" || id===data.id) draw();});
   captureProfile(data.id); draw();
-  return { element, update(next) { data=next; captureProfile(data.id); draw(); }, close:stop };
+  return { element, update(next) { data=next; captureProfile(data.id); draw(); }, close(){stop();vps.close();} };
+}
+
+/** Separate read-only document avoids concurrent bot/client snapshot overwrites. */
+function vpsProfileHistory(target:string){
+  let active=true,busy=false,shown=40,events:HistoryEvent[]=[],collector:any;
+  const owner=myId(),element=h("section",{class:"pf-history-setup"},h("h4",{class:"pf-title",text:"VPS bot history"})),status=h("p",{class:"pf-note",attrs:{role:"status"}}),list=h("ol",{class:"pf-timeline"});
+  const draw=()=>{list.replaceChildren(...events.slice(-shown).reverse().map(event=>h("li",{},historyEventDetail(event))));more.hidden=shown>=events.length;};
+  const refresh=h("button",{class:"btn ghost",text:"Refresh VPS history",on:{click:()=>void load()}}),more=h("button",{class:"btn ghost",text:"Show older VPS events",on:{click:()=>{shown+=40;draw();}}});more.hidden=true;
+  async function load(){
+    if(!owner||busy||!active)return;if(!serverDataEnabled(owner)){status.textContent="Enable Store profile data on my server to read the always-on collector. A bot must be installed in the monitored test servers.";return;}
+    busy=true;refresh.disabled=true;status.textContent="Reading history collected by your VPS…";
+    try{const response:any=await invoke("document_store",{ns:`bot-history.${owner}`,value:null,revision:null});if(!active||myId()!==owner)return;
+      if(response?.value===null){events=[];status.textContent="The server has no bot history yet. Configure the bot, install it in the test servers, and enable a tester in the monitor list.";draw();return;}
+      if(typeof response?.value!=="string")throw Error("The VPS returned an unreadable history document");const raw=JSON.parse(response.value);if(raw.version!==1||!raw.people)throw Error("Unsupported VPS history format");
+      events=new ProfileHistory(JSON.stringify({version:1,people:{[target]:raw.people[target]}})).get(target)?.events??[];collector=raw.collector;
+      status.textContent=`Collector: ${collector?.state??"Status not supplied"}. ${collector?.lastError??""} ${events.length} retained events for this tester. Bot access covers shared, permitted servers; private account DMs and global bio changes are not supplied by the bot gateway.`;draw();
+    }catch(error){if(active)status.textContent=String((error as Error)?.message??error);}
+    finally{busy=false;if(active)refresh.disabled=false;}
+  }
+  element.append(status,h("div",{class:"pf-journal-actions"},refresh,more),exportControls(()=>resultReport(`VPS history for ${target}`,events,{collector},"Read-only bot observations from enabled shared-server monitors; unavailable events cannot be reconstructed.")),list);
+  if(serverDataEnabled(owner))void load();else status.textContent="Enable server profile storage and configure the bot to collect permitted tester activity while your PC is off.";
+  return {element,close(){active=false;}};
 }
 
 /** Defer remote image loads until requested, and retain an honest expired-link fallback. */
@@ -146,4 +172,13 @@ export function historyImages(urls: string[]): HTMLElement {
       details.append(link);
     }
   });return details;
+}
+export function historyVideos(urls:string[]):HTMLElement {
+  const block=h("div");
+  for(const url of imageLinks(urls)??[]){
+    const fallback=h("a",{attrs:{href:url,target:"_blank",rel:"noopener noreferrer",referrerpolicy:"no-referrer"},text:"Video unavailable or unsupported · open original"});
+    const player=h("video",{class:"qr-media",attrs:{src:url,controls:"",preload:"none",playsinline:"","aria-label":"Observed video attachment"}});
+    player.style.cssText="display:block;max-width:100%;max-height:360px;margin-top:8px";
+    player.addEventListener("error",()=>player.replaceWith(fallback),{once:true});block.append(player);
+  }return block;
 }

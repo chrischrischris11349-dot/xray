@@ -74,6 +74,7 @@ export function renderChatMessage(message: any, mine: boolean, text: string): HT
     const open = link(url, "", "qr-media-link");
     open.setAttribute("aria-label", `Open ${label}`);
     open.append(img);
+    img.addEventListener("error",()=>{open.replaceWith(link(url,"Image unavailable or expired · open original"));},{once:true});
     imageLink(open,url,label);
     bubble.append(open);
   };
@@ -82,7 +83,8 @@ export function renderChatMessage(message: any, mine: boolean, text: string): HT
     if (!url || displayed.has(url)) return false;
     displayed.add(url);
     const animate = gif && !deleted && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    bubble.append(h("video", { class: "qr-media", attrs: { src: url, controls: "", preload: "none", playsinline: "", ...(gif ? { loop: "", muted: "" } : {}), ...(animate ? { autoplay: "" } : {}), "aria-label": label } }));
+    const player=h("video", { class: "qr-media", attrs: { src: url, controls: "", preload: "none", playsinline: "", ...(gif ? { loop: "", muted: "" } : {}), ...(animate ? { autoplay: "" } : {}), "aria-label": label } });
+    player.addEventListener("error",()=>{player.replaceWith(link(url,"Video unavailable or unsupported · open original"));},{once:true});bubble.append(player);
     return true;
   };
   for (const attachment of message.attachments ?? []) {

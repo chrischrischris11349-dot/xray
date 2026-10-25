@@ -7,6 +7,7 @@ import { renderImportedReport, reportAvatar } from "../src/ui/importedReport";
 import { historyEventDetail } from "../src/ui/profileJournal";
 import { parseLocalReport } from "../src/ui/intelligence";
 import { resultReport } from "../src/ui/reportExport";
+import { oathnetFullReport, oathnetIndicators, type OathnetRequest } from "../src/ui/oathnetFullReport";
 
 (globalThis as any).document = parseHTML("<html><body></body></html>").document;
 const tick = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -85,7 +86,7 @@ test("closing a profile prevents the second lookup and detached UI updates", asy
   resolve({ username: "test" });
   await tick();
   assert.equal(calls, 1);
-  assert.equal(section.element.querySelector("dl"), null);
+  assert.equal(section.element.querySelector(".pf-facts"), null);
 });
 
 
@@ -142,4 +143,33 @@ test("generic imported exports retain totals and the original payload for profil
  const report=resultReport("Imported",imported.records,imported);
  assert.equal(report.summary.totalFound,31);assert.equal(report.summary.ipAddresses,1);assert.equal(report.summary.returnedIpAddresses,1);
  assert.deepEqual(imported.response,raw);
+});
+
+test("full live report loads every source cursor, preserves all exports and resolves returned IPs",async()=>{
+ const calls:any[]=[];
+ const request:OathnetRequest=async(op,q,cursor,sid)=>{
+  calls.push([op,q,cursor,sid]);if(op==="session")return{data:{session:{id:"sess_test"},user:{daily_lookups:{remaining:7}}}};
+  assert.equal(sid,"sess_test");
+  if(op==="ip")return{data:{ip:q,org:"Returned network information"}};
+  return{data:{items:op==="search"?[{id:cursor?"b":"a",ip:cursor?"192.0.2.2":"192.0.2.1",dbname:"Returned breach"}]:op==="stealer"?[{id:"credential",email:"tester@example.com"}]:[],meta:{total:op==="search"?2:op==="stealer"?1:0},next_cursor:op==="search"&&!cursor?"next-live-page":null}};
+ };
+ const view=oathnetFullReport("300760994454437890",{request,includeProfiles:false});assert.equal(calls.length,0);await view.load();
+ assert.equal(calls.filter(c=>c[0]==="search").length,2);assert.equal(calls.filter(c=>c[0]==="stealer").length,1);assert.equal(calls.filter(c=>c[0]==="victims").length,1);
+ assert.equal(view.report().records.length,5);assert.equal(view.report().summary.totalFound,5);assert.equal(view.report().summary.returnedIpAddresses,2);
+ assert.match(view.element.textContent!,/192\.0\.2\.2/);assert.match(JSON.stringify(view.report()),/Returned network information/);assert.match(view.element.textContent!,/Victim profiles: 0 loaded \/ 0 source matches/);view.close();
+});
+
+test("full report keeps denial distinct from empty and retries just the failed source",async()=>{
+ let denied=true;const calls:string[]=[];
+ const view=oathnetFullReport("300760994454437890",{includeProfiles:false,request:async(op)=>{
+  calls.push(op);if(op==="session")return{data:{session:{id:"sess_test"}}};if(op==="victims"&&denied)throw Error("Plan denied victim access");return{data:{items:[],meta:{total:0}}};
+ }});
+ await view.load();assert.match(view.element.textContent!,/Plan denied victim access/);assert.equal(view.report().summary.totalFound,null);
+ denied=false;await view.load();assert.equal(calls.filter(op=>op==="search").length,1);assert.equal(calls.filter(op=>op==="victims").length,2);assert.equal(view.report().summary.totalFound,0);view.close();
+});
+
+test("full report retains more than 1,000 records while rendering only 50",async()=>{
+ const view=oathnetFullReport("300760994454437890",{includeProfiles:false,request:async(op)=>op==="session"?{data:{session:{id:"sess_test"}}}:{data:{items:op==="search"?Array.from({length:1101},(_,i)=>({id:String(i),dbname:"Returned source"})):[],meta:{total:op==="search"?1101:0}}}});
+ await view.load();assert.equal(view.report().records.length,1101);assert.equal(view.element.querySelectorAll(".pf-report-card").length,50);assert.match(JSON.stringify(view.report()),/1100/);view.close();
+ assert.deepEqual(oathnetIndicators([{raw_data:'{"victim_ip":"192.0.2.1","steam":"110000100000000"}'}]).ips,["192.0.2.1"]);
 });

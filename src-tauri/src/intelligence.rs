@@ -76,11 +76,13 @@ pub fn request_plan(provider:&str,operation:&str,query:&str,kind:&str)->Result<(
             Ok((format!("{path}?id={query}&limit=100"),None))
         },
         "oathnet"=>{
-            let (path,param)=match operation {"profile"=>("discord-userinfo","discord_id"),"history"=>("discord-username-history","discord_id"),"search"=>("v2/breach/search","q"),"ip"=>("ip-info","ip"),"steam"=>("steam","steam_id"),"xbox"=>("xbox","xbl_id"),"roblox"=>("roblox-userinfo","username"),_=>return Err("Unsupported Oathnet operation".into())};
+            if operation=="session" {if query.trim().is_empty(){return Err("Enter a query".into());}return Ok(("/api/service/search/init".into(),Some(json!({"query":query}))));}
+            let (path,param)=match operation {"profile"=>("discord-userinfo","discord_id"),"history"=>("discord-username-history","discord_id"),"search"=>("v2/breach/search","q"),"stealer"=>("v2/stealer/search","q"),"victims"=>("v2/victims/search","q"),"ip"=>("ip-info","ip"),"steam"=>("steam","steam_id"),"xbox"=>("xbox","xbl_id"),"roblox"=>("roblox-userinfo","username"),_=>return Err("Unsupported Oathnet operation".into())};
             if query.trim().is_empty(){return Err("Enter a query".into());}
             if ["profile","history"].contains(&operation) && (!(14..=19).contains(&query.len()) || !query.bytes().all(|b|b.is_ascii_digit())) {return Err("Use a 14–19 digit Discord ID".into());}
             let mut url=tauri::Url::parse(&format!("https://oathnet.org/api/service/{path}")).unwrap();url.query_pairs_mut().append_pair(param,query);
-            if operation=="search" {url.query_pairs_mut().append_pair("page_size","100");}
+            if ["search","stealer","victims"].contains(&operation) {url.query_pairs_mut().append_pair("page_size","100");}
+            if ["stealer","victims"].contains(&operation) {url.query_pairs_mut().append_pair("view","enriched");}
             Ok((url.as_str().trim_start_matches("https://oathnet.org").to_owned(),None))
         },_=>Err("Unknown provider".into())
     }
@@ -89,17 +91,28 @@ pub fn transfer(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:&str
     transfer_paged(app,provider,operation,query,kind,None)
 }
 fn paged_plan(provider:&str,operation:&str,query:&str,kind:&str,cursor:Option<&str>)->Result<(String,Option<Value>),String>{
+    context_plan(provider,operation,query,kind,cursor,None)
+}
+fn context_plan(provider:&str,operation:&str,query:&str,kind:&str,cursor:Option<&str>,search_id:Option<&str>)->Result<(String,Option<Value>),String>{
     let (mut path,body)=request_plan(provider,operation,query,kind)?;
     if let Some(cursor)=cursor.filter(|c|!c.is_empty()) {
-        if provider!="oathnet" || operation!="search" || cursor.len()>4096 || cursor.contains(['\r','\n']) {return Err("Unsupported or invalid pagination cursor".into());}
+        if provider!="oathnet" || !["search","stealer","victims"].contains(&operation) || cursor.len()>4096 || cursor.contains(['\r','\n']) {return Err("Unsupported or invalid pagination cursor".into());}
         let mut url=tauri::Url::parse(&format!("https://oathnet.org{path}")).map_err(|_|"Invalid provider route")?;
         url.query_pairs_mut().append_pair("cursor",cursor);
         path=url.as_str().trim_start_matches("https://oathnet.org").to_owned();
     }
+    if let Some(search_id)=search_id {
+        if provider!="oathnet" || operation=="session" || search_id.is_empty() || search_id.len()>256 || !search_id.bytes().all(|b|b.is_ascii_alphanumeric() || matches!(b,b'_'|b'-')) {return Err("Invalid Oathnet search session".into());}
+        let mut url=tauri::Url::parse(&format!("https://oathnet.org{path}")).map_err(|_|"Invalid provider route")?;
+        url.query_pairs_mut().append_pair("search_id",search_id);path=url.as_str().trim_start_matches("https://oathnet.org").to_owned();
+    }
     Ok((path,body))
 }
 fn transfer_paged(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:&str,cursor:Option<&str>)->Result<Value,String> {
-    let (path,body)=paged_plan(provider,operation,query,kind,cursor)?;
+    transfer_context(app,provider,operation,query,kind,cursor,None)
+}
+fn transfer_context(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:&str,cursor:Option<&str>,search_id:Option<&str>)->Result<Value,String> {
+    let (path,body)=context_plan(provider,operation,query,kind,cursor,search_id)?;
     {let mut requests=REQUESTS.lock().map_err(|_|"Provider queue unavailable")?;requests.retain(|t|t.elapsed()<Duration::from_secs(60));if requests.len()>=30{return Err("Please wait before starting more lookups".into());}requests.push(Instant::now());}
 
     let vault=load(app)?;let key=vault.keys.get(provider).ok_or("Open Provider keys and configure this provider first")?;
@@ -120,8 +133,8 @@ fn transfer_paged(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:&s
     Ok(body)
 }
 #[tauri::command]
-pub async fn intel_request(app:AppHandle,provider:String,operation:String,query:String,kind:String,cursor:Option<String>)->Result<Value,String> {
-    tauri::async_runtime::spawn_blocking(move||transfer_paged(&app,&provider,&operation,&query,&kind,cursor.as_deref())).await.map_err(|_|"Lookup task failed".to_string())?
+pub async fn intel_request(app:AppHandle,provider:String,operation:String,query:String,kind:String,cursor:Option<String>,search_id:Option<String>)->Result<Value,String> {
+    tauri::async_runtime::spawn_blocking(move||transfer_context(&app,&provider,&operation,&query,&kind,cursor.as_deref(),search_id.as_deref())).await.map_err(|_|"Lookup task failed".to_string())?
 }
 #[cfg(test)]
 mod tests {use super::*;
@@ -139,4 +152,9 @@ mod tests {use super::*;
  assert!(paged_plan("snusbase","search","user","username",Some("x")).is_err());
 }
 #[test]fn vault_round_trip(){let input=b"synthetic-test-key";let encrypted=crypt(input,true).unwrap();assert_ne!(encrypted,input);assert_eq!(crypt(&encrypted,false).unwrap(),input);}
+#[test]fn full_search_context_stays_on_fixed_routes(){
+ let (path,body)=request_plan("oathnet","session","300760994454437890","discord").unwrap();assert_eq!(path,"/api/service/search/init");assert_eq!(body.unwrap()["query"],"300760994454437890");
+ for op in ["search","stealer","victims"] {let (path,_)=context_plan("oathnet",op,"300760994454437890","discord",Some("next+/="),Some("sess_test")).unwrap();let url=tauri::Url::parse(&format!("https://oathnet.org{path}")).unwrap();assert_eq!(url.host_str(),Some("oathnet.org"));assert!(url.query_pairs().any(|(k,v)|k=="search_id" && v=="sess_test"));}
+ assert!(context_plan("oathnet","search","x","discord",None,Some("sess_test&url=evil")).is_err());assert!(context_plan("intelx","search","example.com","domain",None,Some("sess_test")).is_err());
+}
 }
