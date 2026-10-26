@@ -134,7 +134,12 @@ export async function initSync(): Promise<void> {
   const reply = await pullConfig(SYNC_NS);
   const remote = reply?.value as Saved | undefined;
   if (remote && typeof remote === "object" && remote.plugins && typeof remote.plugins === "object") {
+    // These live UI switches must not roll back when a reload races the previous
+    // page's asynchronous config upload. Read after the pull, including toggles
+    // changed while it was in flight; other settings retain the usual sync rules.
+    const localModes = ["presentationMode", "personalLocalEditControls"].map(id => [id, saved.plugins[id]?.data] as const);
     Object.assign(saved, remote);
+    for (const [id,data] of localModes) if (data) pluginState(id).data = data;
     flush();
   }
 }

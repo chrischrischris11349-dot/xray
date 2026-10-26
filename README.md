@@ -11,6 +11,8 @@ Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). See
 rules it follows, and [docs/DESIGN.md](docs/DESIGN.md) for the look (design
 tokens) and the extended profile view.
 
+See [0.5.11 reload-sync fix](docs/RELEASE_0.5.11.md) for the final saved-mode reload guard.
+
 See [0.5.10 saved edits and control fixes](docs/RELEASE_0.5.10.md) for persistent
 local overrides, shield behavior, loaded-media capture, recording selection and
 explicit screen-share audio choices.

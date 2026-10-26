@@ -26,7 +26,7 @@ or in captured localStorage otherwise. Switching the mode off suspends them;
 right-click Reset Local Edit deletes the saved override. Session-only message
 hiding remains temporary. At most 1,000 overrides / 1 MB are saved; reaching the
 limit reports an error without evicting existing edits. Discord messages and
-archived history are never rewritten. The shield hides controls, preserving their
+archived history are never rewritten. Late settings-sync reads preserve these local mode preferences. The shield hides controls, preserving their
 operation and its own state across reloads. Notification preview privacy is
 independent of the cosmetic shield; streamer/lock privacy still applies.
 These are build variants of GPL source, not an account-authentication boundary.
