@@ -102,6 +102,12 @@ check("documents reject oversized requests",(await writeDoc("x".repeat(2_600_000
 await call("/clear",{method:"POST",headers:auth()});
 check("clearing logs does not remove account documents",(await (await call(docPath,{headers:auth()})).json()).revision===2);
 check("other account documents remain separate",(await (await call("/documents?ns=profile-history.300760994454437891",{headers:auth()})).json()).value===null);
+const localEditsPath="/documents?ns=local-message-edits.300760994454437890",savedEdit='{"version":1,"edits":[{"id":"300760994454437892","channel_id":"300760994454437893","content":"Personal text","system":false}]}';
+check("saved local edits require authentication",(await call(localEditsPath)).status===401);
+check("saved local edit documents are supported",(await call(localEditsPath,{method:"PUT",headers:auth(),body:JSON.stringify({value:savedEdit,revision:0})})).status===200);
+check("saved local edits survive a new read",(await (await call(localEditsPath,{headers:auth()})).json()).value===savedEdit);
+check("local edits do not change profile history",(await (await call(docPath,{headers:auth()})).json()).value==="updated");
+check("local edits stay scoped to the account",(await (await call("/documents?ns=local-message-edits.300760994454437891",{headers:auth()})).json()).value===null);
 
 const record=payload=>call("/recordings",{method:"POST",headers:auth(),body:JSON.stringify(payload)});
 check("recording routes require authentication",(await call("/recordings",{method:"POST",body:'{"action":"list"}'})).status===401);

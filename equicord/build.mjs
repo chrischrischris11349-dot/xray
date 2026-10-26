@@ -47,7 +47,7 @@ function userpluginsHash() {
   return hash.digest("hex");
 }
 
-const stamp = createHash("sha256").update(COMMIT).update(String(personal)).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).update(readFileSync(join(root,"equicord","patches","PluginCard.tsx"))).update(readFileSync(join(root,"equicord","patches","WebScreenShare.tsx"))).update(readFileSync(join(root,"core","src","voice","captureConstraints.ts"))).update(readFileSync(join(root,"core","src","voice","sharePreview.ts"))).digest("hex").slice(0, 16);
+const stamp = createHash("sha256").update(COMMIT).update(String(personal)).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).update(readFileSync(join(root,"equicord","patches","PluginCard.tsx"))).update(readFileSync(join(root,"equicord","patches","WebScreenShare.tsx"))).update(readFileSync(join(root,"equicord","patches","HiddenServersStore.ts"))).update(readFileSync(join(root,"core","src","voice","captureConstraints.ts"))).update(readFileSync(join(root,"core","src","voice","sharePreview.ts"))).digest("hex").slice(0, 16);
 if (!process.argv.includes("--force") && existsSync(out) && readFileSync(out, "utf8").includes(`xray-build:${stamp}`)) {
   console.log("equicord.js is up to date");
   process.exit(0);
@@ -113,6 +113,7 @@ for (const { file, find, replace } of FIXUPS) {
 // Keep plugin-origin badges self-contained. The pinned card used externally
 // hosted PNGs, which Discord CSP/offline requests can block.
 cpSync(join(root, "equicord", "patches", "PluginCard.tsx"), join(vendor, "src/components/settings/tabs/plugins/PluginCard.tsx"));
+cpSync(join(root,"equicord","patches","HiddenServersStore.ts"),join(vendor,"src/equicordplugins/hideServers/HiddenServersStore.ts"));
 // Bound capture work to the selected share budget; retain Discord's encoder limits.
 cpSync(join(root, "equicord", "patches", "WebScreenShare.tsx"), join(vendor, "src/plugins/webScreenShare.browser/index.tsx"));
 cpSync(join(root, "core", "src", "voice", "captureConstraints.ts"), join(vendor, "src/plugins/webScreenShare.browser/captureConstraints.ts"));

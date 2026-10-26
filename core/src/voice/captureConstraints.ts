@@ -19,3 +19,9 @@ export function boundedCaptureOptions(
   }
   return { ...input, video };
 }
+/** Explicit picker choice. No microphone track is ever requested or mixed in. */
+export function captureAudioOptions(input:DisplayMediaStreamOptions,mode:"default"|"application"|"system"|"off"):DisplayMediaStreamOptions{
+  if(mode==="default")return input;
+  if(mode==="off")return {...input,audio:false,systemAudio:"exclude",windowAudio:"exclude"} as DisplayMediaStreamOptions;
+  return {...input,audio:{...(typeof input.audio==="object"?input.audio:{}),restrictOwnAudio:true,suppressLocalAudioPlayback:false},systemAudio:mode==="system"?"include":"exclude",windowAudio:mode==="system"?"system":"window"} as DisplayMediaStreamOptions;
+}

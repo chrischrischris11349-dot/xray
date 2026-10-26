@@ -42,6 +42,18 @@ await build({ entryPoints: ["core/src/plugins/screenShare.ts"], outfile: coreOut
   } }],
 });
 const corePlugin = createRequire(import.meta.url)(coreOut);
+test("explicit application audio requests window sound without mixing the microphone",async()=>{
+ let actual;globalThis.captureFixture.options.audioMode="application";globalThis.captureFixture.options.systemAudio=false;
+ globalThis.captureFixture.native=async options=>{actual=options;return {getVideoTracks:()=>[]};};
+ const input={video:true,audio:false},pending=navigator.mediaDevices.getDisplayMedia(input);await globalThis.captureFixture.modal.actions[0].onClick();await pending;
+ assert.equal(actual.windowAudio,"window");assert.equal(actual.systemAudio,"exclude");assert.equal(actual.audio.restrictOwnAudio,true);assert.equal(input.audio,false);delete globalThis.captureFixture.options.audioMode;
+});
+test("an existing explicit mute still prevents screen-share audio",async()=>{
+ let actual;globalThis.captureFixture.options.audioMode="application";globalThis.captureFixture.options.systemAudio=true;
+ globalThis.captureFixture.native=async options=>{actual=options;return {getVideoTracks:()=>[]};};
+ const pending=navigator.mediaDevices.getDisplayMedia({video:true,audio:true});await globalThis.captureFixture.modal.actions[0].onClick();await pending;assert.equal(actual.audio,false);
+ globalThis.captureFixture.options.systemAudio=false;delete globalThis.captureFixture.options.audioMode;
+});
 
 test("screen picker caps capture at the selected budget and preserves audio opt-out", async () => {
   let actual;

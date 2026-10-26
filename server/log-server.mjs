@@ -107,13 +107,13 @@ export function openDb(path = DB_PATH) {
 
 /** Namespaces are plugin ids: short, and only safe characters. */
 const NS_PATTERN = /^[a-zA-Z0-9_.-]{1,64}$/;
-const DOCUMENT_NS = /^(profile-history|moderation-audit|server-monitors|bot-history)\.\d{14,20}$/;
+const DOCUMENT_NS = /^(profile-history|moderation-audit|server-monitors|bot-history|local-message-edits)\.\d{14,20}$/;
 const MAX_DOCUMENT_BYTES = 2_500_000;
 /** Retain one create/delete observation per message inside each account document. */
 export function dedupeHistoryDocument(ns,value){
  if(!/^(profile-history|bot-history)\.\d{14,20}$/.test(ns))return value;
  try{const document=JSON.parse(value);let changed=false;for(const person of Object.values(document.people??{})){
-  if(!Array.isArray(person.events))continue;const seen=new Set();person.events=person.events.filter(event=>{if(!["messageObserved","messageDeleted"].includes(event?.kind)||!event.messageId||!event.channelId)return true;const key=`${event.kind}:${event.channelId}:${event.messageId}`;if(seen.has(key)){changed=true;return false;}seen.add(key);return true;});
+  if(!Array.isArray(person.events))continue;const seen=new Set();person.events=person.events.filter(event=>{if(!["messageObserved","messageLoaded","messageDeleted"].includes(event?.kind)||!event.messageId||!event.channelId)return true;const key=`${event.kind==="messageLoaded"?"messageObserved":event.kind}:${event.channelId}:${event.messageId}`;if(seen.has(key)){changed=true;return false;}seen.add(key);return true;});
  }return changed?JSON.stringify(document):value;}catch{return value;}
 }
 

@@ -1,13 +1,13 @@
-import { conversationLabel } from "./messageHistory";
+import { conversationLabel,collectionArray } from "./messageHistory";
 import { imageLink } from "./imageViewer";
 import { exportControls, resultReport } from "./reportExport";
 import { formatDateTime } from "../time";
-import { retryHistoryLoad, captureProfile, clearProfileHistory, configureHistory, historyError, historyFor, historyStorageLabel, removeProfileHistory, saveProfileNote, subscribeHistory, retainRecoveredMedia } from "../history";
+import { retryHistoryLoad, captureProfile, clearProfileHistory, configureHistory, historyError, historyFor, historyStorageLabel, removeProfileHistory, saveProfileNote, subscribeHistory, retainRecoveredMedia,retainLoadedMedia } from "../history";
 import { categories, type Category, type HistoryEvent } from "../history/model";
 import { copyText } from "./dialog";
 import { h } from "./dom";
 import type { ProfileData } from "./profile";
-import { http, myId, stores } from "../discord";
+import { http, myId, stores,currentChannelId } from "../discord";
 import { deletionExcerpt, imageLinks } from "../history/model";
 import { icon, type IconName } from "./icons";
 import { linkedText } from "./reportText";
@@ -20,11 +20,11 @@ import { originalMessage } from "./messageSearch";
 import { hasNativeSave,saveAsButton,suggestedFilename } from "./saveAs";
 
 const labels: Record<Category,string> = { profile: "Username, display name, avatar, banner, global bio and custom status text/emoji", presence: "Visible online / idle / DND / offline changes", membership: "Explicit shared-server member add/remove events", deletions: "Deleted messages · visible text excerpt and file names", edits: "Observed edits (content requires Observed messages)", messages: "Observed messages, text and image links (starts when enabled)" };
-const eventNames: Record<string,string> = { username:"Username changed", displayName:"Display name changed", avatar:"Profile picture changed", banner:"Banner changed", bio:"Global bio changed", customStatus:"Custom status changed", presence:"Presence observed", memberAdded:"Server membership added", memberRemoved:"Server membership removed (left, kicked or banned)", messageDeleted:"Message deleted · actor unknown", messageEdited:"Message edited", messageObserved:"Message observed" };
+const eventNames: Record<string,string> = { username:"Username changed", displayName:"Display name changed", avatar:"Profile picture changed", banner:"Banner changed", bio:"Global bio changed", customStatus:"Custom status changed", presence:"Presence observed", memberAdded:"Server membership added", memberRemoved:"Server membership removed (left, kicked or banned)", messageDeleted:"Message deleted · actor unknown", messageEdited:"Message edited", messageObserved:"Message observed",messageLoaded:"Media loaded from conversation history" };
 /** Shared delivery identity; independent observation timestamps are kept in exports. */
 export function historyMessageIdentity(event:HistoryEvent):string{
  if(!event.messageId||!event.channelId)return event.id;
- return `${event.kind}:${event.channelId}:${event.messageId}${event.kind==="messageEdited"?JSON.stringify([event.messageText,event.messageBefore,event.messageFiles]):""}`;
+ return `${event.kind==="messageLoaded"?"messageObserved":event.kind}:${event.channelId}:${event.messageId}${event.kind==="messageEdited"?JSON.stringify([event.messageText,event.messageBefore,event.messageFiles]):""}`;
 }
 export function historyEventText(event: HistoryEvent): string {
   const parts=[eventNames[event.kind]??event.kind];
@@ -33,7 +33,7 @@ export function historyEventText(event: HistoryEvent): string {
   if(event.channelId)parts.push(conversationLabel(stores.channels?.getChannel?.(event.channelId),event.channelId));
   if(event.messageId)parts.push(`message ${event.messageId}`);
   let text=parts.join(" · ");
-  if(["messageDeleted","messageObserved","messageEdited"].includes(event.kind)){
+  if(["messageDeleted","messageObserved","messageLoaded","messageEdited"].includes(event.kind)){
     if(event.messageSentAt)text+=`\nSent: ${formatDateTime(new Date(event.messageSentAt))}`;
     if(event.messageBefore!==undefined)text+=`\nPrevious: ${event.messageBefore}\nEdited:`;
     text+=`\n${event.messageText??"Text unavailable · not retained before this observation"}`;
@@ -112,10 +112,11 @@ export function profileJournal(initial: ProfileData): { element: HTMLElement; up
     const disabled=controls.map(control=>control.disabled);controls.forEach(control=>{control.disabled=true;});
     void Promise.resolve().then(action).then(()=>{status.textContent=historyError() || `${message} Storage: ${historyStorageLabel()}.`;}).catch(error=>{status.textContent=historyError() || (error instanceof Error?error.message:"Could not save.");}).finally(()=>{busy=false;controls.forEach((control,i)=>{control.disabled=disabled[i];});});
   };
-  let timelineKey = "",shownEvents=40,timelineRevision=0;
+  let timelineKey = "",shownEvents=40,timelineRevision=0,loadedMediaCaptured=false;
   const draw = () => {
     if(historyError()) status.textContent=historyError();
     const record = historyFor(data.id);
+    if(!loadedMediaCaptured&&record?.enabled&&record.categories.includes("messages")){loadedMediaCaptured=true;const channel=currentChannelId();if(channel)retainLoadedMedia(data.id,collectionArray(stores.messages?.getMessages?.(channel)));}
     if(!noteDirty) note.value=record?.notes??"";
     if(!setupDirty) { enable.checked=record?.enabled??false;retention.value=String(record?.retentionDays??30);for(const [category,input] of selects)input.checked=record?record.categories.includes(category):category!=="messages"; }
     if(!historyError() && !busy) status.textContent=`Storage: ${historyStorageLabel()}.`;
@@ -128,7 +129,7 @@ export function profileJournal(initial: ProfileData): { element: HTMLElement; up
     const visibleEvents=record?.events.slice(-shownEvents).reverse()??[];
     eventRows.retain(new Set(visibleEvents.map(event=>event.id)));
     reconcileChildren(eventList,visibleEvents.map(event=>{
-      const displayed=historyEventWithMedia(event,data.id),text=historyEventText(displayed),laterDeleted=event.kind==="messageObserved" && deletedMessages.has(`${event.channelId}:${event.messageId}`);
+      const displayed=historyEventWithMedia(event,data.id),text=historyEventText(displayed),laterDeleted=["messageObserved","messageLoaded"].includes(event.kind) && deletedMessages.has(`${event.channelId}:${event.messageId}`);
       return eventRows.get(event.id,JSON.stringify([displayed,text,laterDeleted]),()=>h("li",{},historyEventDetail(displayed,text,laterDeleted,async()=>{
         const client=http();if(!client?.get||!event.channelId||!event.messageId)throw Error("Discord message reading is unavailable");
         await retainRecoveredMedia(data.id,await originalMessage(request=>client.get(request),event.channelId,event.messageId,data.id));

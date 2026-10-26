@@ -243,7 +243,7 @@ export function bubblePositionControl():HTMLElement {
  const choose=h("select",{class:"dialog-input",attrs:{"aria-label":"Chat bubble position"}},...[["custom","Current / drag freely"],["right","Bottom right"],["left","Bottom left"],["top","Top right"]].map(([value,text])=>h("option",{attrs:{value},text})));
  choose.value="custom";
  choose.addEventListener("change",()=>{if(choose.value==="custom")return;const x=choose.value==="left"?20:innerWidth-76,y=choose.value==="top"?72:innerHeight-148;pluginState("quickReplyBubble").data=clampBubble(x,y,innerWidth,innerHeight);save();moveBubble(x,y);});
- return h("div",{class:"card"},h("div",{class:"card-title",text:"Chat bubble position"}),choose,h("div",{class:"card-sub",text:"Choose a corner or drag the bubble. Focus it and use Alt + arrows for fine movement. Your position is remembered."}));
+ return h("div",{class:"card settings-detail-card"},h("label",{class:"card-title",text:"Chat bubble position"}),choose,h("div",{class:"card-sub",text:"Choose a corner or drag the bubble. Focus it and use Alt + arrows for fine movement. Your position is remembered."}));
 }
 function positionPopover(): void {
   if (!popover || !bubble || stopFloating) return;

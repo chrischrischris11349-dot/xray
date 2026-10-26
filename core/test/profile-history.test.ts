@@ -8,6 +8,17 @@ import { gatherProfile, mergeProfile, mergeProfileMember, profileSections, type 
 import { deleteMessageAuthorized, mayEnableModeration, messageAllowed } from "../src/plugins/messageModeration";
 import { notificationIdentity } from "../src/shell/notificationIdentity";
 const person="300760994454437890", actor="300760994454437891", channel="300760994454437892", messageId="300760994454437893";
+test("loaded conversation media is retained once for opted-in profiles, with original sent time and deletion media",()=>{
+ const history=new ProfileHistory();history.configure(person,true,["messages","deletions"]);history.configure(actor,true,["deletions"]);
+ const video="https://cdn.discordapp.com/attachments/300760994454437892/300760994454437893/older.mp4",sent="2026-10-24T12:00:00Z";
+ const message={id:messageId,author:{id:person},timestamp:sent,content:"Old caption",attachments:[{filename:"older.mp4",url:video,content_type:"video/mp4"}]};
+ const observer=new HistoryObserver(history);
+ const load={type:"LOAD_MESSAGES_SUCCESS",channelId:channel,messages:[message,{...message,id:"300760994454437894",author:{id:actor}},{...message,id:"300760994454437895",attachments:[]}]};
+ assert.deepEqual([...observer.handle(load)],[person]);observer.handle(load);observer.handle({type:"MESSAGE_CREATE",message:{...message,channel_id:channel}});
+ assert.equal(history.get(person)!.events.length,1);assert.equal(history.get(actor)!.events.length,0);
+ const event=history.get(person)!.events[0];assert.equal(event.kind,"messageLoaded");assert.equal(event.messageSentAt,new Date(sent).toISOString());assert.deepEqual(event.messageVideos,[video]);assert.match(historyEventText(event),/loaded from conversation history/);
+ observer.handle({type:"MESSAGE_DELETE",channelId:channel,id:messageId});const restored=new ProfileHistory(history.serialize());assert.deepEqual(restored.get(person)!.events.at(-1)!.messageVideos,[video]);
+});
 
 test("profile distinguishes loading, absent fields, failed reads and missing server context",()=>{
  const base=gatherProfile({id:person,username:"tester"});

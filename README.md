@@ -11,6 +11,10 @@ Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). See
 rules it follows, and [docs/DESIGN.md](docs/DESIGN.md) for the look (design
 tokens) and the extended profile view.
 
+See [0.5.10 saved edits and control fixes](docs/RELEASE_0.5.10.md) for persistent
+local overrides, shield behavior, loaded-media capture, recording selection and
+explicit screen-share audio choices.
+
 See [0.5.9 media recovery and release polish](docs/RELEASE_0.5.9.md) for archived
 photo/video playback, Save As, VC recording menus, build variants and signed updates.
 

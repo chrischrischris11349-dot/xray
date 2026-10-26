@@ -83,6 +83,11 @@ function changed(id: string): void {
   notify(id);
 }
 export function historyFor(id: string) { const model = current(); model?.prune(false); return model?.get(id); }
+/** Archive only opted-in media already loaded by the user; no network search. */
+export function retainLoadedMedia(id:string,messages:any[]):void{
+  if(storageSwitching())return;const record=current()?.get(id);if(!record?.enabled||!record.categories.includes("messages"))return;
+  for(const target of observer?.handle({type:"LOAD_MESSAGES_SUCCESS",messages:messages.slice(-1000).filter(message=>{if(message?.author?.id!==id)return false;const media=deletionExcerpt(message);return media.messageImages?.length||media.messageVideos?.length;}).slice(-100)})??[])changed(target);
+}
 export function retryHistoryLoad(): void {
   if(loading || pending || flight || engine)return;
   account=undefined;current();notify();
@@ -137,7 +142,7 @@ export function observeProfileResponse(id: string, body: any): void {
 }
 export function startProfileHistory(): void {
   if (installed) return; installed = true;
-  const relevant = new Set(["PRESENCE_UPDATE","PRESENCE_UPDATES","USER_UPDATE","USER_PROFILE_FETCH_SUCCESS","GUILD_MEMBER_ADD","GUILD_MEMBER_REMOVE","MESSAGE_CREATE","MESSAGE_UPDATE","MESSAGE_DELETE","MESSAGE_DELETE_BULK"]);
+  const relevant = new Set(["PRESENCE_UPDATE","PRESENCE_UPDATES","USER_UPDATE","USER_PROFILE_FETCH_SUCCESS","GUILD_MEMBER_ADD","GUILD_MEMBER_REMOVE","MESSAGE_CREATE","MESSAGE_UPDATE","MESSAGE_DELETE","MESSAGE_DELETE_BULK","LOAD_MESSAGES_SUCCESS"]);
   intercept(action => {
     if (storageSwitching()) return;
     if(!relevant.has(action.type)) return;

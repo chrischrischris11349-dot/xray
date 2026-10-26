@@ -4,7 +4,7 @@ use tauri::{AppHandle, Runtime};
 
 fn valid_ns(ns: &str) -> bool {
     let Some((kind, id)) = ns.split_once('.') else { return false; };
-    matches!(kind, "profile-history" | "moderation-audit" | "server-monitors" | "bot-history") && (14..=20).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_digit())
+    matches!(kind, "profile-history" | "moderation-audit" | "server-monitors" | "bot-history" | "local-message-edits") && (14..=20).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_digit())
 }
 
 #[tauri::command]
@@ -69,6 +69,7 @@ mod tests {
     fn document_namespaces_are_narrow() {
         assert!(super::valid_ns("profile-history.300760994454437890"));
         assert!(super::valid_ns("moderation-audit.300760994454437890"));
+        assert!(super::valid_ns("local-message-edits.300760994454437890"));
         for bad in ["xray", "profile-history.1", "profile-history.300760994454437890/../x", "other.300760994454437890"] { assert!(!super::valid_ns(bad)); }
     }
 }

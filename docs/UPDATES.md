@@ -19,8 +19,16 @@ Use `scripts/build-release.ps1` for Team or add `-Personal` for your own install
 `XRAY_PERSONAL_BUILD=1` gates local editing, Fake Deafen and the FakeDM port during
 core/plugin/installer generation. These controls are absent from the team catalog.
 Both builds retain normal Discord permissions for real edits and deletions.
-The personal local-edit switch starts off, requires consent for the session, and
-resets edited views when switched off. It does not rewrite messages or archives.
+The personal local-edit switch starts off for each new account and remembers an
+explicit opt-in across reloads and restarts. Saved overrides are account-scoped
+`local-message-edits` documents, kept on the VPS when server storage is enabled,
+or in captured localStorage otherwise. Switching the mode off suspends them;
+right-click Reset Local Edit deletes the saved override. Session-only message
+hiding remains temporary. At most 1,000 overrides / 1 MB are saved; reaching the
+limit reports an error without evicting existing edits. Discord messages and
+archived history are never rewritten. The shield hides controls, preserving their
+operation and its own state across reloads. Notification preview privacy is
+independent of the cosmetic shield; streamer/lock privacy still applies.
 These are build variants of GPL source, not an account-authentication boundary.
 
 The updater signing key is outside the repository at `%APPDATA%/XRay-build/updater.key`.

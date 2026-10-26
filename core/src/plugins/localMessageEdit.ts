@@ -5,8 +5,9 @@ import { definePlugin } from "./types";
 import { canEditLocally } from "./messageModeration";
 import { onPersonalEditingChanged } from "./personalLocalEdit";
 import { createElement } from "../api/react";
-import { sessionMessageView } from "../ui/localMessageView";
-import { stores } from "../discord";
+import { sessionMessageView,SessionMessageView } from "../ui/localMessageView";
+import { stores,myId } from "../discord";
+import { accountDocument,onStorageModeChanged } from "../shell/serverStorage";
 
 export class LocalMessageEdits {
   private edits = new Map<string, { id: string; channel_id: string; original: string; content: string }>();
@@ -32,72 +33,82 @@ export class LocalMessageEdits {
 
 let requestEdit:((message:any)=>Promise<void>)|undefined;
 let requestHide:((message:any)=>void)|undefined;
+let requestReset:((message:any)=>Promise<void>)|undefined;
 export const localEditAvailable=(message:any)=>!!requestEdit&&canEditLocally(message);
 export async function editMessageLocally(message:any):Promise<void>{if(!localEditAvailable(message))throw Error("Enable Personal local editing and Local Message Edit first");await requestEdit!(message);}
 export function hideMessageLocally(message:any):void{if(!requestHide||!localEditAvailable(message))throw Error("Enable Personal local editing first");requestHide(message);}
+export const hasLocalEdit=(message:any)=>sessionMessageView.get(message)?.content!==undefined;
+export async function resetMessageLocally(message:any):Promise<void>{if(!requestReset||!localEditAvailable(message))throw Error("Enable Personal local editing first");await requestReset(message);}
 export default definePlugin({
-  id: "localMessageEdit",
-  name: "Local Message Edit",
-  description: "Edit any message’s text in your own view. Right-click a message to edit or reset it. Edits last for this session.",
-  category: "Chat",
-  impact: "light",
-  impactReason: "Rewrites only locally edited messages when they load or update",
-  needsReload: false,
-  enabledByDefault: true,
+  id: "localMessageEdit", name: "Local Message Edit",
+  description: "Edit messages only in your own view. Saved per account until you right-click Reset Local Edit, including after reloads and restarts. Session-only deletion stays temporary.",
+  category: "Chat", impact: "light", impactReason: "Looks up edited message IDs during rendering; writes only on explicit edit or reset", needsReload: false, enabledByDefault: true,
   start(ctx) {
-    const touched=new Map<string,any>();
-    const systemStyles=new Map<string,{className:string;fontFamily:string}>();
-    let active = true;
+    const touched=new Map<string,any>(),systemStyles=new Map<string,{className:string;fontFamily:string}>();
+    let active=true,loadedOwner:string|undefined,generation=0,loadFailureShown=false,loading:{owner:string;promise:Promise<void>}|undefined;
     const key=(message:any)=>`${message.channel_id}:${message.id}`;
-    // Only a render notification: keep the canonical content intact in Discord's store.
-    const update = (message: any) => dispatch({ type: "MESSAGE_UPDATE", message:{id:message.id,channel_id:message.channel_id,content:stores.messages?.getMessage?.(message.channel_id,message.id)?.content??message.content??""}, xrayLocalEdit: true });
+    const update=(message:any)=>dispatch({type:"MESSAGE_UPDATE",message:{id:message.id,channel_id:message.channel_id,content:stores.messages?.getMessage?.(message.channel_id,message.id)?.content??message.content??""},xrayLocalEdit:true});
     const rowFor=(message:any)=>document.getElementById(`chat-messages-${message.channel_id}-${message.id}`);
-    const mark=(row:Element)=>{const match=/^chat-messages-(\d+)-(\d+)$/.exec(row.id);if(!match)return;row.toggleAttribute("data-xray-session-hidden",!!sessionMessageView.get({channel_id:match[1],id:match[2]})?.hidden);};
-    ctx.css("li[data-xray-session-hidden]{display:none!important}");
-    ctx.watch('li[id^="chat-messages-"]',mark);
-    requestHide=(message:any)=>{sessionMessageView.hide(message);touched.set(key(message),message);const row=rowFor(message);if(row)mark(row);void update(message);};
-    requestEdit=async(message:any)=>{
-      if(!canEditLocally(message))return;
-      const row=rowFor(message),native=row?.querySelector<HTMLElement>('[id^="message-content-"], [class*="systemMessage_"] [class*="content_"]');
-      const fontFamily=native?getComputedStyle(native).fontFamily:undefined;
-      const clone=native?.cloneNode(true) as HTMLElement|undefined;clone?.querySelectorAll("time,button,[class*='timestamp_']").forEach(node=>node.remove());
-      const content=await promptText({title:"Edit message locally · visible only to you",value:sessionMessageView.get(message)?.content??(message.type&&message.type!==19?clone?.textContent:message.content)??message.content??"",confirm:"Save local edit",multiline:true,fontFamily});
-      if(content===null||!active||!canEditLocally(message))return;
-      if(content.length>4000)throw Error("Local edits can contain up to 4,000 characters");
-      sessionMessageView.edit(message,content);touched.set(key(message),message);
-      if(message.type&&message.type!==19)systemStyles.set(key(message),{className:native?.className??"",fontFamily:fontFamily??"inherit"});
-      await update(message);
+    const nativeFor=(message:any)=>rowFor(message)?.querySelector<HTMLElement>('[id^="message-content-"], [class*="systemMessage_"] [class*="content_"]');
+    const styleFor=(message:any)=>{const native=nativeFor(message);return {className:native?.className??"",fontFamily:native?getComputedStyle(native).fontFamily:"inherit"};};
+    const mark=(row:Element)=>{const match=/^chat-messages-(\d+)-(\d+)$/.exec(row.id);if(match)row.toggleAttribute("data-xray-session-hidden",!!sessionMessageView.get({channel_id:match[1],id:match[2]})?.hidden);};
+    const redraw=()=>{for(const message of touched.values())if(stores.messages?.getMessage?.(message.channel_id,message.id))void update(message).catch(error=>ctx.log("Could not redraw local view",error));};
+    const applySaved=(raw:string|null)=>{
+      sessionMessageView.load(raw,true);
+      for(const message of sessionMessageView.entries()){touched.set(key(message),message);if(message.system&&!systemStyles.has(key(message))&&rowFor(message))systemStyles.set(key(message),styleFor(message));}
+      redraw();
     };
-    const reset=()=>{sessionMessageView.clear();systemStyles.clear();document.querySelectorAll('[data-xray-session-hidden]').forEach(node=>node.removeAttribute("data-xray-session-hidden"));for(const original of touched.values())void update(original).catch(error=>ctx.log("Could not restore local view",error));touched.clear();};
-    const stopToggle=onPersonalEditingChanged(()=>{if(!canEditLocally({author:{id:"local"}}))reset();});
+    const releaseView=()=>{generation++;loadedOwner=undefined;loading=undefined;sessionMessageView.clear();systemStyles.clear();document.querySelectorAll('[data-xray-session-hidden]').forEach(node=>node.removeAttribute("data-xray-session-hidden"));redraw();touched.clear();};
+    async function loadCurrent():Promise<void>{
+      const owner=myId();if(!owner||!active||!canEditLocally({author:{id:owner}}))return;
+      if(loadedOwner===owner)return;if(loading?.owner===owner)return loading.promise;
+      const serial=++generation,document=accountDocument("local-message-edits",owner);
+      const promise=(async()=>{await document.load();if(!active||serial!==generation||myId()!==owner||!canEditLocally({author:{id:owner}}))return;applySaved(document.value);loadedOwner=owner;loadFailureShown=false;})();
+      loading={owner,promise};try{await promise;}finally{if(loading?.promise===promise)loading=undefined;}
+    }
+    async function persist(message:any,content?:string,system=false):Promise<void>{
+      const owner=myId();await loadCurrent();if(!owner||myId()!==owner||loadedOwner!==owner||!active||!canEditLocally(message))throw Error("The account or local editing mode changed. Reopen the message.");
+      const document=accountDocument("local-message-edits",owner);
+      await document.update(raw=>{const saved=new SessionMessageView();saved.load(raw);if(content===undefined)saved.reset(message);else saved.edit(message,content,system);return saved.serialize();});
+      if(!active||myId()!==owner||!canEditLocally(message))return;
+      applySaved(document.value);if(content===undefined){sessionMessageView.reset(message);systemStyles.delete(key(message));const row=rowFor(message);if(row)mark(row);}
+      touched.set(key(message),message);await update(message);
+    }
+    const fail=(error:unknown)=>showDialog({title:"Saved local edits",body:String((error as Error)?.message??error)});
+    const restore=()=>{if(canEditLocally({author:{id:"local"}}))void loadCurrent().catch(error=>{if(!active||loadFailureShown)return;loadFailureShown=true;showDialog({title:"Saved local edits unavailable",body:`Original messages are shown because saved edits could not load. Your saved overrides were not erased. Use Retry saved local edits in XRay's command search. ${String((error as Error)?.message??error)}`});});};
+    ctx.css("li[data-xray-session-hidden]{display:none!important}");ctx.watch('li[id^="chat-messages-"]',mark);
+    requestHide=message=>{sessionMessageView.hide(message);touched.set(key(message),message);const row=rowFor(message);if(row)mark(row);void update(message).catch(error=>ctx.log("Could not hide local message",error));};
+    requestReset=message=>persist(message);
+    requestEdit=async message=>{
+      const owner=myId();await loadCurrent();if(!owner||myId()!==owner||!canEditLocally(message))return;
+      const native=nativeFor(message),fontFamily=native?getComputedStyle(native).fontFamily:undefined;
+      const clone=native?.cloneNode(true) as HTMLElement|undefined;clone?.querySelectorAll("time,button,[class*='timestamp_']").forEach(node=>node.remove());
+      const system=!!message.type&&message.type!==19;
+      const content=await promptText({title:"Edit message locally · visible only to you",value:sessionMessageView.get(message)?.content??(system?clone?.textContent:message.content)??message.content??"",confirm:"Save local edit",multiline:true,fontFamily});
+      if(content===null||!active||myId()!==owner||!canEditLocally(message))return;
+      if(content.length>4000)throw Error("Local edits can contain up to 4,000 characters");
+      await persist(message,content,system);
+    };
+    const stopToggle=onPersonalEditingChanged(()=>{releaseView();restore();}),stopStorage=onStorageModeChanged(()=>{releaseView();restore();});
     ctx.onElement("div",props=>{
-      const match=/^message-content-(\d+)$/.exec(props?.id??"");if(!match)return;
-      for(const message of touched.values())if(message.id===match[1]&&!systemStyles.has(key(message))){const content=sessionMessageView.get(message)?.content;if(content!==undefined)return {...props,children:content,"data-xray-local-edit":true,title:"Local edit · visible only to you"};}
+      const match=/^message-content-(\d+)$/.exec(props?.id??"");if(!match)return;const view=sessionMessageView.getById(match[1]);
+      if(view?.content!==undefined&&!view.system)return {...props,children:view.content,"data-xray-local-edit":true,title:"Local edit · visible only to you"};
     });
     ctx.onElement("li",props=>{
       const match=/^chat-messages-(\d+)-(\d+)$/.exec(props?.id??"");if(!match)return;
-      const message={channel_id:match[1],id:match[2]},view=sessionMessageView.get(message),style=systemStyles.get(key(message));
-      if(!style||view?.content===undefined)return;
+      const message={channel_id:match[1],id:match[2]},view=sessionMessageView.get(message);if(!view?.system||view.content===undefined)return;
+      const style=systemStyles.get(key(message))??styleFor(message);
       return {...props,children:createElement("div",{className:style.className,style:{fontFamily:style.fontFamily,whiteSpace:"pre-wrap",padding:"4px 0"},title:"Local system-message edit · visible only to you"},view.content)};
     });
-    ctx.menu("message", (items, { message }) => {
-      if (!message?.id || !message.channel_id) return;
-      items.push(menu.group(menu.item({ id: "edit-locally", label: "Edit Locally", disabled: !canEditLocally(message), subtext: "Only your view changes. Enable Personal local editing for this session.", action: () => {
-        if (!canEditLocally(message)) return;
-        void editMessageLocally(message).catch(error => showDialog({ title: "Could not edit message", body: String((error as Error)?.message??error) }));
-      } }),menu.item({id:"hide-local-message",label:"Delete from this session",disabled:!canEditLocally(message),subtext:"Only your view; no Discord deletion",action:()=>hideMessageLocally(message)}), sessionMessageView.get(message) ? menu.item({ id: "reset-local-edit", label: "Reset Local View", action: () => {
-        sessionMessageView.reset(message);systemStyles.delete(key(message));const row=rowFor(message);if(row)mark(row);
-        void update(message).catch(error => ctx.log("Could not reset local view", error));
-      } }) : null));
+    ctx.menu("message",(items,{message})=>{
+      if(!message?.id||!message.channel_id)return;
+      items.push(menu.group(menu.item({id:"edit-locally",label:"Edit Locally",disabled:!canEditLocally(message),subtext:"Saved in your personal view until reset; Discord and archives stay original.",action:()=>void editMessageLocally(message).catch(fail)}),
+        menu.item({id:"hide-local-message",label:"Delete from this session",disabled:!canEditLocally(message),subtext:"Only your view; no Discord deletion",action:()=>hideMessageLocally(message)}),
+        hasLocalEdit(message)?menu.item({id:"reset-local-edit",label:"Reset Local Edit",action:()=>void resetMessageLocally(message).catch(fail)}):null));
     });
-    ctx.command("Restore session messages","Clear local edits and session-only deletions",reset);
-    ctx.onAction("LOGOUT",reset);
-    ctx.onStop(() => {
-      active = false;
-      requestEdit=undefined;
-      requestHide=undefined;
-      stopToggle();
-      reset();
-    });
+    ctx.command("Restore session messages","Undo temporary session deletions; keep saved local edits",()=>{const saved=sessionMessageView.serialize();sessionMessageView.load(saved);document.querySelectorAll('[data-xray-session-hidden]').forEach(node=>node.removeAttribute("data-xray-session-hidden"));redraw();});
+    ctx.command("Retry saved local edits","Reload your account's saved edits after a storage failure",()=>void loadCurrent().catch(fail));
+    ctx.onAction("LOGOUT",releaseView);ctx.onAction("CONNECTION_OPEN",()=>{if(loadedOwner&&loadedOwner!==myId())releaseView();restore();});restore();
+    ctx.onStop(()=>{active=false;requestEdit=requestHide=undefined;requestReset=undefined;stopToggle();stopStorage();releaseView();});
   },
 });

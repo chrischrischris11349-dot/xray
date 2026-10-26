@@ -74,10 +74,10 @@ const accountDetails = definePlugin({
       button.style.setProperty("--xray-profile-action-width", size(bounds.width));
       button.style.setProperty("--xray-profile-action-height", size(bounds.height));
       const open = (event: Event) => {
+        event.preventDefault();
         event.stopPropagation();
-        // Close Discord's popout first (it closes on Escape), so the sheet isn't stacked on it.
-        document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", keyCode: 27, bubbles: true }));
-        showProfile(user, guildId);
+        // Keep Discord's profile mounted; a synthetic Escape can race the new sheet.
+        try{showProfile(user.id, guildId);}catch(error){showDialog({title:"Profile report unavailable",body:String((error as Error)?.message??error)});}
       };
       button.addEventListener("click", open);
       button.addEventListener("keydown", (event) => {

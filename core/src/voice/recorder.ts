@@ -2,15 +2,18 @@ import { invoke } from "../shell/bridge";
 import { myId,stores } from "../discord";
 import { onAction,intercept } from "../api/flux";
 import { h } from "../ui/dom";
-import { confirmAction,showDialog } from "../ui/dialog";
+import { confirmAction,showDialog,showSheet,closeDialog } from "../ui/dialog";
 import { uiRoot } from "../ui/root";
 import { formatDateTime } from "../time";
+import { recordingTrackOwner,includeRecordingTrack } from "./recordingSelection";
 
 const peers=new Set<RTCPeerConnection>(),listeners=new Set<()=>void>();
 let installed=false,recorder:MediaRecorder|undefined,context:AudioContext|undefined,destination:MediaStreamAudioDestinationNode|undefined;
 const sources=new Map<MediaStreamTrack,{node:MediaStreamAudioSourceNode;cleanup:()=>void}>();
 let session="",channel="",owner="",index=0,bytes=0,queued:Uint8Array[]=[],uploading=false,starting=false,finishing=false,error="",partialReason="",label="Ready · VC audio only",stopTimer:number|undefined;
 let indicator:HTMLElement|undefined,cancelPreparing=false;
+let selection:Set<string>|null=null;
+const connections=():any[]=>{const value=stores.mediaEngine?.getMediaEngine?.()?.connections;return value&&typeof value.values==="function"?[...value.values()]:[];};
 function participants(id:string):string {
  const states=stores.voiceStates?.getVoiceStatesForChannel?.(id);
  if(!states || typeof states!=="object")throw Error("Voice participants are unavailable. Rejoin the call and retry.");
@@ -29,11 +32,33 @@ function attach(track:MediaStreamTrack):void {
   sources.set(track,{node,cleanup:()=>track.removeEventListener("ended",ended)});
   track.addEventListener("ended",ended,{once:true});
 }
+async function attachIncoming(peer:RTCPeerConnection,track:MediaStreamTrack):Promise<void>{
+ if(!context||!session)return;if(selection===null){attach(track);return;}
+ const id=session,receiver=peer.getReceivers().find(receiver=>receiver.track===track);if(!receiver)return;
+ const user=await recordingTrackOwner(receiver,connections(),new Set(participants(channel).split(",")));
+ if(session===id&&includeRecordingTrack(user,selection))attach(track);
+}
+async function chooseRecordingAudio(ids:string[],available:Set<string>):Promise<Set<string>|null|undefined>{
+ return new Promise(resolve=>{
+  let result:Set<string>|null|undefined,all=true;const chosen=new Set<string>();
+  const consent=h("input",{attrs:{type:"checkbox","aria-label":"Everyone whose audio is captured has agreed"}});
+  const checks=ids.filter(id=>id!==myId()).map(id=>{
+   const input=h("input",{attrs:{type:"checkbox",...(available.has(id)?{}:{disabled:""})}});input.onchange=()=>{input.checked?chosen.add(id):chosen.delete(id);draw();};
+   const user=stores.users?.getUser?.(id);return h("label",{class:"recording-choice"},input,h("span",{text:`${user?.globalName??user?.username??id}${available.has(id)?"":" · separate audio unavailable"}`}));
+  });
+  const scope=h("select",{class:"dialog-input",attrs:{"aria-label":"Recording audio selection"}},h("option",{attrs:{value:"all"},text:"All incoming audio"}),h("option",{attrs:{value:"selected"},text:"Selected participants"}));
+  const list=h("div",{},...checks),status=h("p",{class:"pf-note",attrs:{role:"status"}});
+  const start=h("button",{class:"btn",text:"Start recording",on:{click:()=>{if(!consent.checked||!all&&!chosen.size)return;result=all?null:new Set(chosen);closeDialog();}}});
+  const draw=()=>{list.hidden=all;start.disabled=!consent.checked||!all&&!chosen.size;status.textContent=all?"Includes incoming call audio and watched stream audio; your microphone is excluded.":available.size?"Only selected, separately identified incoming audio is captured. Unidentified audio is excluded.":"Discord has not exposed separate participant audio in this session. All incoming audio is still available.";};
+  scope.onchange=()=>{all=scope.value==="all";draw();};consent.onchange=draw;draw();
+  showSheet(h("section",{class:"dialog",attrs:{role:"dialog","aria-label":"Record VC audio"}},h("h2",{class:"dialog-title",text:"Record VC audio"}),scope,list,status,h("label",{class:"recording-choice"},consent,h("span",{text:"Everyone whose audio is captured has agreed"})),h("p",{class:"pf-note",text:"Audio is saved on your configured server. A visible indicator stays on while recording. Joining participants or changing the voice channel stops capture."}),h("div",{class:"dialog-actions"},h("button",{class:"btn ghost",text:"Cancel",on:{click:closeDialog}}),start)),()=>resolve(result));
+ });
+}
 export function installVoiceRecording():void {
   if(installed)return;installed=true;
   if(typeof window.RTCPeerConnection==="function") {
     const Original=window.RTCPeerConnection;
-    window.RTCPeerConnection=new Proxy(Original,{construct(target,args,newTarget){const peer=Reflect.construct(target,args,newTarget) as RTCPeerConnection;peers.add(peer);peer.addEventListener("track",event=>attach(event.track));peer.addEventListener("connectionstatechange",()=>{if(peer.connectionState==="closed")peers.delete(peer);});if(peers.size>64)peers.delete(peers.values().next().value!);return peer;}});
+    window.RTCPeerConnection=new Proxy(Original,{construct(target,args,newTarget){const peer=Reflect.construct(target,args,newTarget) as RTCPeerConnection;peers.add(peer);peer.addEventListener("track",event=>void attachIncoming(peer,event.track).catch(()=>{}));peer.addEventListener("connectionstatechange",()=>{if(peer.connectionState==="closed")peers.delete(peer);});if(peers.size>64)peers.delete(peers.values().next().value!);return peer;}});
   }
   intercept(action=>{
     if(action.type!=="VOICE_STATE_UPDATES" || !session)return;
@@ -70,7 +95,10 @@ async function start(expectedChannel?:string):Promise<void> {
   if(!tracks.length)throw Error("No incoming VC audio is available. Rejoin voice after launching this XRay build, then retry.");
   const account=myId(),members=participants(current);
   const ready=()=>!cancelPreparing && voiceChannel()===current && myId()===account && participants(current)===members;
-  if(!await confirmAction("Record VC audio?","Start only after everyone in this voice channel has agreed. Captures incoming Discord audio (including watched stream audio), before local volume/mute processing. Your microphone is excluded. Audio uploads to your server; a new participant automatically stops recording.","Everyone agreed · start"))return;
+  const receivers=[...peers].flatMap(peer=>peer.getReceivers()).filter(receiver=>tracks.includes(receiver.track)).slice(0,64),membersSet=new Set(members.split(","));
+  const identities=await Promise.all(receivers.map(receiver=>recordingTrackOwner(receiver,connections(),membersSet)));
+  if(!ready())throw Error("Voice channel or participants changed. Reopen recording.");
+  const selected=await chooseRecordingAudio([...membersSet],new Set(identities.filter((id):id is string=>!!id)));if(selected===undefined)return;selection=selected;
   if(!ready())throw Error("Voice channel, account or participants changed. Confirm consent again.");
   const saved=await transfer({action:"start",consent:true,channelId:current});
   session=saved.id;channel=current;owner=myId()??"";index=bytes=0;queued=[];error="";partialReason="";finishing=false;
@@ -78,7 +106,8 @@ async function start(expectedChannel?:string):Promise<void> {
     if(!ready())throw Error("Voice channel, account or participants changed. Confirm consent again.");
     context=new AudioContext();await context.resume();
     if(!ready())throw Error("Recording preparation was interrupted. Confirm consent again.");
-    destination=context.createMediaStreamDestination();tracks.forEach(attach);
+    destination=context.createMediaStreamDestination();receivers.forEach((receiver,i)=>{if(includeRecordingTrack(identities[i],selection))attach(receiver.track);});
+    if(!sources.size)throw Error("None of the selected participants has a separate live audio stream. Try All incoming audio.");
     recorder=new MediaRecorder(destination.stream,{mimeType:"audio/webm;codecs=opus",audioBitsPerSecond:48000});
     let pending=Promise.resolve(), reserved=0;
     recorder.ondataavailable=event=>{

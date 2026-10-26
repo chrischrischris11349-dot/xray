@@ -3,9 +3,9 @@ import { storage } from "../env";
 import { invoke } from "./bridge";
 import { DocumentSession, type DocumentReply } from "./documentSession";
 
-type Kind = "profile-history" | "moderation-audit" | "server-monitors";
+type Kind = "profile-history" | "moderation-audit" | "server-monitors" | "local-message-edits";
 const key = (account: string) => `xray.serverData.v1:${account}`;
-const localKey = (kind: Kind, account: string) => `xray.${kind === "profile-history" ? "profileHistory" : kind === "server-monitors" ? "serverMonitors" : "moderationAudit"}.v1:${account}`;
+const localKey = (kind: Kind, account: string) => `xray.${kind === "profile-history" ? "profileHistory" : kind === "server-monitors" ? "serverMonitors" : kind === "local-message-edits" ? "localMessageEdits" : "moderationAudit"}.v1:${account}`;
 const transport = {
   read: (ns: string) => invoke("document_store", { ns, value: null, revision: null }) as Promise<DocumentReply>,
   write: (ns: string, value: string, revision: number) => invoke("document_store", { ns, value, revision }) as Promise<{ revision: number }>,
@@ -29,7 +29,7 @@ export async function setServerData(on: boolean): Promise<void> {
   if (on === serverDataEnabled(account)) return;
   switching = true;
   try {
-    const kinds: Kind[] = ["profile-history", "moderation-audit", "server-monitors"];
+    const kinds: Kind[] = ["profile-history", "moderation-audit", "server-monitors", "local-message-edits"];
     for (const doc of documents.values()) await doc.idle();
     const prepared: DocumentSession[] = [];
     if (on) {

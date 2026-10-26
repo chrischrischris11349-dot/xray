@@ -24,6 +24,24 @@ export class HistoryObserver {
       const old = record.events.at(-1); this.history.observe(id, patch);
       if (record.events.at(-1) !== old) changed.add(id);
     };
+    if(action.type==="LOAD_MESSAGES_SUCCESS"){
+      const rows=Array.isArray(action.messages)?action.messages:action.messages?._array??action.messages?.toArray?.()??[];
+      for(const message of (Array.isArray(rows)?rows:[]).slice(-100)){
+        if(!message||typeof message!=="object")continue;
+        const channelId=message.channel_id??message.channelId??action.channelId??action.channel_id;
+        const loaded={...message,channel_id:channelId};this.remember(loaded);
+        const excerpt=deletionExcerpt(loaded);
+        if(!excerpt.messageImages?.length&&!excerpt.messageVideos?.length)continue;
+        // Older entries may have retained only a filename. Enrich media references
+        // from the exact loaded message without changing the historical text.
+        const record=this.history.get(message.author?.id);
+        if(record?.enabled&&record.categories.includes("messages"))for(const event of record.events){
+          if(event.channelId!==channelId||event.messageId!==message.id)continue;
+          for(const field of ["messageImages","messageVideos","messageFiles"] as const)if(!event[field]?.length&&excerpt[field]?.length){event[field]=excerpt[field];changed.add(message.author.id);}
+        }
+        if(typeof channelId==="string"&&typeof message.id==="string"&&this.history.add(message.author?.id,"messages",{id:`message:${channelId}:${message.id}`,kind:"messageLoaded",messageId:message.id,channelId,guildId:message.guild_id??message.guildId,...excerpt}))changed.add(message.author.id);
+      }
+    }
     if (action.type === "PRESENCE_UPDATES" || action.type === "PRESENCE_UPDATE") {
       for (const presence of action.updates ?? action.presences ?? [action]) {
         const id = presence.user?.id ?? presence.userId ?? presence.user_id;

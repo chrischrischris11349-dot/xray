@@ -11,5 +11,5 @@ export function collectorStatusControl():HTMLElement{
    status.textContent=collector?.state==="connected"?`VPS collector connected. Last observed event: ${collector.lastEventAt?formatDateTime(new Date(collector.lastEventAt)):"none yet"}. Coverage is limited to enabled testers in permitted installed-bot servers.`:`Desktop capture only · VPS collector ${collector?.state??"not configured"}. Personal account sessions cannot collect while your PC is off. Archived files remain on the server.`;
   }catch(error){status.textContent=`Coverage check failed: ${String((error as Error)?.message??error)}`;}finally{button.disabled=false;}
  }}});
- return h("section",{class:"card",attrs:{"aria-label":"Collection coverage"}},h("div",{class:"card-title"},h("span",{trustedHtml:icon("database",17)})," Collection coverage"),status,button);
+ return h("section",{class:"card settings-detail-card",attrs:{"aria-label":"Collection coverage"}},h("div",{class:"card-title"},h("span",{trustedHtml:icon("database",17)})," Collection coverage"),status,button);
 }

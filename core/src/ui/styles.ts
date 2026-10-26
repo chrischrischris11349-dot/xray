@@ -9,6 +9,7 @@ import { seasonalShadowCss } from "../theme/seasonal";
 import { shadowDropdownCss } from "./dropdownStyles";
 export const css = `
 * { box-sizing: border-box; }
+[hidden] { display:none!important; }
 :host {
   all: initial;
   --text: ${ink.text}; --muted: ${ink.text2}; --faint: ${ink.text3};
@@ -71,6 +72,15 @@ export const css = `
 .card-text { flex: 1; min-width: 0; }
 .card-title { font-size: 14px; font-weight: 600; }
 .card-sub { margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+.settings-detail-card,.app-update-card { display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:10px; }
+.settings-detail-card>.card-title,.app-update-card>.card-title { display:flex;align-items:center;gap:8px;min-width:0; }
+.settings-detail-card>select { width:100%; }
+.settings-detail-card>.btn { justify-self:start; }
+.app-update-card>.dialog-actions { justify-content:flex-start;flex-wrap:wrap;gap:8px; }
+.update-dialog { width:min(540px,calc(100vw - 32px)); }
+.dialog-scrim { align-items:center;box-sizing:border-box;padding:24px; }
+.recording-choice { display:flex;align-items:center;gap:10px;min-height:28px; }
+.recording-choice input { flex:none;accent-color:var(--accent); }
 
 .section { display: flex; align-items: baseline; justify-content: space-between; padding: 14px 10px 6px; }
 .impact { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; }
@@ -224,7 +234,8 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Dialogs (dialog.ts) */
 .dialog-scrim { align-items: center; padding: 24px; }
-.dialog { width: min(500px, 100%); max-height: 80vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: ${radius.l}; background: var(--raised); backdrop-filter: saturate(180%) blur(24px); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(237,233,226,.09), inset 0 1px 0 rgba(237,233,226,.07); animation: pop ${motion.rise} var(--ease); scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+.dialog { width: min(500px, 100%); max-height: 80vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: ${radius.l}; background: var(--raised); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(237,233,226,.09), inset 0 1px 0 rgba(237,233,226,.07); animation: pop ${motion.rise} var(--ease); scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+.panel,.palette { backdrop-filter:none; } /* Opaque surfaces cannot reveal the blurred backdrop. */
 .dialog-title { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
 .dialog-text { font-size: 13.5px; color: var(--muted); white-space: pre-wrap; }
 .dialog-facts { display: grid; grid-template-columns: auto 1fr; gap: 9px 18px; margin: 0; }

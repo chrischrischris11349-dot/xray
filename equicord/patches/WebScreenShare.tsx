@@ -17,7 +17,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import { Checkbox, closeModal, Modal, openModal, Text, } from "@webpack/common";
 
 import managedStyle from "./styles.css?managed";
-import { boundedCaptureOptions } from "./captureConstraints";
+import { boundedCaptureOptions,captureAudioOptions } from "./captureConstraints";
 import { confirmSharePreview } from "./sharePreview";
 
 const cl = classNameFactory("vc-screen-picker-");
@@ -108,7 +108,7 @@ function ModalComponent({ modalProps, submit, close, options }: {
             const audioOptions = typeof options?.audio !== "boolean" && !!options.audio ? options.audio : {};
             // Limit capture work to the selected budget, while preserving stricter
             // caller constraints. Discord retains its negotiated encoding/bitrate limits.
-            const capture = () => getDisplayMedia(boundedCaptureOptions({
+            const capture = () => getDisplayMedia(boundedCaptureOptions(captureAudioOptions({
                     ...options,
                     video: options.video === false ? false : { ...videoOptions },
                     audio: options.audio === false ? false : {
@@ -117,7 +117,7 @@ function ModalComponent({ modalProps, submit, close, options }: {
                     },
                     surfaceSwitching: "include",
                     systemAudio: liveSettings.systemAudio ? "exclude" : "include"
-                }, frameRate, height)).then(t => {
+                }, liveSettings.systemAudio?"off":liveSettings.audioMode??"default"), frameRate, height)).then(t => {
                     // w3c says this can fail, they don't say why, so just to be safe
                     try {
                         const video = t.getVideoTracks()?.[0];
@@ -198,18 +198,11 @@ function ModalComponent({ modalProps, submit, close, options }: {
                         </div>
                     </div>
                     <Divider />
-                    <div className={cl("padding", "pointer")}>
-                        <Checkbox
-                            value={!!liveSettings.systemAudio}
-                            onChange={(_e, value) => (liveSettings.systemAudio = value)}
-                            shape="box"
-                            reverse={true}>
-                            <div className={cl("control-content")}>
-                                <Text tag="h2" variant="heading-md/semibold" color="text-strong">Mute Stream Audio</Text>
-                                <Text variant="text-sm/normal" color="text-subtle">Prevents system audio from being included in your stream.</Text>
-                            </div>
-                        </Checkbox>
-                    </div>
+                    <section className={cl("padding")}>
+                        <Text tag="h2" variant="heading-md/semibold" color="text-strong">Share audio</Text>
+                        <OptionRadio options={StreamAudio} labels={["Application audio", "System audio", "No audio", "Discord default"]} settings={{...liveSettings,audioMode:liveSettings.systemAudio?"off":liveSettings.audioMode??"default"}} settingsKey="audioMode" onChange={value=>{liveSettings.audioMode=value;liveSettings.systemAudio=value==="off";}} />
+                        <Text variant="text-sm/normal" color="text-subtle">Application audio avoids the desktop mix when Windows supports it. Your microphone is never added. System audio can include VoiceMeeter monitoring or any other sound routed to your output; use application audio or disable that monitoring route to exclude it. The next preview reports whether an audio track was actually supplied.</Text>
+                    </section>
                     <div className={cl("padding", "pointer")}>
                         <Checkbox
                             value={!disableStreamPreviewsValue}
@@ -235,11 +228,13 @@ function ModalComponent({ modalProps, submit, close, options }: {
 }
 
 // Capture budgets; these do not replace Discord's negotiated encoder settings.
+const StreamAudio = ["application","system","off","default"] as const;
 const StreamResolution = ["480", "720", "1080", "1440", "2160"] as const;
 const StreamFps = ["15", "30", "60", "120"] as const;
 const StreamContentHint = ["motion", "detail", ""] as const;
 
 const settings = definePluginSettings({
+    audioMode:{type:OptionType.SELECT,description:"Screen-share audio source",hidden:true,options:StreamAudio.map(value=>({label:value,value,default:value==="application"}))},
     resolution: {
         type: OptionType.SELECT,
         description: "Resolution",

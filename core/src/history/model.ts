@@ -25,7 +25,7 @@ function sentAt(value:any):string|undefined {
  try {const date=new Date(value?.toDate?.() ?? value);return value && Number.isFinite(date.getTime())?date.toISOString():undefined;}catch{return undefined;}
 }
 function cleanExcerpt(event: Partial<HistoryEvent>): Pick<HistoryEvent, "messageText" | "messageFiles" | "messageImages" | "messageVideos" | "messageBefore" | "messageSentAt"> {
-  if (!["messageDeleted","messageObserved","messageEdited"].includes(event.kind ?? "")) return {};
+  if (!["messageDeleted","messageObserved","messageLoaded","messageEdited"].includes(event.kind ?? "")) return {};
   return { messageBefore: text(event.messageBefore,4000), messageSentAt: sentAt(event.messageSentAt), messageImages: imageLinks(event.messageImages), messageVideos: imageLinks(event.messageVideos), messageText: text(event.messageText, 4000), messageFiles: Array.isArray(event.messageFiles) ? event.messageFiles.slice(0,4).map(name => text(name,80)).filter((name): name is string => name !== undefined) : undefined };
 }
 
