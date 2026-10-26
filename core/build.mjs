@@ -23,6 +23,7 @@ const options = {
   define: {
     __XRAY_VERSION__: JSON.stringify(version),
     __XRAY_DEV__: String(!release),
+    __XRAY_PERSONAL_BUILD__: String(process.env.XRAY_PERSONAL_BUILD === "1"),
   },
   logLevel: "info",
   // Icons (Lucide, ISC) are bundled as SVG text, so nothing loads from outside at runtime.

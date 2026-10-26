@@ -5,6 +5,8 @@ import { miniMenu, type MiniAction } from "./miniMenu";
 import { photoAttachment, showPhotoMetadata } from "./photoMetadata";
 import { showProfile } from "./profile";
 import { isDeletedMessage } from "./deletedMessages";
+import { personalBuild } from "../personalBuild";
+import { editMessageLocally,hideMessageLocally,localEditAvailable } from "../plugins/localMessageEdit";
 
 export function mayPin(channel: any, can: (permission: bigint, channel: any) => boolean): boolean {
   return !!channel && ([1, 3].includes(channel.type) || !!channel.guild_id && can(1n << 51n, channel));
@@ -16,6 +18,8 @@ export function messageMenu(event: MouseEvent, source: any, reply: (message: any
   const deleted = () => isDeletedMessage(source) || isDeletedMessage(latest());
   const policy = () => ({ actor: myId(), author: latest().author?.id, enabled: moderationEnabled(), guild: !!channel?.guild_id, manageMessages: can(1n << 13n, channel) });
   const actions: MiniAction[] = [
+    ...(personalBuild?[{label:"Edit locally · personal",disabled:deleted()||!localEditAvailable(latest()),run:()=>editMessageLocally(latest())}]:[]),
+    ...(personalBuild?[{label:"Delete from this session",disabled:!localEditAvailable(latest()),run:()=>hideMessageLocally(latest())}]:[]),
     { label: "Reply", disabled: deleted(), run: () => { if (deleted()) throw new Error("Deleted messages cannot be replied to."); reply(latest()); } },
     { label: source.pinned ? "Unpin message" : "Pin message", disabled: deleted() || !mayPin(channel, can), run: async () => {
       if (deleted()) throw new Error("Deleted messages cannot be pinned.");

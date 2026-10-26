@@ -11,6 +11,9 @@ Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). See
 rules it follows, and [docs/DESIGN.md](docs/DESIGN.md) for the look (design
 tokens) and the extended profile view.
 
+See [0.5.9 media recovery and release polish](docs/RELEASE_0.5.9.md) for archived
+photo/video playback, Save As, VC recording menus, build variants and signed updates.
+
 See [the 0.5.2 polish notes](docs/RELEASE_0.5.2.md) for zoom, taskbar Leave VC, profile alignment, image history, screen-share confirmation and sandbox fixes.
 See [the 0.5.3 report notes](docs/RELEASE_0.5.3.md) for in-app images, paged message searches, DM labels, exports, clipboard fixes and remaining data limits.
 See [the 0.5.4 report fixes](docs/RELEASE_0.5.4.md) for full returned Oathnet fields, search-result paging, older history and recovery after a failed server read.

@@ -54,3 +54,17 @@ test("unrecognized isolated controls are left intact",()=>{
   assert.equal(f.document.querySelector('.xray-details'),null);
   f.stop();assert.ok(f.document.querySelector('button'));
 });
+test("Discord's newer outer profile class still gets one correctly placed report icon",()=>{
+ const f=mount('<div class="outer_fixture"><div id="actions"><button aria-label="Message">Message</button><button aria-label="Add Friend">+</button><button aria-label="More">...</button></div></div>');
+ const more=f.document.querySelector('[aria-label="More"]');more.getBoundingClientRect=()=>({width:32,height:32});f.visit(more);assert.equal(f.document.querySelectorAll('.xray-details').length,1);assert.equal(f.document.querySelector('.xray-details').parentElement.id,'actions');
+});
+
+test("activity cards and their enclosing tab never receive profile actions",()=>{
+  const f=mount('<div class="userProfile_fixture"><div id="actions"><button>Message</button><button aria-label="More">...</button></div><section><button role="tab">Activity</button><div class="activityCard_fixture"><button aria-label="More">...</button><button>Overwatch</button></div><div class="activityCard_fixture"><button aria-label="More">...</button><button>Roblox</button></div><div class="activityCard_fixture"><button aria-label="More">...</button><button>Minecraft</button></div></section></div>');
+  for(const button of f.document.querySelectorAll('section [aria-label="More"]')) f.visit(button);
+  assert.equal(f.document.querySelectorAll('.xray-details').length,0);
+  const more=f.document.querySelector('#actions [aria-label="More"]');
+  more.getBoundingClientRect=()=>({width:32,height:32});f.visit(more);
+  assert.equal(f.document.querySelectorAll('.xray-details').length,1);
+  assert.equal(f.document.querySelector('.xray-details').parentElement.id,'actions');
+});

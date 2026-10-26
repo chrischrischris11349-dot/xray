@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { retryHistoryLoad, configureHistory, flushHistory, historyError, historyFor, observeProfileResponse, saveProfileNote } from "../src/history";
+import { retryHistoryLoad, configureHistory, flushHistory, historyError, historyFor, observeProfileResponse, saveProfileNote, retainRecoveredMedia } from "../src/history";
 import { switchHistoryAccount } from "./history-discord.fixture";
 import { parseHTML } from "linkedom";
 import { profileJournal } from "../src/ui/profileJournal";
+import { archivedMedia } from "../src/ui/archivedMedia";
+import { viewerUrl } from "../src/ui/imageViewer";
 
 test("history coalesces slow writes, retains offline changes in memory and isolates account reads",async()=>{
   const id="300760994454437890",owner="300760994454437899";
@@ -61,4 +63,31 @@ test("profile history exposes failed-load retry and every retained timeline page
  assert.equal(journal.element.querySelector(".history-event"),firstEvent);assert.equal(firstEvent.open,true,"paging retains expanded event DOM");
  more=[...journal.element.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.startsWith("Show older history"));assert.ok(more);more.click();
  assert.equal(journal.element.querySelectorAll(".pf-timeline li").length,85);journal.close();
+});
+test("server archive playback uses native authenticated URLs and reports failures without source credentials",async()=>{
+ const dom=parseHTML("<html><body></body></html>");(globalThis as any).document=dom.document;
+ const owner="300760994454437899";switchHistoryAccount(owner);window.localStorage.setItem(`xray.serverData.v1:${owner}`,"true");
+ const url=`https://archive.example/media/file/${"a".repeat(64)}?expires=${Date.now()+3600_000}&signature=${"b".repeat(64)}`;
+ let calls=0,shown="",fail=false;
+ (window as any).__TAURI_INTERNALS__={invoke:async(command:string,args:any)=>{calls++;assert.equal(command,"history_media");assert.equal(args.owner,owner);if(fail)throw Error("Archive unavailable");return args.offset===0?{state:"ready",bytes:1,mime:"image/png",offset:0,next:1,data:"YQ=="}:{state:"ready",url,bytes:1,mime:"image/png"};}};
+ const a=archivedMedia("https://cdn.discordapp.com/attachments/123/456/image.png","image",value=>shown=value)!;
+ const b=archivedMedia("https://cdn.discordapp.com/attachments/123/456/image.png","image",()=>{})!;
+ dom.document.body.append(a,b);
+ await new Promise(r=>setTimeout(r,0));assert.equal(calls,2);assert.match(shown,/^blob:/);assert.match(a.textContent!,/server copy/);assert.equal(viewerUrl(shown),shown);
+ fail=true;const failed=archivedMedia("https://cdn.discordapp.com/attachments/123/456/video.mp4","video",()=>{})!;await new Promise(r=>setTimeout(r,0));assert.match(failed.textContent!,/Archive unavailable/);assert.equal(failed.querySelector("button")!.hidden,false);
+ a.remove();b.remove();window.localStorage.setItem(`xray.serverData.v1:${owner}`,"false");assert.equal(archivedMedia("unused","image",()=>{}),null);
+});
+
+test("recovered photo/video metadata persists and refreshes the existing journal immediately",async()=>{
+ const dom=parseHTML("<html><body></body></html>");(globalThis as any).document=dom.document;
+ const owner="300760994454437895",target="300760994454437890",channel="300760994454437892",message="300760994454437893";
+ switchHistoryAccount(owner);window.localStorage.setItem(`xray.serverData.v1:${owner}`,"true");
+ let value=JSON.stringify({version:1,people:{[target]:{enabled:true,startedAt:Date.now(),retentionDays:90,categories:["messages"],events:[{id:"old",at:Date.now(),kind:"messageObserved",channelId:channel,messageId:message,messageText:"Historical text",messageFiles:["photo.png","clip.mp4"],messageImages:[]}]}}}),revision=1;
+ (window as any).__TAURI_INTERNALS__={invoke:async(command:string,args:any)=>{if(command==="history_media")return{state:"failed",error:"Test only"};if(args.ns!==`profile-history.${owner}`)return args.value===null?{value:null,revision:0}:{revision:args.revision+1};if(args.value===null)return{value,revision};value=args.value;revision=args.revision+1;return{revision};}};
+ const journal=profileJournal({id:target,name:"Tester",username:"tester",presence:"offline",mutualServers:{state:"ready",value:[]}} as any);await new Promise(r=>setTimeout(r,0));
+ const detail=journal.element.querySelector<HTMLDetailsElement>(".history-event")!;detail.open=true;detail.dispatchEvent(new dom.Event("toggle"));assert.match(detail.textContent!,/Recover original attachments/);
+ const photo="https://cdn.discordapp.com/attachments/123/456/photo.png",video="https://cdn.discordapp.com/attachments/123/789/clip.mp4";
+ await retainRecoveredMedia(target,{id:message,channel_id:channel,author:{id:target},content:"A newer edit",attachments:[{filename:"photo.png",url:photo},{filename:"clip.mp4",url:video}]});
+ assert.equal(journal.element.querySelector(".history-event img")?.getAttribute("src"),photo);assert.equal(journal.element.querySelector(".history-event video")?.getAttribute("src"),video);
+ const saved=JSON.parse(value).people[target].events[0];assert.equal(saved.messageText,"Historical text");assert.deepEqual(saved.messageVideos,[video]);journal.close();
 });

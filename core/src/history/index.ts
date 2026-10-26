@@ -1,7 +1,7 @@
 import { intercept, onAction } from "../api/flux";
 import { myId, stores } from "../discord";
 import { storage } from "../env";
-import { ProfileHistory, type Category, type Snapshot } from "./model";
+import { deletionExcerpt, ProfileHistory, type Category, type Snapshot } from "./model";
 import { HistoryObserver } from "./observer";
 import { customStatusSnapshot } from "./customStatus";
 import { accountDocument, onStorageModeChanged, serverDataEnabled, storageSwitching } from "../shell/serverStorage";
@@ -103,6 +103,15 @@ export async function configureHistory(id: string, enabled: boolean, categories?
 export async function saveProfileNote(id: string, note: string): Promise<void> { writable().note(id,note); changed(id); await flushHistory(); }
 export async function clearProfileHistory(id: string): Promise<void> { writable().clear(id); changed(id); await flushHistory(); }
 export async function removeProfileHistory(id: string): Promise<void> { writable().remove(id); observer?.clear(); changed(id); await flushHistory(); }
+/** User-requested recovery of attachment references; preserve historical text. */
+export async function retainRecoveredMedia(id:string,message:any):Promise<void>{
+  if(message?.author?.id!==id)throw Error("Original message author does not match this profile");
+  const record=writable().get(id);if(!record)throw Error("History is no longer configured");
+  const excerpt=deletionExcerpt(message),channel=message.channel_id??message.channelId;
+  if(!excerpt.messageImages?.length&&!excerpt.messageVideos?.length)throw Error("The original message returned no supported photo/video attachment URLs");
+  for(const event of record.events)if(event.channelId===channel&&event.messageId===message.id){event.messageImages=excerpt.messageImages;event.messageVideos=excerpt.messageVideos;event.messageFiles=excerpt.messageFiles;}
+  changed(id);await flushHistory();
+}
 export function subscribeHistory(listener: (id: string) => void): () => void { listeners.add(listener); return () => listeners.delete(listener); }
 /** Seed only global fields; visiting different server bios must not create false changes. */
 export function captureProfile(id: string): void {

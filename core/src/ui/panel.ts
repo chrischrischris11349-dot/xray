@@ -26,6 +26,10 @@ import { makeFloatingPanel } from "./floatingPanel";
 import { serverDataEnabled, setServerData } from "../shell/serverStorage";
 import { flushHistory } from "../history";
 import { myId } from "../discord";
+import { bubblePositionControl } from "./quickReply";
+import { appUpdatesControl, installAppUpdates } from "./appUpdates";
+import { collectorStatusControl } from "./collectorStatus";
+import { personalBuild } from "../personalBuild";
 
 const LOGO = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f2f3f5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" fill="none" stroke="#0b0b0d" stroke-width="2.2" stroke-linecap="round"/></svg>`;
 const CLOSE = icon("x", 16, 1.75);
@@ -84,6 +88,7 @@ export function mountUi(): void {
   fakeVoice.subscribe(render);
   mountLauncher();
   mountFrame();
+  installAppUpdates();
   if (!seenWelcome()) showWelcome();
 }
 
@@ -245,6 +250,9 @@ function render(): void {
     loggingCard(),
     syncCard(),
     serverStorageCard(),
+    bubblePositionControl(),
+    appUpdatesControl(),
+    collectorStatusControl(),
     features().length ? h("div", { class: "section" }, h("span", { class: "label", text: "Features" })) : null,
     features().length ? h("div", { class: "list" }, ...features().map(featureRow)) : null,
     isFeatureOn(intelligence) ? h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Open intelligence workspace", on: { click: () => openIntelligence() } }) : null,
@@ -385,7 +393,7 @@ function hotkeyList(): HTMLElement {
   return h(
     "div",
     { class: "list" },
-    ...HOTKEY_ACTIONS.map(({ id, name }) => {
+    ...HOTKEY_ACTIONS.filter(({id})=>personalBuild||id!=="toggleFakeDeafen").map(({ id, name }) => {
       const binding = saved[id];
       const waiting = capturing === id;
       const hint = HOTKEY_HINTS[id];

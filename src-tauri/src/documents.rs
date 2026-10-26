@@ -8,6 +8,27 @@ fn valid_ns(ns: &str) -> bool {
 }
 
 #[tauri::command]
+pub async fn history_media<R: Runtime>(app: AppHandle<R>, owner: String, url: String, retry: Option<bool>, offset: Option<u64>) -> Result<Value,String> {
+    let source=tauri::Url::parse(&url).map_err(|_|"Invalid attachment URL")?;
+    if !(14..=20).contains(&owner.len()) || !owner.bytes().all(|b|b.is_ascii_digit()) || url.len()>2048 || source.scheme()!="https" || !source.username().is_empty() || source.password().is_some() || source.port().is_some() || !matches!(source.host_str(),Some("cdn.discordapp.com"|"media.discordapp.net")) || !(source.path().starts_with("/attachments/") || source.path().starts_with("/ephemeral-attachments/")) {return Err("Invalid history media request".into());}
+    let settings=crate::settings::load(&app);
+    let endpoint=tauri::Url::parse(&settings.sync_endpoint).map_err(|_|"Configure HTTPS server storage first")?;
+    if endpoint.scheme()!="https" || !endpoint.username().is_empty() || endpoint.password().is_some() || endpoint.query().is_some() || endpoint.fragment().is_some() || settings.sync_token.is_empty(){return Err("Configure HTTPS server storage first".into());}
+    tauri::async_runtime::spawn_blocking(move||{
+        use std::io::Read;
+        let base=settings.sync_endpoint.trim_end_matches('/');
+        let agent=ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(15)).redirects(0).build();
+        let mut payload=serde_json::json!({"owner":owner,"url":url,"retry":retry.unwrap_or(false)});if let Some(offset)=offset{if offset>250*1024*1024{return Err("Invalid media offset".into());}payload["offset"]=Value::from(offset);}
+        let response=agent.post(&format!("{base}/media")).set("Authorization",&format!("Bearer {}",settings.sync_token)).send_json(payload).map_err(|error|match error{ureq::Error::Status(404,_)=>"Update the XRay server; media archiving is unavailable".to_string(),ureq::Error::Status(401,_)=>"The media server rejected its configured token".to_string(),_=>"The media archive server is unavailable".to_string()})?;
+        let mut bytes=Vec::new();response.into_reader().take(750001).read_to_end(&mut bytes).map_err(|_|"Could not read media archive status")?;
+        if bytes.len()>750000{return Err("Media archive response exceeds its limit".into());}
+        let mut value:Value=serde_json::from_slice(&bytes).map_err(|_|"Invalid media archive response")?;
+        if value["state"]=="ready" && offset.is_none(){let path=value["path"].as_str().ok_or("Media URL missing")?;if !path.starts_with("/media/file/")||path.contains("..")||path.contains('#'){return Err("Invalid media archive path".into());}value["url"]=Value::String(format!("{base}{path}"));}
+        Ok(value)
+    }).await.map_err(|_|"Media archive task failed".to_string())?
+}
+
+#[tauri::command]
 pub async fn document_store<R: Runtime>(app: AppHandle<R>, ns: String, value: Option<String>, revision: Option<u64>) -> Result<Value, String> {
     if !valid_ns(&ns) || ns.starts_with("bot-history.") && value.is_some() || value.as_ref().is_some_and(|v| v.len() > 2_000_000) || value.is_some() && revision.is_none() {
         return Err("Invalid document or revision".into());

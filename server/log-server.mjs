@@ -27,6 +27,8 @@ import { DatabaseSync } from "node:sqlite";
 import { dirname,join } from "node:path";
 import { recordingStore } from "./recordings.mjs";
 import { startDiscordBot } from "./discord-bot.mjs";
+import { historyMedia } from "./history-media.mjs";
+import { existsSync,statSync,createReadStream } from "node:fs";
 
 const TOKEN = process.env.XRAY_LOG_TOKEN ?? "";
 const PORT = Number(process.env.XRAY_LOG_PORT ?? 8787);
@@ -107,9 +109,17 @@ export function openDb(path = DB_PATH) {
 const NS_PATTERN = /^[a-zA-Z0-9_.-]{1,64}$/;
 const DOCUMENT_NS = /^(profile-history|moderation-audit|server-monitors|bot-history)\.\d{14,20}$/;
 const MAX_DOCUMENT_BYTES = 2_500_000;
+/** Retain one create/delete observation per message inside each account document. */
+export function dedupeHistoryDocument(ns,value){
+ if(!/^(profile-history|bot-history)\.\d{14,20}$/.test(ns))return value;
+ try{const document=JSON.parse(value);let changed=false;for(const person of Object.values(document.people??{})){
+  if(!Array.isArray(person.events))continue;const seen=new Set();person.events=person.events.filter(event=>{if(!["messageObserved","messageDeleted"].includes(event?.kind)||!event.messageId||!event.channelId)return true;const key=`${event.kind}:${event.channelId}:${event.messageId}`;if(seen.has(key)){changed=true;return false;}seen.add(key);return true;});
+ }return changed?JSON.stringify(document):value;}catch{return value;}
+}
 
 /** A tiny data layer, so the HTTP server and the tests share one path. */
 export function store(db, now = () => Date.now()) {
+  let documentWritten=()=>{};
   const insert = db.prepare("INSERT INTO events (kind, at, source, text, detail) VALUES (?, ?, ?, ?, ?)");
   const recent = db.prepare(`SELECT id, kind, at, source, text, detail FROM events WHERE at >= ? ORDER BY at DESC, id DESC LIMIT ?`);
   const dropOld = db.prepare("DELETE FROM events WHERE at < ?");
@@ -123,14 +133,18 @@ export function store(db, now = () => Date.now()) {
   const insertDocument = db.prepare("INSERT OR IGNORE INTO documents (ns,value,revision) VALUES (?,?,1)");
   const updateDocument = db.prepare("UPDATE documents SET value=?,revision=revision+1 WHERE ns=? AND revision=?");
   return {
+    onDocumentWrite(callback){documentWritten=callback;},
     readDocument(ns) {
       const row = getDocument.get(ns);
       return row ?? { value: null, revision: 0 };
     },
     writeDocument(ns, value, revision) {
+      value=dedupeHistoryDocument(ns,value);
       // One atomic statement prevents another device silently replacing newer data.
       const result = revision === 0 ? insertDocument.run(ns, value) : updateDocument.run(value, ns, revision);
-      return Number(result.changes) === 1 ? { revision: revision + 1 } : null;
+      if(Number(result.changes)!==1)return null;
+      try{documentWritten(ns,value);}catch{console.error("History media archive could not index a saved document");}
+      return { revision: revision + 1 };
     },
     add(events) {
       let added = 0;
@@ -215,11 +229,23 @@ function json(res, code, body) {
   res.end(text);
 }
 
-export function createApp(data,recordings) {
+export function createApp(data,recordings,media) {
   return async (req, res) => {
     const url = new URL(req.url, "http://localhost");
     try {
+      if(url.pathname.startsWith("/media/file/") && ["GET","HEAD"].includes(req.method)){
+        if(!media)return json(res,503,{error:"History media unavailable"});return media.serve(req,res,url);
+      }
       if (!authorized(req)) return json(res, 401, { error: "unauthorized" });
+      if(req.method==="GET" && /^\/updates\/(personal\.json|XRay-Personal-\d+\.\d+\.\d+\.exe)$/.test(url.pathname)){
+        const file=join(process.env.XRAY_UPDATES_DIR??join(dirname(DB_PATH),"updates"),url.pathname.split("/").pop());
+        if(!existsSync(file))return json(res,404,{error:"No personal update published"});
+        res.writeHead(200,{"content-type":file.endsWith(".json")?"application/json":"application/octet-stream","content-length":statSync(file).size,"cache-control":"no-store","x-content-type-options":"nosniff"});const stream=createReadStream(file);stream.on("error",()=>res.destroy());res.on("close",()=>stream.destroy());stream.pipe(res);return;
+      }
+      if(url.pathname==="/media" && req.method==="POST"){
+        if(!media)return json(res,503,{error:"History media archive unavailable"});
+        let payload;try{payload=JSON.parse(await readBody(req,5000));return json(res,200,media.resolve(payload.owner,payload.url,payload.retry===true,payload.offset));}catch(error){return json(res,400,{error:error.message});}
+      }
       if(url.pathname==="/recordings" && req.method==="POST") {
         if(!recordings)return json(res,503,{error:"Recording storage unavailable"});
         let payload;try{payload=JSON.parse(await readBody(req,200000));}catch{return json(res,400,{error:"Invalid recording request"});}
@@ -352,9 +378,12 @@ load();
 /** Starts the HTTP server. Returned so tests can start it on an ephemeral port. */
 export function start({ db = openDb(), port = PORT, bind = BIND, recordings = recordingStore(process.env.XRAY_RECORDINGS_DIR ?? join(dirname(DB_PATH),"recordings")) } = {}) {
   const data = store(db);
-  const timer = setInterval(() => {data.prune();recordings.list();}, PRUNE_EVERY_MS);
+  const media=historyMedia(db,process.env.XRAY_MEDIA_DIR??join(dirname(DB_PATH),"history-media"),{secret:TOKEN});
+  data.onDocumentWrite((ns,value)=>media.syncDocument(ns,value));
+  for(const row of db.prepare("SELECT ns,value FROM documents WHERE ns LIKE 'profile-history.%' OR ns LIKE 'bot-history.%'").all()){try{media.syncDocument(row.ns,row.value);}catch{console.error("Could not index existing history media");}}
+  const timer = setInterval(() => {data.prune();recordings.list();media.prune();}, PRUNE_EVERY_MS);
   timer.unref?.();
-  const server = createServer(createApp(data,recordings));
+  const server = createServer(createApp(data,recordings,media));
   server.listen(port, bind, () => console.log(`xray log server on http://${bind}:${port} (keeping ${RETENTION_DAYS} days)`));
   return { server, db, data, stop: () => { clearInterval(timer); server.close(); db.close(); } };
 }

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { channelList, conversationLabel, queryAvailableMessages } from "../src/ui/messageHistory";
-import { searchMessagePage, searchDmPage } from "../src/ui/messageSearch";
+import { searchMessagePage, searchDmPage, originalMessage } from "../src/ui/messageSearch";
 import { resultReport, reportCsv, printableReport, csvCell, returnedIpAddresses } from "../src/ui/reportExport";
 import { pasteText, writeClipboard } from "../src/ui/clipboard";
 import { viewerUrl } from "../src/ui/imageViewer";
@@ -96,4 +96,12 @@ test("retained videos survive observation, deletion, serialization and inline re
   const events=new ProfileHistory(history.serialize()).get(user)!.events;assert.deepEqual(events.at(-1)?.messageVideos,[video]);
   const rows=queryAvailableMessages(user,[],()=>[],events),rendered=renderAvailableMessage(rows[0]);assert.equal(rendered.querySelector("video")?.getAttribute("src"),video);assert.match(rendered.textContent!,/Deleted · retained observation/);
  }finally{(globalThis as any).document=previous;}
+});
+test("original attachment recovery requires the exact message and author",async()=>{
+ const channel="300760994454437890",message="300760994454437891",author="300760994454437892";
+ let calls=0;const get=async(request:any)=>{calls++;assert.equal(request.url,`/channels/${channel}/messages/${message}`);return{body:{id:message,author:{id:author},attachments:[{filename:"clip.mp4"}]}};};
+ assert.equal((await originalMessage(get,channel,message,author)).channel_id,channel);assert.equal(calls,1);
+ await assert.rejects(originalMessage(async()=>({body:{id:message,author:{id:channel}}}),channel,message,author),/deleted or unavailable/);
+ await assert.rejects(originalMessage(async()=>({status:403}),channel,message,author),/403/);
+ await assert.rejects(originalMessage(get,"bad",message,author),/Invalid/);assert.equal(calls,1);
 });

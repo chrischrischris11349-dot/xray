@@ -1,4 +1,15 @@
 export interface SearchScope {id:string;kind:"guild"|"dm";}
+/** One explicit read of an existing message; never substitutes a neighbouring result. */
+export async function originalMessage(get:(request:{url:string})=>Promise<any>,channel:string,message:string,author:string):Promise<any>{
+ if(![channel,message,author].every(id=>/^\d{14,20}$/.test(id)))throw Error("Invalid original message ID");
+ const response=await get({url:`/channels/${channel}/messages/${message}`});
+ if(response?.status===429)throw Error("Discord rate limited this recovery. Wait before trying again.");
+ if(response?.status>=400)throw Error(`Original message unavailable (HTTP ${response.status}). Use the account that can open this conversation; deleted originals cannot be refetched.`);
+ const found=response?.body??response;
+ if(found?.id!==message||found?.author?.id!==author)throw Error("Original message is deleted or unavailable in the current account; no neighbouring message was substituted");
+ if(!found)throw Error("Original message is deleted or unavailable; its files cannot be recovered from the filename");
+ return {...found,channel_id:channel};
+}
 export async function searchMessagePage(get:(request:{url:string})=>Promise<any>,scope:SearchScope,userId:string,cursor=0):Promise<{messages:any[];next:number|null;total:number|null}> {
   if(!/^\d{14,20}$/.test(userId) || !/^\d{14,20}$/.test(scope.id))throw Error("Invalid search ID.");
   if(scope.kind!=="guild" || !Number.isInteger(cursor) || cursor<0 || cursor>9975)throw Error("Invalid server search cursor; DM history uses string cursors.");

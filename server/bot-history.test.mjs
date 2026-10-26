@@ -32,3 +32,13 @@ test("multiple opted-in profile testers can be observed in an enabled shared ser
  const {db,data,read}=fixture(),alt="300760994454437895";const profile=data.readDocument(`profile-history.${owner}`),raw=JSON.parse(profile.value);raw.people[alt]={enabled:true,categories:["messages"],retentionDays:30};data.writeDocument(`profile-history.${owner}`,JSON.stringify(raw),profile.revision);
  const history=botHistory(db,data);history.dispatch("MESSAGE_CREATE",{id:message,guild_id:guild,channel_id:channel,author:{id:alt},content:"Consented second tester"});assert.equal(read().people[alt].events[0].messageText,"Consented second tester");db.close();
 });
+test("gateway replays and duplicate monitor enrollment do not duplicate message events",()=>{
+ const {db,data,read}=fixture();const saved=data.readDocument(`server-monitors.${owner}`),value=JSON.parse(saved.value);value.servers.push(value.servers[0]);data.writeDocument(`server-monitors.${owner}`,JSON.stringify(value),saved.revision);
+ const history=botHistory(db,data),payload={id:message,guild_id:guild,channel_id:channel,author:{id:target},content:"one"};assert.equal(history.targets().length,1);
+ history.dispatch("MESSAGE_CREATE",payload);history.dispatch("MESSAGE_CREATE",payload);const edit={...payload,content:"changed",edited_timestamp:"2026-10-25T12:00:00Z"};history.dispatch("MESSAGE_UPDATE",edit);history.dispatch("MESSAGE_UPDATE",edit);history.dispatch("MESSAGE_DELETE",payload);history.dispatch("MESSAGE_DELETE",payload);
+ assert.equal(read().people[target].events.filter(event=>event.kind==="messageObserved").length,1);assert.equal(read().people[target].events.filter(event=>event.kind==="messageEdited").length,1);assert.equal(read().people[target].events.filter(event=>event.kind==="messageDeleted").length,1);db.close();
+});
+test("history document writes collapse repeated creates and deletes without dropping distinct edits",()=>{
+ const {db,data}=fixture();const events=[{id:"a",kind:"messageObserved",messageId:message,channelId:channel},{id:"b",kind:"messageObserved",messageId:message,channelId:channel},{id:"edit1",kind:"messageEdited",messageId:message,channelId:channel,messageText:"one"},{id:"edit2",kind:"messageEdited",messageId:message,channelId:channel,messageText:"two"}];
+ const saved=data.readDocument(`profile-history.${owner}`);const value=JSON.parse(saved.value);value.people[target].events=events;data.writeDocument(`profile-history.${owner}`,JSON.stringify(value),saved.revision);assert.equal(JSON.parse(data.readDocument(`profile-history.${owner}`).value).people[target].events.length,3);db.close();
+});

@@ -139,8 +139,28 @@ test("restored image links reject credentials, scripts and arbitrary hosts",()=>
  assert.deepEqual(new ProfileHistory(h.serialize()).get(person)!.events[0].messageImages,["https://media.discordapp.net/attachments/x/y/a.png"]);
 });
 
+test("native attachment collections and URL-only media survive edit, deletion and restart",()=>{
+ const url="https://cdn.discordapp.com/attachments/123/456/photo.png?ex=123",video="https://media.discordapp.net/attachments/123/456/clip.mp4";
+ for(const attachments of [new Map([["a",{url}],["b",{proxyURL:video}]]),{a:{url},b:{proxy_url:video}},[{url},null,{proxy_url:video}]]){
+  const h=new ProfileHistory();h.configure(person,true,["messages","edits","deletions"]);const o=new HistoryObserver(h);
+  o.handle({type:"MESSAGE_CREATE",message:{id:messageId,channel_id:channel,author:{id:person},content:"Files",attachments}});
+  o.handle({type:"MESSAGE_UPDATE",message:{id:messageId,channel_id:channel,content:"Edited",edited_timestamp:"2026-10-25T12:00:00Z"}});
+  o.handle({type:"MESSAGE_DELETE",channelId:channel,id:messageId});
+  const events=new ProfileHistory(h.serialize()).get(person)!.events;assert.equal(events.length,3);
+  for(const event of events){assert.deepEqual(event.messageImages,[url]);assert.deepEqual(event.messageVideos,[video]);}
+ }
+});
+
 
 test("custom status history displays previous/new text and explicit clearing",()=>{
   const rendered=historyEventText({id:"custom:1",at:Date.now(),kind:"customStatus",before:"At work",after:"(empty)"});
   assert.match(rendered,/Custom status changed/);assert.match(rendered,/At work/);assert.match(rendered,/\(empty\)/);
+});
+
+test("custom retention and no age expiry survive restart without changing size bounds",()=>{
+ let now=Date.now();const h=new ProfileHistory(null,()=>now);h.configure(person,true,["messages"],365);
+ h.add(person,"messages",{id:"old",kind:"messageObserved",messageText:"keep"});now+=100*864e5;
+ const restored=new ProfileHistory(h.serialize(),()=>now);assert.equal(restored.get(person)?.retentionDays,365);assert.equal(restored.get(person)?.events.length,1);
+ restored.configure(person,true,["messages"],0);now+=1000*864e5;assert.equal(new ProfileHistory(restored.serialize(),()=>now).get(person)?.events.length,1);
+ assert.throws(()=>restored.configure(person,true,["messages"],-1),/whole number/);assert.throws(()=>restored.configure(person,true,["messages"],1.5),/whole number/);
 });

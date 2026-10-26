@@ -117,3 +117,13 @@ test("cached search preserves ordering, accents, ties and mutable item updates",
   assert.equal(rank("Unique edited name", items, 1)[0], items[0]);
   assert.deepEqual(rank("new keyword", items, 60), reference("new keyword"));
 });
+import { appUpdatesControl, updateLabel } from "../src/ui/appUpdates";
+import { parseHTML as updateTestDom } from "linkedom";
+test("signed update controls require explicit download then restart and retain actionable errors",async()=>{
+ const dom=updateTestDom("<html><body></body></html>");(globalThis as any).document=dom.document;(globalThis as any).__XRAY_VERSION__="test";
+ const actions:string[]=[];(window as any).__TAURI_INTERNALS__={invoke:async(command:string,args:any)=>{assert.equal(command,"app_update");actions.push(args.action);return{phase:args.action==="check"?"available":args.action==="download"?"ready":"installing",version:"9.9.9"};}};
+ const card=appUpdatesControl();dom.document.body.append(card);
+ const click=async(text:string)=>{const button=[...card.querySelectorAll("button")].find(node=>node.textContent===text)!;assert.ok(button);assert.equal(button.hasAttribute("disabled"),false);button.click();await new Promise(r=>setTimeout(r,0));};
+ await click("Check for updates");assert.match(card.textContent!,/9.9.9/);await click("Download update");assert.ok([...card.querySelectorAll("button")].some(node=>node.textContent==="Restart and apply"));
+ assert.deepEqual(actions,["check","download"]);assert.match(updateLabel({phase:"downloading",downloaded:25,total:100}),/25%/);card.remove();
+});

@@ -18,7 +18,8 @@ import { formatDateTime } from "../time";
  *   3. renderProfile(): builds the sheet. Nothing here parses HTML; all
  *      text goes in as text.
  */
-import { displayName, http, navigate, onStoresChanged, privateChannelActions, safeImage, snowflakeDate, stores } from "../discord";
+import { displayName, http, myId, navigate, onStoresChanged, privateChannelActions, safeImage, snowflakeDate, stores } from "../discord";
+import { icon } from "./icons";
 import { warn } from "../env";
 import { copyText, showSheet, closeDialog, showDialog } from "./dialog";
 import { h } from "./dom";
@@ -374,7 +375,8 @@ export function renderProfile(data: ProfileData, actions: ProfileActions, now = 
       { class: "pf-names" },
       h("h2", { class: "pf-name", attrs: { id: titleId } }, data.name, data.bot ? h("span", { class: "pf-tag", text: "Bot" }) : null),
       h("div", { class: "pf-handle", text: handle }),
-      h("div", { class: "pf-meta" }, status, data.customStatus ? h("span", { class: "pf-custom", text: data.customStatus }) : null),
+      h("div", { class: "pf-meta" }, status, data.customStatus ? h("span", { class: "pf-custom", text: data.customStatus }) : null,
+        h("span",{class:"pf-badge",attrs:{title:"Discord does not reliably expose another person's client modification. Presence device indicators do not prove Vencord or another client."}},h("span",{trustedHtml:icon("info",14)}),data.id===myId()?"XRay · this session":"Client undisclosed")),
       data.badges.length ? h("div", { class: "pf-badges" }, ...data.badges.map((b) => h("span", { class: "pf-badge" },
         data.badgeIcons?.[b] ? h("img", { attrs: { src: data.badgeIcons[b], alt: "", width: "22", height: "22", referrerpolicy: "no-referrer" } }) : null, b))) : null,
     ),

@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { parseHTML } from "linkedom";
 import { oathnetHistory, oathnetSection, parseOathnetResponse } from "../src/ui/oathnet";
 import { renderImportedReport, reportAvatar } from "../src/ui/importedReport";
-import { historyEventDetail } from "../src/ui/profileJournal";
+import { historyEventDetail, historyEventWithMedia } from "../src/ui/profileJournal";
 import { parseLocalReport } from "../src/ui/intelligence";
 import { resultReport } from "../src/ui/reportExport";
 import { oathnetFullReport, oathnetIndicators, type OathnetRequest } from "../src/ui/oathnetFullReport";
@@ -130,11 +130,26 @@ test("report summaries expose source IP counts and each source record has a bund
 test("history detail lazily reveals complete text, fields and images with safe links",()=>{
  const dom=parseHTML("<html><body></body></html>");(globalThis as any).document=dom.document;
  const event={id:"synthetic-event",at:Date.now(),kind:"messageDeleted" as const,messageText:"Full observed text https://example.com/details",messageImages:["https://cdn.discordapp.com/attachments/123/456/image.png"]};
- const detail=historyEventDetail(event);assert.equal(detail.querySelector("pre"),null);assert.ok(detail.querySelector("svg"));
- (detail as HTMLDetailsElement).open=true;detail.dispatchEvent(new dom.Event("toggle"));
- assert.match(detail.querySelector("pre")!.textContent!,/Full observed text/);assert.match(detail.textContent!,/Images \(1\)/);
+ const detail=historyEventDetail(event);assert.equal((detail as HTMLDetailsElement).open,true);assert.ok(detail.querySelector("svg"));
+ assert.match(detail.querySelector("pre")!.textContent!,/Full observed text/);
+ const image=detail.querySelector("img")!;assert.equal(image.src,event.messageImages[0]);assert.equal(image.closest("details"),detail);assert.equal(image.getAttribute("loading"),"lazy");
  assert.equal(detail.querySelector("a")!.getAttribute("rel"),"noopener noreferrer");
  assert.match(detail.textContent!,/synthetic-event/);
+ image.dispatchEvent(new dom.Event("error"));const fallback=detail.querySelector('.history-event-images a')!;
+ assert.match(fallback.textContent!,/expired/);assert.equal(fallback.getAttribute("target"),"_blank");
+ const click=new dom.Event("click",{cancelable:true});fallback.dispatchEvent(click);assert.equal(click.defaultPrevented,false);
+});
+
+test("history recovers missing loaded media without replacing observed text or crossing authors",()=>{
+ const url="https://cdn.discordapp.com/attachments/123/456/photo.png";
+ const event={id:"old",at:Date.now(),kind:"messageDeleted",channelId:"channel",messageId:"message",messageText:"Original observed text"};
+ const lookup=()=>({author:{id:"tester"},content:"Newer edit",attachments:[{filename:"photo.png",url}]});
+ const resolved=historyEventWithMedia(event,"tester",lookup);
+ assert.deepEqual(resolved.messageImages,[url]);assert.equal(resolved.messageText,event.messageText);assert.equal(event.messageText,"Original observed text");
+ assert.equal(historyEventWithMedia(event,"other",lookup),event);
+ assert.deepEqual(historyEventWithMedia({...event,messageImages:[]},"tester",lookup).messageImages,[]);
+ assert.equal(historyEventWithMedia(event,"tester",()=>null),event);
+ const detail=historyEventDetail({...event,messageImages:undefined});assert.equal(detail.querySelector("pre"),null);
 });
 
 test("generic imported exports retain totals and the original payload for profile reports",()=>{

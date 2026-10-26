@@ -8,7 +8,7 @@ import { resolve } from "node:path";
 const cache = "node_modules/.cache/xray";
 const out = "src-tauri/windows/generated";
 mkdirSync(cache, { recursive: true }); mkdirSync(out, { recursive: true });
-await build({ entryPoints: ["core/src/plugins/builtins.ts"], outfile: `${cache}/installer-core.cjs`, bundle: true, platform: "node", format: "cjs", loader: { ".svg": "text" }, define: { __XRAY_VERSION__: '"build"', __XRAY_DEV__: "false" }, banner: { js: 'globalThis.window=globalThis;globalThis.document={};globalThis.addEventListener=()=>{};globalThis.WebSocket=class {};globalThis.location={hostname:"build.invalid"};' } });
+await build({ entryPoints: ["core/src/plugins/builtins.ts"], outfile: `${cache}/installer-core.cjs`, bundle: true, platform: "node", format: "cjs", loader: { ".svg": "text" }, define: { __XRAY_VERSION__: '"build"', __XRAY_DEV__: "false", __XRAY_PERSONAL_BUILD__:String(process.env.XRAY_PERSONAL_BUILD==="1") }, banner: { js: 'globalThis.window=globalThis;globalThis.document={};globalThis.addEventListener=()=>{};globalThis.WebSocket=class {};globalThis.location={hostname:"build.invalid"};' } });
 const require = createRequire(import.meta.url);
 const { builtins } = require(resolve(`${cache}/installer-core.cjs`));
 function sourceFile(path) { return ts.createSourceFile(path, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true); }
@@ -57,7 +57,7 @@ sections+='SectionGroupEnd\n!insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN\n';
 sections+='!insertmacro MUI_DESCRIPTION_TEXT ${XRAY_KEEP_CHOICES} "Preserve current plugin settings during an upgrade instead of applying the selections below."\n';
 plugins.forEach((p,i)=>{ sections+=`!insertmacro MUI_DESCRIPTION_TEXT \${XRAY_PLUGIN_${i}} "${escape(p.description)}"\n`; });
 sections+='!insertmacro MUI_FUNCTION_DESCRIPTION_END\n';
-sections+='Function XRayWriteSelection\n  SectionGetFlags ${XRAY_KEEP_CHOICES} $0\n  IntOp $0 $0 & ${SF_SELECTED}\n  ${If} $0 <> 0\n    Return\n  ${EndIf}\n  CreateDirectory "$XRaySeedDirectory"\n  ClearErrors\n  FileOpen $1 "$XRaySeedDirectory\\installer-plugins.ini.tmp" w\n  ${If} ${Errors}\n    MessageBox MB_ICONSTOP "Could not save plugin choices. Check folder permissions and retry setup."\n    Abort\n  ${EndIf}\n  FileWrite $1 "[plugins]$\\r$\\n"\n';
+sections+='Function XRayWriteSelection\n  ${If} $UpdateMode = 1\n    Return\n  ${EndIf}\n  SectionGetFlags ${XRAY_KEEP_CHOICES} $0\n  IntOp $0 $0 & ${SF_SELECTED}\n  ${If} $0 <> 0\n    Return\n  ${EndIf}\n  CreateDirectory "$XRaySeedDirectory"\n  ClearErrors\n  FileOpen $1 "$XRaySeedDirectory\\installer-plugins.ini.tmp" w\n  ${If} ${Errors}\n    MessageBox MB_ICONSTOP "Could not save plugin choices. Check folder permissions and retry setup."\n    Abort\n  ${EndIf}\n  FileWrite $1 "[plugins]$\\r$\\n"\n';
 plugins.forEach((p,i)=>{ sections+=`  SectionGetFlags \${XRAY_PLUGIN_${i}} $0\n  IntOp $0 $0 & \${SF_SELECTED}\n  FileWrite $1 "${p.key}=$0$\\r$\\n"\n`; });
 sections+='  FileClose $1\n  Delete "$XRaySeedDirectory\\installer-plugins.ini"\n  Rename "$XRaySeedDirectory\\installer-plugins.ini.tmp" "$XRaySeedDirectory\\installer-plugins.ini"\n  ${If} ${Errors}\n    MessageBox MB_ICONSTOP "Could not finalize plugin choices. Check folder permissions and retry setup."\n    Abort\n  ${EndIf}\nFunctionEnd\n';
 writeFileSync(`${out}/plugins.nsh`, '\uFEFF'+sections);

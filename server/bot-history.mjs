@@ -1,4 +1,6 @@
 // GPL-3.0-or-later. Collect only enrolled testers in explicitly enabled guild monitors.
+import {createHash} from "node:crypto";
+const days=value=>Number.isInteger(value)&&value>=0&&value<=365000?value:30;
 const id=value=>typeof value==="string"&&/^\d{14,20}$/.test(value);
 const parse=value=>{try{return JSON.parse(value);}catch{return null;}};
 const text=(value,max=4000)=>typeof value==="string"?value.slice(0,max):undefined;
@@ -15,16 +17,17 @@ export function botHistory(db,data,now=()=>Date.now()){
       const profile=parse(data.readDocument(`profile-history.${owner}`).value);
       const enrolled=Object.entries(profile?.people??{}).filter(([target,record])=>id(target)&&record?.enabled===true).slice(0,30).map(([target])=>target);
       for(const server of monitors.servers.slice(0,32))if(server.enabled===true&&id(server.guildId)&&id(server.testerId)){
-        for(const target of new Set([server.testerId,...enrolled]))result.push({owner,guild:server.guildId,target,categories:profile?.people?.[target]?.enabled?profile.people[target].categories:[],days:profile?.people?.[target]?.retentionDays===7?7:30});
+        for(const target of new Set([server.testerId,...enrolled]))result.push({owner,guild:server.guildId,target,categories:profile?.people?.[target]?.enabled?profile.people[target].categories:[],days:days(profile?.people?.[target]?.retentionDays)});
       }
     }
-    return result;
+    return [...new Map(result.map(target=>[`${target.owner}:${target.guild}:${target.target}`,target])).values()];
   }
+  function cacheCutoff(){const values=targets().map(target=>target.days);return values.includes(0)?0:now()-Math.max(30,...values)*864e5;}
   function update(owner,change){
     const ns=`bot-history.${owner}`,saved=data.readDocument(ns),doc=parse(saved.value)??{version:1,people:{}};
     if(doc.version!==1||!doc.people||typeof doc.people!=="object")throw Error("Invalid bot history document; existing data retained");
     change(doc);doc.collector={state,lastError,lastEventAt,updatedAt:now()};
-    for(const person of Object.values(doc.people))person.events=(person.events??[]).filter(e=>e.at>=now()-(person.retentionDays===7?7:30)*864e5).slice(-200);
+    for(const person of Object.values(doc.people))person.events=(person.events??[]).filter(e=>(days(person.retentionDays)===0||e.at>=now()-days(person.retentionDays)*864e5)).slice(-200);
     const events=Object.values(doc.people).flatMap(person=>person.events.map(event=>({person,event}))).sort((a,b)=>a.event.at-b.event.at);
     for(const {person,event}of events.slice(0,Math.max(0,events.length-2000)))person.events=person.events.filter(e=>e!==event);
     let raw=JSON.stringify(doc);while(Buffer.byteLength(raw)>1_800_000){const people=Object.values(doc.people).filter(p=>p.events.length);if(!people.length)throw Error("Bot document metadata exceeds its limit");people.sort((a,b)=>a.events[0].at-b.events[0].at)[0].events.shift();raw=JSON.stringify(doc);}
@@ -33,7 +36,10 @@ export function botHistory(db,data,now=()=>Date.now()){
   function status(next,error=""){state=next;lastError=String(error).slice(0,240);for(const owner of new Set(targets().map(t=>t.owner)))update(owner,()=>{});}
   function record(target,event){update(target.owner,doc=>{
     const person=doc.people[target.target]??={enabled:true,startedAt:now(),retentionDays:target.days,categories:target.categories,notes:"VPS bot observations",events:[]};
-    const value={...event,id:`bot:${target.guild}:${event.messageId??""}:${event.kind}:${now()}:${person.events.length}`,guildId:target.guild,at:now()};
+    const suffix=event.kind==="messageEdited"?createHash("sha256").update(JSON.stringify([event.messageRevision,event.messageText,event.messageFiles,event.messageImages,event.messageVideos])).digest("hex").slice(0,24):"";
+    const eventId=event.messageId?`bot:${event.kind}:${event.channelId}:${event.messageId}:${suffix}`:`bot:${target.guild}:${event.kind}:${now()}:${person.events.length}`;
+    if(person.events.some(existing=>existing.id===eventId))return;
+    const {messageRevision,...fields}=event;const value={...fields,id:eventId,guildId:target.guild,at:now()};
     person.retentionDays=target.days;person.events.push(value);
   });}
   function dispatch(type,event){
@@ -51,7 +57,7 @@ export function botHistory(db,data,now=()=>Date.now()){
       const category=type==="MESSAGE_CREATE"?"messages":type==="MESSAGE_UPDATE"?"edits":type==="MESSAGE_DELETE"?"deletions":type==="PRESENCE_UPDATE"?"presence":type.startsWith("GUILD_MEMBER_")?"profile":"membership";
       const keepBody=target.categories.includes("messages")||target.categories.includes("deletions");
       if(type.startsWith("MESSAGE_")){
-        const detail={kind:type==="MESSAGE_CREATE"?"messageObserved":type==="MESSAGE_UPDATE"?"messageEdited":"messageDeleted",channelId:event.channel_id??cached?.channel_id,messageId:event.id};
+        const detail={kind:type==="MESSAGE_CREATE"?"messageObserved":type==="MESSAGE_UPDATE"?"messageEdited":"messageDeleted",channelId:event.channel_id??cached?.channel_id,messageId:event.id,...(type==="MESSAGE_UPDATE"?{messageRevision:message.edited_timestamp}:{} )};
         if(target.categories.includes(category))record(target,{...detail,...(keepBody?excerpt(type==="MESSAGE_DELETE"?cached:message):{}),...(type==="MESSAGE_UPDATE"&&target.categories.includes("messages")&&cached?.content!==undefined?{messageBefore:text(cached.content)}:{})});
         else if(type!=="MESSAGE_CREATE")record(target,detail);
       }else if(type==="GUILD_MEMBER_ADD"||type==="GUILD_MEMBER_REMOVE")record(target,{kind:type==="GUILD_MEMBER_ADD"?"memberAdded":"memberRemoved"});
@@ -74,9 +80,9 @@ export function botHistory(db,data,now=()=>Date.now()){
     else if(type==="MESSAGE_CREATE"||type==="MESSAGE_UPDATE"){
       const keepBody=selected.some(t=>t.categories.includes("messages")||t.categories.includes("deletions"));
       putMessage.run(event.id,guild,event.channel_id??cached?.channel_id,user,JSON.stringify({id:event.id,guild_id:guild,channel_id:event.channel_id??cached?.channel_id,author:{id:user},content:keepBody?text(message.content):undefined,timestamp:message.timestamp,attachments:keepBody?(message.attachments??[]).slice(0,4):[]}),now());
-      db.prepare("DELETE FROM bot_messages WHERE at<? OR id IN (SELECT id FROM bot_messages ORDER BY at DESC LIMIT -1 OFFSET 10000)").run(now()-30*864e5);
+      db.prepare("DELETE FROM bot_messages WHERE at<? OR id IN (SELECT id FROM bot_messages ORDER BY at DESC LIMIT -1 OFFSET 10000)").run(cacheCutoff());
     }
   }
-  function prune(){db.prepare("DELETE FROM bot_messages WHERE at<?").run(now()-30*864e5);for(const row of db.prepare("SELECT ns FROM documents WHERE ns LIKE 'bot-history.%'").all())update(row.ns.slice("bot-history.".length),()=>{});}
+  function prune(){db.prepare("DELETE FROM bot_messages WHERE at<?").run(cacheCutoff());for(const row of db.prepare("SELECT ns FROM documents WHERE ns LIKE 'bot-history.%'").all())update(row.ns.slice("bot-history.".length),()=>{});}
   return {dispatch,status,targets,prune};
 }

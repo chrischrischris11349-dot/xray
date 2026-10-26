@@ -29,7 +29,8 @@ const userpluginsDir = process.env.XRAY_USERPLUGINS_DIR ?? join(homedir(), "Venc
 const haveUserplugins = existsSync(userpluginsDir);
 // Repository-owned ports are always included, including on CI.
 const bundledPluginsDir = join(root, "equicord", "plugins");
-const bundledPlugins = readdirSync(bundledPluginsDir).filter(name => statSync(join(bundledPluginsDir, name)).isDirectory()).sort();
+const personal = process.env.XRAY_PERSONAL_BUILD === "1";
+const bundledPlugins = readdirSync(bundledPluginsDir).filter(name => statSync(join(bundledPluginsDir, name)).isDirectory() && (personal || name !== "fakeDM")).sort();
 
 /** A fingerprint of every file in the listed userplugins, so editing one triggers a rebuild. */
 function userpluginsHash() {
@@ -46,7 +47,7 @@ function userpluginsHash() {
   return hash.digest("hex");
 }
 
-const stamp = createHash("sha256").update(COMMIT).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).update(readFileSync(join(root,"equicord","patches","PluginCard.tsx"))).update(readFileSync(join(root,"equicord","patches","WebScreenShare.tsx"))).update(readFileSync(join(root,"core","src","voice","captureConstraints.ts"))).update(readFileSync(join(root,"core","src","voice","sharePreview.ts"))).digest("hex").slice(0, 16);
+const stamp = createHash("sha256").update(COMMIT).update(String(personal)).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).update(readFileSync(join(root,"equicord","patches","PluginCard.tsx"))).update(readFileSync(join(root,"equicord","patches","WebScreenShare.tsx"))).update(readFileSync(join(root,"core","src","voice","captureConstraints.ts"))).update(readFileSync(join(root,"core","src","voice","sharePreview.ts"))).digest("hex").slice(0, 16);
 if (!process.argv.includes("--force") && existsSync(out) && readFileSync(out, "utf8").includes(`xray-build:${stamp}`)) {
   console.log("equicord.js is up to date");
   process.exit(0);

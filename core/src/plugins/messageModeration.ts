@@ -6,6 +6,7 @@ import { confirmAction, showDialog } from "../ui/dialog";
 import { h } from "../ui/dom";
 import { uiRoot } from "../ui/root";
 import { definePlugin } from "./types";
+import { personalEditingEnabled } from "./personalLocalEdit";
 
 const MANAGE_MESSAGES = 1n << 13n;
 let enabledFor: string | undefined;
@@ -32,7 +33,7 @@ function policyFor(message: any): MessagePolicy {
   const channel=stores.channels?.getChannel?.(message.channel_id);
   return {actor:myId(),author:message.author?.id,enabled:moderationEnabled(),guild:!!channel?.guild_id,manageMessages:canManage(message.channel_id)};
 }
-export const canEditLocally = (message: any) => messageAllowed("localEdit",policyFor(message));
+export const canEditLocally = (message: any) => personalEditingEnabled() && !!message?.author?.id && !!myId();
 interface Audit { actorId: string; messageId: string; channelId: string; at: string; outcome: "requested" | "confirmed" | "rejected" }
 async function auditEntry(entry: Audit): Promise<void> {
   if (storageSwitching()) throw new Error("Wait for the storage change to finish before moderating messages.");

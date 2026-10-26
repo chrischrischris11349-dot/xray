@@ -59,11 +59,12 @@ async function drain():Promise<void> {
   finally{uploading=false;update();}
 }
 function stop():void {cancelPreparing=true;clearTimeout(stopTimer);if(recorder && recorder.state!=="inactive")recorder.stop();update();}
-async function start():Promise<void> {
+async function start(expectedChannel?:string):Promise<void> {
   if(session || uploading || starting)return;
   starting=true;cancelPreparing=false;update();
   try {
   const current=voiceChannel();if(!current)throw Error("Join a voice channel first.");
+  if(expectedChannel&&current!==expectedChannel)throw Error("Join the selected voice channel before recording it.");
   if(typeof MediaRecorder==="undefined" || !MediaRecorder.isTypeSupported("audio/webm;codecs=opus"))throw Error("This WebView cannot record Opus audio. Update WebView2.");
   const tracks=[...peers].flatMap(peer=>peer.getReceivers().map(receiver=>receiver.track)).filter(track=>track?.kind==="audio" && track.readyState==="live");
   if(!tracks.length)throw Error("No incoming VC audio is available. Rejoin voice after launching this XRay build, then retry.");
@@ -115,3 +116,9 @@ export function recordingPanel():{element:HTMLElement;close():void} {
   element.append(h("h2",{text:"VC recordings"}),h("p",{class:"pf-note",text:"VC audio only; no microphone access. Explicit participant consent is required. Server limit: 32 MB per recording, 512 MB total, seven-day retention. No persistent local audio copy; save a download only when you choose."}),h("div",{class:"pf-journal-actions"},begin,stopButton,retry,partial,discard,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Refresh server recordings",on:{click:()=>void refresh()}})),status,list);
   listeners.add(draw);draw();void refresh();return{element,close(){active=false;listeners.delete(draw);}};
 }
+/** Prevent restarting while audio or pending recording chunks remain in memory. */
+export function recordingNeedsAttention():boolean{return !!session||!!recorder||uploading||queued.length>0;}
+/** Shared by the recordings panel and native context menu; consent checks stay in start(). */
+export function voiceRecordingState(){return {channel:voiceChannel(),recordingChannel:channel,recording:recorder?.state==="recording",busy:starting||finishing||uploading||!!session};}
+export async function startVoiceRecording(channelId:string):Promise<void>{await start(channelId);}
+export function stopVoiceRecording():void{stop();}

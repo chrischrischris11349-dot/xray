@@ -10,6 +10,7 @@
 import { currentChannelId, loggedIn, messageActions, myId, navigate, onStoresChanged, safeImage, stores, userView, whenStore } from "../discord";
 import { h } from "./dom";
 import { messageVisualKey, renderChatMessage } from "./chatMessage";
+import { sessionMessageView } from "./localMessageView";
 import { reconcileChildren, StableRows } from "./reconcile";
 import { ImageDrafts } from "./imageDrafts";
 import { sendMiniChatMessage } from "./imageUpload";
@@ -237,6 +238,13 @@ function constrainBubble(): void {
   if (!bubble) return;
   const rect = bubble.getBoundingClientRect(); moveBubble(rect.left, rect.top);
 }
+/** Discoverable positions alongside dragging and Alt+arrow movement. */
+export function bubblePositionControl():HTMLElement {
+ const choose=h("select",{class:"dialog-input",attrs:{"aria-label":"Chat bubble position"}},...[["custom","Current / drag freely"],["right","Bottom right"],["left","Bottom left"],["top","Top right"]].map(([value,text])=>h("option",{attrs:{value},text})));
+ choose.value="custom";
+ choose.addEventListener("change",()=>{if(choose.value==="custom")return;const x=choose.value==="left"?20:innerWidth-76,y=choose.value==="top"?72:innerHeight-148;pluginState("quickReplyBubble").data=clampBubble(x,y,innerWidth,innerHeight);save();moveBubble(x,y);});
+ return h("div",{class:"card"},h("div",{class:"card-title",text:"Chat bubble position"}),choose,h("div",{class:"card-sub",text:"Choose a corner or drag the bubble. Focus it and use Alt + arrows for fine movement. Your position is remembered."}));
+}
 function positionPopover(): void {
   if (!popover || !bubble || stopFloating) return;
   const rect = bubble.getBoundingClientRect();
@@ -436,7 +444,8 @@ function renderMessages(): void {
   const items: HTMLElement[] = [];
   const keys = new Set<string>();
   for (const [index, message] of all.slice(-MAX_MESSAGES).entries()) {
-    const text = typeof message.content === "string" && message.content ? readable(message.content) : message.stickerItems?.length ? "Sent a sticker" : "";
+    const local=sessionMessageView.get(message);if(local?.hidden)continue;
+    const text = local?.content!==undefined?local.content:typeof message.content === "string" && message.content ? readable(message.content) : message.stickerItems?.length ? "Sent a sticker" : "";
     if (!text && !message.attachments?.length && !message.embeds?.length && !isDeletedMessage(message)) continue;
     const author = message.author?.id ?? "";
     const mine = author === me;

@@ -7,11 +7,18 @@ export interface HistoryRecord { enabled: boolean; startedAt: number; retentionD
 export interface HistoryDocument { version: 1; people: Record<string, HistoryRecord> }
 const DAY = 864e5;
 const validId = (value: string) => /^\d{14,20}$/.test(value);
+/** Zero keeps observations until manually cleared; count/byte limits still apply. */
+export const retentionDaysValue = (value: unknown): number => typeof value==="number" && Number.isInteger(value) && value>=0 && value<=365000 ? value : 30;
 const text = (value: unknown, limit = 300) => typeof value === "string" ? value.length > limit ? `${value.slice(0,limit-1)}…` : value : undefined;
 export function deletionExcerpt(message: any): Pick<HistoryEvent, "messageText" | "messageFiles" | "messageImages" | "messageVideos" | "messageBefore" | "messageSentAt"> {
-  const attachments=Array.isArray(message?.attachments)?message.attachments:undefined;
-  const media=(kind:string,extension:RegExp)=>attachments?imageLinks(attachments.filter((file:any)=>String(file.content_type??file.contentType??"").startsWith(`${kind}/`) || extension.test(file.filename??file.fileName??"")).map((file:any)=>file.url??file.proxy_url??file.proxyURL)):undefined;
-  return {messageSentAt:sentAt(message?.timestamp),messageImages:media("image",/\.(png|jpe?g|gif|webp|avif)$/i),messageVideos:media("video",/\.(mp4|webm|mov)$/i),messageText:text(message?.content,4000),messageFiles:attachments?.slice(0,4).map((file:any)=>text(file.filename??file.fileName,80)).filter((name:unknown):name is string=>typeof name==="string")};
+  const value=message?.attachments;
+  const attachments:any[]|undefined=Array.isArray(value)?value:typeof value?.values==="function"?Array.from(value.values()):value && typeof value==="object"?Object.values(value):undefined;
+  const media=(kind:string,extension:RegExp)=>attachments?imageLinks(attachments.filter((file:any)=>{
+    if (!file || typeof file!=="object") return false;
+    let pathname="";try{pathname=new URL(file.url??file.proxy_url??file.proxyURL).pathname;}catch{}
+    return String(file.content_type??file.contentType??"").startsWith(`${kind}/`) || extension.test(file.filename??file.fileName??pathname);
+  }).map((file:any)=>[file.url,file.proxy_url,file.proxyURL].find(url=>imageLinks([url])?.length))):undefined;
+  return {messageSentAt:sentAt(message?.timestamp),messageImages:media("image",/\.(png|jpe?g|gif|webp|avif)$/i),messageVideos:media("video",/\.(mp4|webm|mov)$/i),messageText:text(message?.content,4000),messageFiles:attachments?.slice(0,4).map((file:any)=>text(file?.filename??file?.fileName,80)).filter((name:unknown):name is string=>typeof name==="string")};
 }
 
 function sentAt(value:any):string|undefined {
@@ -42,7 +49,7 @@ export class ProfileHistory {
       for (const [id, item] of Object.entries(parsed.people).slice(0, 30)) {
         const value = item as HistoryRecord;
         if (!validId(id) || !value || typeof value !== "object") continue;
-        this.document.people[id] = { enabled: value.enabled === true, startedAt: Number.isFinite(value.startedAt) ? value.startedAt : this.clock(), retentionDays: value.retentionDays === 7 ? 7 : 30,
+        this.document.people[id] = { enabled: value.enabled === true, startedAt: Number.isFinite(value.startedAt) ? value.startedAt : this.clock(), retentionDays: retentionDaysValue(value.retentionDays),
           categories: Array.isArray(value.categories) ? categories.filter(c => value.categories.includes(c)) : [...categories], notes: text(value.notes, 2000) ?? "",
           events: Array.isArray(value.events) ? value.events.slice(-200).filter(e => e && typeof e.id === "string" && Number.isFinite(e.at) && typeof e.kind === "string").map(e => ({ id: e.id.slice(0, 200), at: e.at, kind: e.kind.slice(0, 40), before: text(e.before), after: text(e.after), guildId: text(e.guildId, 20), channelId: text(e.channelId, 20), messageId: text(e.messageId, 20), ...cleanExcerpt(e) })) : [] };
       }
@@ -54,7 +61,8 @@ export class ProfileHistory {
     if (!validId(id)) throw new Error("Invalid profile ID.");
     const old = this.document.people[id];
     if (!old && Object.keys(this.document.people).length >= 30) throw new Error("History supports 30 profiles. Remove an old profile first.");
-    this.document.people[id] = { enabled, startedAt: old?.startedAt ?? this.clock(), retentionDays: retentionDays === 7 ? 7 : 30, categories: categories.filter(c => selected.includes(c)), notes: old?.notes ?? "", events: old?.events ?? [] };
+    if(retentionDaysValue(retentionDays)!==retentionDays)throw Error("Choose a whole number of days from 0 to 365000; 0 means no age expiry.");
+    this.document.people[id] = { enabled, startedAt: old?.startedAt ?? this.clock(), retentionDays, categories: categories.filter(c => selected.includes(c)), notes: old?.notes ?? "", events: old?.events ?? [] };
     // Resuming establishes a new baseline. Changes during gaps have unknown times.
     if (!old?.enabled || !enabled) this.baselines.delete(id);
     this.prune();
@@ -89,7 +97,7 @@ export class ProfileHistory {
     const now = this.clock();
     if(!force && now-this.lastPrune<60_000)return;
     this.lastPrune=now;
-    for (const record of Object.values(this.document.people)) record.events = record.events.filter(e => e.at >= now - record.retentionDays * DAY && e.at <= now + 60_000).slice(-200);
+    for (const record of Object.values(this.document.people)) record.events = record.events.filter(e => (record.retentionDays===0 || e.at >= now - record.retentionDays * DAY) && e.at <= now + 60_000).slice(-200);
     const all = Object.values(this.document.people).flatMap(record => record.events.map(event => ({ record, event }))).sort((a,b) => a.event.at - b.event.at);
     for (const {record,event} of all.slice(0, Math.max(0, all.length - 2000))) record.events = record.events.filter(e => e !== event);
   }

@@ -2,6 +2,7 @@ import { h } from "./dom";
 import { currentTimeFormat, formatDateTime, formatTime } from "../time";
 import { isDeletedMessage } from "./deletedMessages";
 import { imageLink } from "./imageViewer";
+import { hasNativeSave,saveAsButton } from "./saveAs";
 
 export function chatUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -94,6 +95,7 @@ export function renderChatMessage(message: any, mine: boolean, text: string): HT
     const type = attachment.content_type ?? attachment.contentType ?? "";
     const preview = attachment.proxy_url ?? attachment.proxyURL ?? url;
     const parts = h("div", { class: "qr-attachment" }, link(url, `📎 ${name}`));
+    if(hasNativeSave())parts.append(saveAsButton(url,name));
     if (typeof attachment.size === "number") parts.append(h("span", { class: "qr-file-size", text: `${Math.max(1, Math.ceil(attachment.size / 1024))} KB` }));
     bubble.append(parts);
     const render = () => {

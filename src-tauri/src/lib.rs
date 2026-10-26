@@ -3,6 +3,8 @@
 //! badge, the tray, single-instance handling and launch at login.
 
 mod badge;
+mod downloads;
+mod updates;
 mod documents;
 mod hotkeys;
 mod installer;
@@ -43,8 +45,10 @@ pub fn run() {
             Some(vec![window::AUTOSTART_ARG]),
         ))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         // Every command Discord's page may call (see capabilities/main.json).
-        .invoke_handler(tauri::generate_handler![notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
+        .invoke_handler(tauri::generate_handler![downloads::save_file_as, updates::app_update, notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, documents::history_media, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
@@ -56,6 +60,7 @@ pub fn run() {
             // Register settings before the WebView restores zoom or its injected
             // core invokes a native command during document-start.
             app.manage(Shell(Mutex::new(shell)));
+            app.manage(updates::Updates::default());
             window::create(handle, visible)?;
             taskbar::register_shortcut(handle);
             taskbar::install(handle);

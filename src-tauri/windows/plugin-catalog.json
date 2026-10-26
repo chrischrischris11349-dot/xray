@@ -1,8 +1,6 @@
 {
   "coreIds": [
-    "fakeDeafen",
     "messageLogger",
-    "localMessageEdit",
     "messageModeration",
     "cleanLinks",
     "translate",
@@ -20,6 +18,7 @@
     "messagePeek",
     "unsuppressEmbeds",
     "voiceBar",
+    "voiceRecordingMenu",
     "screenShareCapture",
     "webContextMenus",
     "copyEmojiMarkdown",
@@ -195,15 +194,6 @@
       "minimal": true
     },
     {
-      "key": "xray:fakeDeafen",
-      "id": "fakeDeafen",
-      "source": "XRay",
-      "name": "Fake Deafen",
-      "description": "A standalone toggle: appear self-deafened while keeping local audio unchanged. Never server-mutes or server-deafens you. Starts off each launch.",
-      "recommended": true,
-      "minimal": false
-    },
-    {
       "key": "xray:focusMode",
       "id": "focusMode",
       "source": "XRay",
@@ -228,15 +218,6 @@
       "name": "Friends Since",
       "description": "Right-click a friend to see when you became friends.",
       "recommended": false,
-      "minimal": false
-    },
-    {
-      "key": "xray:localMessageEdit",
-      "id": "localMessageEdit",
-      "source": "XRay",
-      "name": "Local Message Edit",
-      "description": "Edit any message’s text in your own view. Right-click a message to edit or reset it. Edits last for this session.",
-      "recommended": true,
       "minimal": false
     },
     {
@@ -353,6 +334,15 @@
       "source": "XRay",
       "name": "Translate",
       "description": "Right-click a message to translate it into your language.",
+      "recommended": false,
+      "minimal": false
+    },
+    {
+      "key": "xray:voiceRecordingMenu",
+      "id": "voiceRecordingMenu",
+      "source": "XRay",
+      "name": "VC recording menu",
+      "description": "Right-click your connected voice channel or a participant to start a consented VC-audio recording, or stop and save it on your configured server.",
       "recommended": false,
       "minimal": false
     },
@@ -1218,15 +1208,6 @@
       "name": "F8Break",
       "description": "Pause the client when you press F8 with DevTools (+ breakpoints) open.",
       "recommended": false,
-      "minimal": false
-    },
-    {
-      "key": "equicord:FakeDM",
-      "id": "FakeDM",
-      "source": "Equicord",
-      "name": "FakeDM",
-      "description": "Adds fake local messages to DMs and group DMs for this Discord session only.",
-      "recommended": true,
       "minimal": false
     },
     {

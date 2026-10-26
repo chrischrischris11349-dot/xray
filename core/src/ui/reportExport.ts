@@ -1,5 +1,7 @@
 import { h } from "./dom";
 import { icon } from "./icons";
+import { hasNativeSave,saveTextAs } from "./saveAs";
+import { showDialog } from "./dialog";
 
 /** Count unique, explicitly identified IP values without inferring addresses from IDs. */
 export function returnedIpAddresses(records:unknown[]):number {
@@ -56,6 +58,7 @@ export function printableReport(report:ResultReport):string {
   return `<!doctype html><html lang="en"><meta charset="utf-8"><title>${escape(report.title)}</title><style>body{font:15px system-ui;margin:32px;color:#171717}pre{white-space:pre-wrap;overflow-wrap:anywhere}article{border-top:1px solid #bbb;padding:12px 0;break-inside:avoid}@media print{body{margin:0}}</style><h1>${escape(report.title)}</h1><p>${escape(report.generatedAt)}</p><p>${escape(report.coverage)}</p><h2>Summary</h2><pre>${escape(JSON.stringify(report.summary,null,2))}</pre>${report.sourceResponse && Object.keys(report.sourceResponse as object).length ? `<details><summary>Complete source response</summary><pre>${escape(JSON.stringify(report.sourceResponse,null,2))}</pre></details>` : ""}${report.records.map((row,index)=>`<article><h2>Record ${index+1}</h2><pre>${escape(JSON.stringify(row,null,2))}</pre></article>`).join("")}</html>`;
 }
 export function downloadText(name:string,text:string,type:string):void {
+  if(hasNativeSave()){void saveTextAs(name,text).catch(error=>showDialog({title:"Could not save report",body:String((error as Error)?.message??error)}));return;}
   const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement("a");a.href=url;a.download=name;a.style.display="none";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30_000);
 }
 export function exportControls(getReport:()=>ResultReport):HTMLElement {

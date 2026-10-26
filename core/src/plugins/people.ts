@@ -14,6 +14,27 @@ import { definePlugin, type Plugin } from "./types";
 const FRIEND = 1;
 const DETAILS_ICON = icon("idCard", 18, 2);
 
+/** Only a compact row of profile actions; activity cards also have More buttons. */
+function profileActionRow(existing: Element): Element | null {
+  const action = (branch: Element): Element | null => {
+    let node = branch;
+    for (let depth = 0; depth < 4; depth++) {
+      if (node.matches('button, [role="button"]')) return node;
+      if (node.children.length !== 1) return null;
+      node = node.children[0];
+    }
+    return null;
+  };
+  for (let row = existing.parentElement, depth = 0; row && depth < 4; row = row.parentElement, depth++) {
+    const branches = [...row.children].filter(child => !child.classList.contains("xray-details"));
+    const actions = branches.map(action);
+    if (actions.length < 2 || actions.length > 8 || actions.some(value => !value)) continue;
+    // Positive identification prevents climbing to a collection of activity cards.
+    if (actions.some(value => /^(?:message|send (?:a )?message|add friend|friends?|call|voice call|video call|wave)$/i.test((value!.getAttribute("aria-label") ?? value!.textContent ?? "").trim()))) return row;
+  }
+  return null;
+}
+
 const accountDetails = definePlugin({
   id: "accountDetails",
   name: "Profile Details",
@@ -33,18 +54,10 @@ const accountDetails = definePlugin({
     ctx.css(`.xray-details { position:relative!important; inset:auto!important; transform:none!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; align-self:center!important; flex:0 0 auto!important; box-sizing:border-box!important; width:var(--xray-profile-action-width)!important; min-width:var(--xray-profile-action-width)!important; height:var(--xray-profile-action-height)!important; margin:0!important; padding:0!important; line-height:1!important; cursor:pointer; }
       .xray-details > svg { display:block; flex:none; width:18px; height:18px; }
       .xray-details:focus-visible { outline:2px solid var(--text-normal); outline-offset:2px; }`);
-    ctx.watch('[class*="bannerButton_"], [class*="userProfile"] button[aria-label*="More"], [class*="userPopout"] button[aria-label*="More"], [class*="profile"] [role="button"][aria-label*="More"]', (existing) => {
+    ctx.watch('[class*="bannerButton_"], button[aria-label="More"], [role="button"][aria-label="More"]', (existing) => {
       if (existing.closest(".xray-details")) return;
-      const actionSelector = 'button, [role="button"], [class*="bannerButton_"]';
-      // Tooltip wrappers can surround More. Find distinct action branches,
-      // rather than inserting another control inside More's own wrapper.
-      let row = existing.parentElement;
-      let depth = 0;
-      for (; row && depth < 6; depth++, row = row.parentElement) {
-        const branches = [...row.children].filter(child => !child.classList.contains("xray-details") && (child.matches(actionSelector) || child.querySelector(actionSelector)));
-        if (branches.length >= 2) break;
-      }
-      if (!row || depth === 6 || row.querySelector(".xray-details")) return;
+      const row = profileActionRow(existing);
+      if (!row || row.querySelector(".xray-details")) return;
       const { user, guildId } = aboutElement(row);
       if (!user) return;
       const button = document.createElement("button");

@@ -21,20 +21,23 @@ import { readingPlugins } from "./reading";
 import { toolPlugins } from "./tools";
 import type { Plugin } from "./types";
 import voiceBar from "./voiceBar";
+import voiceRecordingMenu from "./voiceRecordingMenu";
 import screenShare from "./screenShare";
 import { webMenuPlugins } from "./webMenus";
 import { utilityPlugins } from "./utility";
+import { personalBuild } from "../personalBuild";
+import personalLocalEdit from "./personalLocalEdit";
 
 /** Every plugin that ships with xray, in the order the panel lists them. */
 export const builtins: readonly Plugin<any>[] = [
-  fakeDeafen,
+  ...(personalBuild?[fakeDeafen,personalLocalEdit,localMessageEdit]:[]),
   messageLogger,
-  localMessageEdit,
   messageModeration,
   cleanLinks,
   translate,
   ...chatActionPlugins,
   voiceBar,
+  voiceRecordingMenu,
   screenShare,
   ...webMenuPlugins,
   ...toolPlugins,

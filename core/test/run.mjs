@@ -34,6 +34,10 @@ await build({
 });
 
 try {
+  execFileSync(process.execPath, ["--test", "core/test/local-view.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/archive-reload.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/voice-recording-menu.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/build-variants.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/voice-zoom.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/profile-actions.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/sandbox-preview.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });

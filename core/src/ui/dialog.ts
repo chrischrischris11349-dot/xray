@@ -106,7 +106,7 @@ export function copyText(text: string): void {
 }
 
 /** Asks for a line (or block) of text. Resolves to the text, or null if cancelled. */
-export function promptText(options: { title: string; value?: string; placeholder?: string; confirm?: string; multiline?: boolean }): Promise<string | null> {
+export function promptText(options: { title: string; value?: string; placeholder?: string; confirm?: string; multiline?: boolean; fontFamily?: string }): Promise<string | null> {
   return new Promise((resolve) => {
     let settled = false;
     const done = (value: string | null) => {
@@ -118,6 +118,7 @@ export function promptText(options: { title: string; value?: string; placeholder
       ? h("textarea", { class: "dialog-input", attrs: { rows: "5", placeholder: options.placeholder ?? "", spellcheck: "true" } })
       : h("input", { class: "dialog-input", attrs: { type: "text", placeholder: options.placeholder ?? "", spellcheck: "true" } });
     field.value = options.value ?? "";
+    if(options.fontFamily)field.style.fontFamily=options.fontFamily;
     const submit = () => {
       done(field.value);
       closeDialog();
