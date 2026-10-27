@@ -16,11 +16,12 @@ export async function loadDmArchive(target?:string):Promise<any>{const account=m
 export function knownDmChannels(target:string):string[]{return channelList(stores.channels?.getMutablePrivateChannels?.()).filter(c=>[1,3].includes(c.type)&&collectionArray(c.recipients??c.rawRecipients).some(user=>(typeof user==='string'?user:user?.id)===target)).map(c=>c.id);}
 export async function savePastDms(target:string):Promise<void>{
  if(job)throw Error('Pause the current history load before starting another.');const account=myId();if(!account||!serverDataEnabled(account))throw Error('Enable Store profile data on my server first.');
- const channels=[...new Set([...knownDmChannels(target),...scopes.filter(s=>s.target===target).map(s=>s.channel)])];if(!channels.length)throw Error('Open a DM with this person first. Only known, accessible conversations can be saved.');
  const client=http();if(!client?.get)throw Error('Discord message loading is not ready.');
  const serial=generation,run={target,cancel:false,promise:Promise.resolve()};job=run;error='';
  const active=()=>!run.cancel&&generation===serial&&myId()===account&&serverDataEnabled(account);
  run.promise=(async()=>{
+  await loadDmArchive(target);if(!active())return;
+  const channels=[...new Set([...knownDmChannels(target),...scopes.filter(s=>s.target===target).map(s=>s.channel)])];if(!channels.length)throw Error('Open a DM with this person first. Only known, accessible conversations can be saved.');
   const configured=await request(account,{action:'configure',target,channels,enabled:true});if(!active())return;
   owner=account;scopes=[...scopes.filter(s=>s.target!==target),...configured.scopes];
   for(let index=0;index<configured.scopes.length&&active();index++){
@@ -32,16 +33,17 @@ export async function savePastDms(target:string):Promise<void>{
  notify();return run.promise;
 }
 export function pauseDmArchive():void{if(job)job.cancel=true;status='Pausing after the current operation…';notify();}
-export async function stopDmArchive(target:string):Promise<void>{if(job?.target===target)pauseDmArchive();await job?.promise.catch(()=>{});await loadDmArchive(target);const channels=scopes.filter(s=>s.target===target).map(s=>s.channel);if(!channels.length)return;const account=myId();if(!account)throw Error('Account changed');for(const scope of scopes)if(scope.target===target)scope.enabled=0;await tail;await request(account,{action:'configure',target,channels,enabled:false});await loadDmArchive(target);status='Live DM archiving stopped for this person. Saved messages remain on the server.';notify();}
+export async function stopDmArchive(target:string):Promise<void>{const running=job?.target===target?job:undefined;if(running){pauseDmArchive();await running.promise.catch(()=>{});}await loadDmArchive(target);const channels=scopes.filter(s=>s.target===target).map(s=>s.channel);if(!channels.length)return;const account=myId();if(!account)throw Error('Account changed');for(const scope of scopes)if(scope.target===target)scope.enabled=0;await tail;await request(account,{action:'configure',target,channels,enabled:false});await loadDmArchive(target);status='Live DM archiving stopped for this person. Saved messages remain on the server.';notify();}
 export async function archivedDmPage(target:string,before?:string):Promise<any>{const account=myId();if(!account||!serverDataEnabled(account))throw Error('Enable server storage to read saved messages.');return request(account,{action:'page',target,...(before?{before}:{})});}
-export async function flushDmArchive():Promise<void>{if(job){pauseDmArchive();await job.promise;}await tail;if(error||pending)throw Error(error||'DM archive writes are still pending. Keep XRay open.');}
+/** A read/page error has no unsaved payload. Drain real uploads before restarting. */
+export async function flushDmArchive():Promise<void>{if(job){pauseDmArchive();await job.promise.catch(()=>{});}await tail;if(pending)throw Error('DM archive writes are still pending. Keep XRay open.');}
 function enqueue(account:string,payload:any):void{
  if(pending>=200){error='Live DM archive queue is full. Click Save past DMs to backfill accessible messages after the server recovers.';notify();return;}
  pending++;tail=tail.then(async()=>{if(myId()!==account||!serverDataEnabled(account))throw Error('Account/storage changed before a live message could save. Backfill accessible messages when you return.');await request(account,payload);}).catch(failure=>{error=`Live DM archive save failed: ${String((failure as Error)?.message??failure)}`;notify();}).finally(()=>{pending--;});
 }
 export function startDmArchive():void{
- const reset=()=>{generation++;pauseDmArchive();owner=undefined;scopes=[];};
- const restore=()=>{reset();if(myId()&&serverDataEnabled())void loadDmArchive().catch(failure=>{error=String((failure as Error)?.message??failure);notify();});};
+ const reset=()=>{generation++;if(job)job.cancel=true;owner=undefined;scopes=[];error='';status='Load a saved archive or resume past DMs.';notify();};
+ const restore=()=>{reset();const serial=generation;if(myId()&&serverDataEnabled())void loadDmArchive().catch(failure=>{if(generation===serial){error=String((failure as Error)?.message??failure);notify();}});};
  onAction('CONNECTION_OPEN',restore);onAction('LOGOUT',reset);onStorageModeChanged(restore);
  intercept(action=>{const account=myId();if(!account||owner!==account||!serverDataEnabled()||action.xrayLocalEdit||action.xrayLocalDelete)return;
   const channel=action.channelId??action.channel_id??action.message?.channel_id??action.message?.channelId;

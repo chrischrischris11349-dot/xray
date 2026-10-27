@@ -34,6 +34,7 @@ await build({
 });
 
 try {
+  execFileSync(process.execPath, ["--test", "core/test/dm-archive-controller.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/dm-backfill.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/settings-mode-sync.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/hidden-servers.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
