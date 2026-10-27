@@ -51,25 +51,28 @@ const accountDetails = definePlugin({
     });
     // A Details button beside Add Friend and More on Discord's profile popout and full profile.
     if (typeof ctx.watch !== "function") return;
-    ctx.css(`.xray-details { position:relative!important; inset:auto!important; transform:none!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; align-self:center!important; flex:0 0 auto!important; box-sizing:border-box!important; width:var(--xray-profile-action-width)!important; min-width:var(--xray-profile-action-width)!important; height:var(--xray-profile-action-height)!important; margin:0!important; padding:0!important; line-height:1!important; cursor:pointer; }
+    ctx.css(`[data-xray-profile-actions] { align-items:center!important; }
+      .xray-details { position:relative!important; inset:auto!important; transform:none!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; align-self:center!important; flex:0 0 auto!important; box-sizing:border-box!important; width:var(--xray-profile-action-width)!important; min-width:var(--xray-profile-action-width)!important; height:var(--xray-profile-action-height)!important; margin:0!important; padding:0!important; border:0; border-radius:50%; color:var(--interactive-normal,var(--text-normal)); background:var(--background-modifier-hover); line-height:1!important; cursor:pointer; }
       .xray-details > svg { display:block; flex:none; width:18px; height:18px; }
       .xray-details:focus-visible { outline:2px solid var(--text-normal); outline-offset:2px; }`);
     ctx.watch('[class*="bannerButton_"], button[aria-label="More"], [role="button"][aria-label="More"]', (existing) => {
       if (existing.closest(".xray-details")) return;
       const row = profileActionRow(existing);
       if (!row || row.querySelector(".xray-details")) return;
-      const { user, guildId } = aboutElement(row);
+      const nativeAction=existing.matches('button,[role="button"]')?existing:existing.querySelector('button,[role="button"]');
+      if(!nativeAction)return;
+      const { user, guildId } = aboutElement(nativeAction);
       if (!user) return;
       const button = document.createElement("button");
       button.type = "button";
       // Discord's own class, so it looks and sizes like its neighbours.
-      button.className = `${existing.className} xray-details`;
+      button.className = `${nativeAction.className} xray-details`;
       button.setAttribute("role", "button");
       button.setAttribute("tabindex", "0");
       button.setAttribute("aria-label", "Open profile report");
       button.title = "Open profile report";
       button.innerHTML = DETAILS_ICON;
-      const bounds = existing.getBoundingClientRect();
+      const bounds = nativeAction.getBoundingClientRect();
       const size = (value: number) => `${value >= 24 && value <= 48 ? value : 32}px`;
       button.style.setProperty("--xray-profile-action-width", size(bounds.width));
       button.style.setProperty("--xray-profile-action-height", size(bounds.height));
@@ -77,7 +80,9 @@ const accountDetails = definePlugin({
         event.preventDefault();
         event.stopPropagation();
         // Keep Discord's profile mounted; a synthetic Escape can race the new sheet.
-        try{showProfile(user.id, guildId);}catch(error){showDialog({title:"Profile report unavailable",body:String((error as Error)?.message??error)});}
+        // Resolve at click time: Discord reuses profile action rows for other people.
+        const current=aboutElement(nativeAction);
+        try{showProfile(current.user??user, current.guildId??guildId);}catch(error){showDialog({title:"Profile report unavailable",body:String((error as Error)?.message??error)});}
       };
       button.addEventListener("click", open);
       button.addEventListener("keydown", (event) => {
@@ -90,8 +95,9 @@ const accountDetails = definePlugin({
       let before: Element = row.querySelector('[aria-label*="More"]') ?? existing;
       while (before.parentElement && before.parentElement !== row) before = before.parentElement;
       row.insertBefore(button, before);
+      row.setAttribute("data-xray-profile-actions", "");
     });
-    ctx.onStop(() => document.querySelectorAll(".xray-details").forEach(el => el.remove()));
+    ctx.onStop(() => {document.querySelectorAll(".xray-details").forEach(el => el.remove());document.querySelectorAll('[data-xray-profile-actions]').forEach(el=>el.removeAttribute('data-xray-profile-actions'));});
   },
 });
 

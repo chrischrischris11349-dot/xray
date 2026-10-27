@@ -5,12 +5,12 @@ import { build } from "esbuild";
 import { parseHTML } from "linkedom";
 
 const mocks = {
-  "../api/menus": 'export const aboutElement=()=>({user:{id:"fixture"}}),menu={item:x=>x};',
+  "../api/menus": 'export const aboutElement=()=>({user:globalThis.profileUser??{id:"fixture"}}),menu={item:x=>x};',
   "../discord": 'export const http=()=>null,stores={};',
   "../settings": 'export const pluginState=()=>({}),save=()=>{};',
   "../ui/dialog": 'export const copyText=()=>{},promptText=()=>{},showDialog=()=>{};',
   "../ui/icons": 'export const icon=()=>\'<svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/></svg>\';',
-  "../ui/profile": 'export const showProfile=()=>globalThis.opened++;',
+  "../ui/profile": 'export const showProfile=user=>{globalThis.opened++;globalThis.openedUser=user.id;};',
 };
 const result = await build({ entryPoints:["core/src/plugins/people.ts"], bundle:true, write:false, platform:"node", format:"cjs", plugins:[{
   name:"profile-action-fixture", setup(b) {
@@ -43,6 +43,7 @@ for (const wrapped of [false,true]) test(`profile report is a peer of More (${wr
   assert.equal(row.querySelectorAll('.xray-details').length,1);
   button.dispatchEvent(new f.window.Event('click'));
   assert.equal(f.context.opened,1);
+  f.context.profileUser={id:'reused-profile'};button.dispatchEvent(new f.window.Event('click'));assert.equal(f.context.openedUser,'reused-profile');
   f.stop();
   assert.equal(row.children.length,3);
   assert.ok(original.isConnected);

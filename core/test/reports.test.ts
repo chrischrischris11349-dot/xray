@@ -27,9 +27,10 @@ test("server author queries encode IDs and use total_results instead of short pa
   await assert.rejects(searchMessagePage(async()=>({body:{}}),{id:guild,kind:"guild"},user),/unsupported/);
 });
 test("DM history keeps snowflake cursors exact and filters authors",async()=>{
-  let url="";const rows=Array.from({length:100},(_,i)=>({id:String(BigInt(msg)+BigInt(i)),author:{id:i%2?user:guild}}));
+  let url="";const rows=Array.from({length:100},(_,i)=>({id:String(BigInt(msg)-1n-BigInt(i)),author:{id:i%2?user:guild}}));
   const result=await searchDmPage(async r=>{url=r.url;return{body:rows};},dm,user,msg);
-  assert.match(url,new RegExp(`before=${msg}`));assert.equal(result.before,msg);assert.equal(result.messages.length,50);
+  assert.match(url,new RegExp(`before=${msg}`));assert.equal(result.before,rows.at(-1)!.id);assert.equal(result.messages.length,50);
+  await assert.rejects(searchDmPage(async()=>({body:[{id:msg,author:{id:user}}]}),dm,user,msg),/did not advance/);
 });
 test("CSV/JSON exports preserve records, state unknown metrics, and escape printable input",()=>{
   const report=resultReport("<script>attack</script>",[{source:"one",text:'a,"b"\nnext',nested:{id:msg}},{source:"one",text:"=HYPERLINK(1)"}]);

@@ -7,6 +7,7 @@ import {join} from "node:path";
 import {createServer} from "node:http";
 import {once} from "node:events";
 import {historyMedia,attachmentUrl} from "./history-media.mjs";
+import {messageArchive} from './message-archive.mjs';
 process.env.XRAY_LOG_TOKEN="test-media-token-0123456789";
 const {openDb,store,createApp}=await import("./log-server.mjs");
 const owner="300760994454437890",target="300760994454437891",source="https://cdn.discordapp.com/attachments/123/456/photo.png?ex=old";
@@ -48,6 +49,19 @@ test("multiple accounts store one physical copy with independent access and rete
  try{const other="300760994454437899";media.syncDocument(`profile-history.${owner}`,doc(Date.now()));media.syncDocument(`profile-history.${other}`,doc(Date.now()));await media.idle();assert.equal(calls,2);assert.equal(readdirSync(directory).length,2);
   assert.equal(media.resolve(other,source).state,"ready");media.syncDocument(`profile-history.${owner}`,JSON.stringify({version:1,people:{}}));assert.equal(media.resolve(owner,source).state,"missing");assert.equal(media.resolve(other,source).state,"ready");assert.equal(readdirSync(directory).length,2);
  }finally{db.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('permanent DM archive references survive the rolling profile log being pruned',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'xray-media-')),db=openDb(':memory:');let now=Date.now();
+ const media=historyMedia(db,directory,{secret:'test',now:()=>now,fetcher:async()=>new Response(png,{headers:{'content-type':'image/png'}})});
+ try{media.syncDocument(`profile-history.${owner}`,doc(now,1));media.syncDocument(`message-archive.${owner}.300760994454437892.300760994454437893`,doc(now,0));await media.idle();media.syncDocument(`profile-history.${owner}`,JSON.stringify({people:{}}));now+=4000*864e5;media.prune();assert.equal(media.resolve(owner,source).state,'ready');assert.deepEqual(Buffer.from(media.resolve(owner,source,false,0).data,'base64'),png);}finally{db.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('archive media reindexing after restart can stream stored messages without nested transaction failures',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'xray-media-')),db=openDb(':memory:');
+ const media=historyMedia(db,directory,{secret:'test',fetcher:async()=>new Response(png,{headers:{'content-type':'image/png'}})});
+ const archive=messageArchive(db,{onMedia:(account,row)=>media.syncDocument(`message-archive.${account}.${row.channel}.${row.id}`,JSON.stringify({people:{[target]:{retentionDays:0,events:[{at:Date.now(),messageImages:row.images}]}}}),false)});
+ try{archive.configure({owner,target,channels:['300760994454437892'],enabled:true});archive.ingest({owner,target,channel:'300760994454437892',mode:'history',messages:[{id:'300760994454437893',author:target,channel:'300760994454437892',images:[source]}]});await media.idle();archive.restoreMedia();await media.idle();assert.equal(media.resolve(owner,source).state,'ready');}finally{db.close();rmSync(directory,{recursive:true,force:true});}
 });
 test("existing account-specific files migrate to shared storage without losing playback",()=>{
  const directory=mkdtempSync(join(tmpdir(),"xray-media-")),db=openDb(":memory:"),id=createHash("sha256").update(owner+":"+new URL(source).pathname).digest("hex");

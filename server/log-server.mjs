@@ -28,6 +28,7 @@ import { dirname,join } from "node:path";
 import { recordingStore } from "./recordings.mjs";
 import { startDiscordBot } from "./discord-bot.mjs";
 import { historyMedia } from "./history-media.mjs";
+import { messageArchive } from "./message-archive.mjs";
 import { existsSync,statSync,createReadStream } from "node:fs";
 
 const TOKEN = process.env.XRAY_LOG_TOKEN ?? "";
@@ -229,7 +230,7 @@ function json(res, code, body) {
   res.end(text);
 }
 
-export function createApp(data,recordings,media) {
+export function createApp(data,recordings,media,archive) {
   return async (req, res) => {
     const url = new URL(req.url, "http://localhost");
     try {
@@ -237,6 +238,11 @@ export function createApp(data,recordings,media) {
         if(!media)return json(res,503,{error:"History media unavailable"});return media.serve(req,res,url);
       }
       if (!authorized(req)) return json(res, 401, { error: "unauthorized" });
+      if(url.pathname==="/message-archive" && req.method==="POST"){
+        if(!archive)return json(res,503,{error:"Message archive unavailable"});
+        try{const payload=JSON.parse(await readBody(req,800000));if(!['status','configure','ingest','checkpoint','deleted','page'].includes(payload?.action))throw Error('Invalid archive action');return json(res,200,archive[payload.action](payload));}
+        catch(error){return json(res,error.message==='too large'?413:400,{error:error.message});}
+      }
       if(req.method==="GET" && /^\/updates\/(personal\.json|XRay-Personal-\d+\.\d+\.\d+\.exe)$/.test(url.pathname)){
         const file=join(process.env.XRAY_UPDATES_DIR??join(dirname(DB_PATH),"updates"),url.pathname.split("/").pop());
         if(!existsSync(file))return json(res,404,{error:"No personal update published"});
@@ -379,11 +385,13 @@ load();
 export function start({ db = openDb(), port = PORT, bind = BIND, recordings = recordingStore(process.env.XRAY_RECORDINGS_DIR ?? join(dirname(DB_PATH),"recordings")) } = {}) {
   const data = store(db);
   const media=historyMedia(db,process.env.XRAY_MEDIA_DIR??join(dirname(DB_PATH),"history-media"),{secret:TOKEN});
+  const archive=messageArchive(db,{maxBytes:Number(process.env.XRAY_MESSAGE_ARCHIVE_BYTES??500*1024*1024),onMedia:(owner,row)=>media.syncDocument(`message-archive.${owner}.${row.channel}.${row.id}`,JSON.stringify({people:{[row.author]:{retentionDays:0,events:[{at:row.firstSavedAt,messageImages:row.images,messageVideos:row.videos}]}}}),false)});
+  archive.restoreMedia();
   data.onDocumentWrite((ns,value)=>media.syncDocument(ns,value));
   for(const row of db.prepare("SELECT ns,value FROM documents WHERE ns LIKE 'profile-history.%' OR ns LIKE 'bot-history.%'").all()){try{media.syncDocument(row.ns,row.value);}catch{console.error("Could not index existing history media");}}
   const timer = setInterval(() => {data.prune();recordings.list();media.prune();}, PRUNE_EVERY_MS);
   timer.unref?.();
-  const server = createServer(createApp(data,recordings,media));
+  const server = createServer(createApp(data,recordings,media,archive));
   server.listen(port, bind, () => console.log(`xray log server on http://${bind}:${port} (keeping ${RETENTION_DAYS} days)`));
   return { server, db, data, stop: () => { clearInterval(timer); server.close(); db.close(); } };
 }

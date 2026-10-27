@@ -2,6 +2,29 @@
 use serde_json::Value;
 use tauri::{AppHandle, Runtime};
 
+#[tauri::command]
+pub async fn message_archive<R:Runtime>(app:AppHandle<R>,payload:Value)->Result<Value,String>{
+    let owner=payload["owner"].as_str().unwrap_or("");
+    if !(14..=20).contains(&owner.len())||!owner.bytes().all(|b|b.is_ascii_digit())||!matches!(payload["action"].as_str(),Some("status"|"configure"|"ingest"|"checkpoint"|"deleted"|"page"))||payload.to_string().len()>800000{return Err("Invalid message archive request".into());}
+    let settings=crate::settings::load(&app);
+    let endpoint=tauri::Url::parse(&settings.sync_endpoint).map_err(|_|"Configure HTTPS server storage first")?;
+    if endpoint.scheme()!="https"||!endpoint.username().is_empty()||endpoint.password().is_some()||endpoint.query().is_some()||endpoint.fragment().is_some()||settings.sync_token.is_empty(){return Err("Configure HTTPS server storage first".into());}
+    tauri::async_runtime::spawn_blocking(move||{
+        use std::io::Read;
+        let agent=ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(30)).redirects(0).build();
+        let response=match agent.post(&format!("{}/message-archive",settings.sync_endpoint.trim_end_matches('/'))).set("Authorization",&format!("Bearer {}",settings.sync_token)).send_json(payload){
+            Ok(response)=>response,
+            Err(ureq::Error::Status(400,response))=>response,
+            Err(ureq::Error::Status(404,_))=>return Err("Update the XRay server; message archiving is unavailable".into()),
+            Err(_)=>return Err("Message archive server unavailable. Saved pages remain on your server; retry this page.".into())
+        };
+        let mut bytes=Vec::new();response.into_reader().take(1500001).read_to_end(&mut bytes).map_err(|_|"Could not read archive response")?;
+        if bytes.len()>1500000{return Err("Message archive response exceeds its limit".into());}
+        let value:Value=serde_json::from_slice(&bytes).map_err(|_|"Invalid archive response")?;
+        if let Some(error)=value["error"].as_str(){return Err(error.to_string());}Ok(value)
+    }).await.map_err(|_|"Message archive task failed".to_string())?
+}
+
 fn valid_ns(ns: &str) -> bool {
     let Some((kind, id)) = ns.split_once('.') else { return false; };
     matches!(kind, "profile-history" | "moderation-audit" | "server-monitors" | "bot-history" | "local-message-edits") && (14..=20).contains(&id.len()) && id.bytes().all(|b| b.is_ascii_digit())

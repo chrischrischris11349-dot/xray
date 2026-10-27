@@ -29,6 +29,7 @@ import { reportsFor } from "./reportCache";
 import { renderImportedReport } from "./importedReport";
 import { discordDate, memberJoinedAt } from "./memberDates";
 import { profileJournal } from "./profileJournal";
+import { dmArchivePanel } from "./dmArchive";
 import { observeProfileResponse } from "../history";
 import { onAction } from "../api/flux";
 import { linkedText, connectionUrl } from "./reportText";
@@ -490,6 +491,7 @@ export function showProfile(user: any, guildId?: string | null): void {
   let open = true;
   const oathnet = oathnetSection(user.id);
   const journal = profileJournal(data);
+  const dmArchive = dmArchivePanel(data.id);
   const counts = h("section", { class: "pf-block wide", attrs: { "aria-label": "Loaded-message counts" } });
   counts.hidden = true;
   const actions: ProfileActions = {
@@ -510,7 +512,7 @@ export function showProfile(user: any, guildId?: string | null): void {
     const keepFocus = active instanceof HTMLElement && journal.element.contains(active) ? active : null;
     const next = renderProfile(data, actions);
     journal.update(data);
-    next.querySelector(".pf-body")?.prepend(journal.element,oathnet.element);
+    next.querySelector(".pf-body")?.prepend(journal.element,dmArchive.element,oathnet.element);
     if (data.mutualServers.state === "ready" && data.mutualServers.value.length) {
       const select = h("select",{class:"dialog-input",attrs:{"aria-label":"Profile server context"}},h("option",{attrs:{value:""},text:"Choose a shared server"}),...data.mutualServers.value.map(server=>h("option",{attrs:{value:server.id},text:server.name})));
       select.value=guildId ?? "";
@@ -534,7 +536,7 @@ export function showProfile(user: any, guildId?: string | null): void {
   draw();
   let stopMembers = () => {};
   let stopLogout = () => {};
-  showSheet(sheet!, () => { open = false; oathnet.close(); journal.close(); stopMembers(); stopLogout(); });
+  showSheet(sheet!, () => { open = false; oathnet.close(); journal.close(); dmArchive.close(); stopMembers(); stopLogout(); });
   stopLogout = onAction("LOGOUT",closeDialog);
   sheet!.querySelector<HTMLButtonElement>(".pf-close")?.focus();
   if (guildId) stopMembers = onStoresChanged([stores.members],()=>{

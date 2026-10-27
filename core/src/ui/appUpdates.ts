@@ -1,5 +1,6 @@
 import { invoke } from "../shell/bridge";
 import { flushHistory } from "../history";
+import { flushDmArchive } from "../history/dmArchive";
 import { personalBuild } from "../personalBuild";
 import { h } from "./dom";
 import { uiRoot } from "./root";
@@ -15,7 +16,7 @@ export function updateLabel(value:UpdateState):string{
 function redraw(){for(let i=cards.length-1;i>=0;i--){const card=cards[i].deref();if(!card?.isConnected){cards.splice(i,1);continue;}draw(card);}if(notice){notice.hidden=!["available","ready"].includes(state.phase);notice.textContent=state.phase==="ready"?"Restart to update":"Update available";}}
 async function run(action:"check"|"download"|"apply"){
  if(busy)return;busy=true;error="";state={...state,phase:action==="check"?"checking":action==="download"?"downloading":"installing"};redraw();let timer:ReturnType<typeof setInterval>|undefined,polling=true;
- try{if(action==="apply"){if(recordingNeedsAttention())throw Error("Finish and save your voice recording before restarting");await flushHistory();}if(action==="check")lastCheck=Date.now();
+ try{if(action==="apply"){if(recordingNeedsAttention())throw Error("Finish and save your voice recording before restarting");await flushDmArchive();await flushHistory();}if(action==="check")lastCheck=Date.now();
   if(action==="download")timer=setInterval(()=>void invoke("app_update",{action:"status"}).then(value=>{if(polling){state=value as UpdateState;redraw();}}).catch(()=>{}),750);
   state=await invoke("app_update",{action}) as UpdateState;
  }catch(failure){state={...state,phase:"failed"};error=String((failure as Error)?.message??failure);}finally{polling=false;clearInterval(timer);busy=false;redraw();}

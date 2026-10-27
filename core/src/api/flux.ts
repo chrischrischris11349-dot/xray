@@ -80,7 +80,7 @@ export function intercept(interceptor: Interceptor): () => void {
 }
 
 /** Sends an action, exactly as Discord's own code does. */
-export function dispatch(action: Action): Promise<void> {
+export async function dispatch(action: Action): Promise<void> {
   if (!dispatcher) return Promise.reject(new Error("Discord's dispatcher isn't loaded yet"));
   return dispatcher.dispatch(action);
 }

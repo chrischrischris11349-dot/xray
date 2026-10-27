@@ -105,7 +105,7 @@ export const css = `
 
 .reload { margin: 8px 2px 0; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 14px; border-radius: ${radius.m}; background: var(--accentSoft); border: 1px solid var(--line); font-size: 13px; }
 .reload span { flex: 1; }
-.btn { height: 30px; padding: 0 14px; border: 0; border-radius: ${radius.m}; background: var(--accent); color: var(--onAccent); font: 600 13px ${type.family}; cursor: pointer; transition: transform 120ms var(--ease); }
+.btn { display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:30px;height:auto;min-width:0;max-width:100%;padding:6px 14px;text-align:center;line-height:1.2;border:0;border-radius:${radius.m};background:var(--accent);color:var(--onAccent);font:600 13px ${type.family};cursor:pointer;transition:transform 120ms var(--ease); }
 .btn:active, .switch:active, .icon-btn:active { transform: scale(.94); }
 
 .chip { min-width: 84px; height: 30px; flex: none; padding: 0 10px; border: 1px solid var(--line2); border-radius: ${radius.m}; background: var(--seg); color: var(--text); font: 500 12px "Cascadia Mono", Consolas, ui-monospace, monospace; cursor: pointer; transition: background-color 120ms ease; }

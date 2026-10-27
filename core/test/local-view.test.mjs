@@ -7,7 +7,7 @@ const hooks=new Map(),actions=[],stops=[],commands=[];let answer="Edited system 
 const message={id:"123456789012345678",channel_id:"223456789012345678",type:2,content:"",author:{id:"323456789012345678"}};
 let allowed=true;
 const stubs={
- "../api/flux":"export const dispatch=async action=>globalThis.calls.push(action);",
+ "../api/flux":"export const dispatch=action=>{globalThis.calls.push(action);};",
  "../api/menus":"export const menu={group:(...items)=>items,item:item=>item};",
  "../ui/dialog":"export const promptText=async options=>{globalThis.prompt=options;return globalThis.answer()};export const showDialog=()=>{};",
  "./messageModeration":"export const canEditLocally=()=>globalThis.allowed();",
@@ -16,14 +16,21 @@ const stubs={
  "../discord":"export const myId=()=>globalThis.owner;export const stores={messages:{getMessage:()=>globalThis.message}};",
  "../shell/serverStorage":"export const accountDocument=(kind,owner)=>globalThis.documentFor(kind,owner);export const onStorageModeChanged=()=>()=>{};",
 };
+test('memoized native content gets a reversible view overlay without changing its original children',async()=>{
+ const output=await build({entryPoints:['core/src/ui/localEditDom.ts'],bundle:true,write:false,platform:'node',format:'cjs'}),context={module:{exports:{}}};vm.runInNewContext(output.outputFiles[0].text,context);
+ const {document}=parseHTML('<li><div id="message-content-123456789012345678" class="native"><strong>Original</strong> text</div></li>'),row=document.querySelector('li'),native=row.firstElementChild;
+ context.module.exports.paintLocalEdit(row,'Edited <script>plain text</script>');assert.equal(native.textContent,'Original text');assert.ok(native.hasAttribute('data-xray-edit-original'));assert.equal(row.querySelector('[data-xray-edit-overlay]').textContent,'Edited <script>plain text</script>');assert.equal(row.querySelector('script'),null);
+ context.module.exports.paintLocalEdit(row,'Edited <script>plain text</script>');assert.equal(row.querySelectorAll('[data-xray-edit-overlay]').length,1);
+ context.module.exports.paintLocalEdit(row,undefined);assert.equal(row.children.length,1);assert.equal(native.hasAttribute('data-xray-edit-original'),false);assert.equal(native.querySelector('strong').textContent,'Original');
+});
 test("local system rendering and session deletion never rewrite canonical message content",async()=>{
  const output=await build({entryPoints:["core/src/plugins/localMessageEdit.ts"],bundle:true,write:false,platform:"node",format:"cjs",plugins:[{name:"local-fixtures",setup(b){b.onResolve({filter:/.*/},args=>stubs[args.path]?{path:args.path,namespace:"stub"}:null);b.onLoad({filter:/.*/,namespace:"stub"},args=>({contents:stubs[args.path],loader:"js"}));}}]});
- const row={id:`chat-messages-${message.channel_id}-${message.id}`,toggleAttribute(name,value){this.hidden=value;},querySelector:()=>({className:"native-content",cloneNode:()=>({textContent:"Original removed someone",querySelectorAll:()=>[]})})};
+ const row={id:`chat-messages-${message.channel_id}-${message.id}`,toggleAttribute(name,value){this.hidden=value;},querySelectorAll:()=>[],querySelector:selector=>selector==='[data-xray-edit-overlay]'?null:({className:"native-content",cloneNode:()=>({textContent:"Original removed someone",querySelectorAll:()=>[]})})};
  const saved=new Map();let offline=false;
  const documentFor=(kind,owner)=>{assert.equal(kind,"local-message-edits");return {value:saved.get(owner)??null,load:async()=>{if(offline)throw Error("offline");},async update(change){if(offline)throw Error("offline");this.value=change(saved.get(owner)??null);saved.set(owner,this.value);}};};
  const context={module:{exports:{}},TextEncoder,owner:"423456789012345678",documentFor,calls:actions,message,allowed:()=>allowed,answer:()=>answer,document:{getElementById:()=>row,querySelectorAll:()=>[]},getComputedStyle:()=>({fontFamily:'"gg sans", sans-serif'})};
  vm.runInNewContext(output.outputFiles[0].text,context);
- context.module.exports.default.start({css(){},watch(_selector,fn){fn({id:`chat-messages-${message.channel_id}-${message.id}`,...row});},onElement:(type,fn)=>hooks.set(type,fn),menu(){},onAction(){},command:(...args)=>commands.push(args),onStop:fn=>stops.push(fn),log(){}});
+ context.module.exports.default.start({css(){},watch(selector,fn){if(selector==='li[id^="chat-messages-"]')fn(row);},onElement:(type,fn)=>hooks.set(type,fn),menu(){},onAction(){},command:(...args)=>commands.push(args),onStop:fn=>stops.push(fn),log(){}});
  await context.module.exports.editMessageLocally(message);
  assert.equal(message.content,"");assert.equal(actions.at(-1).message.content,"");assert.equal(actions.at(-1).xrayLocalEdit,true);
  assert.equal(context.prompt.fontFamily,'"gg sans", sans-serif');assert.equal(context.prompt.value,"Original removed someone");

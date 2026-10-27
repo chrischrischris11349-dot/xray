@@ -8,6 +8,7 @@ import { createElement } from "../api/react";
 import { sessionMessageView,SessionMessageView } from "../ui/localMessageView";
 import { stores,myId } from "../discord";
 import { accountDocument,onStorageModeChanged } from "../shell/serverStorage";
+import { paintLocalEdit } from "../ui/localEditDom";
 
 export class LocalMessageEdits {
   private edits = new Map<string, { id: string; channel_id: string; original: string; content: string }>();
@@ -47,12 +48,13 @@ export default definePlugin({
     const touched=new Map<string,any>(),systemStyles=new Map<string,{className:string;fontFamily:string}>();
     let active=true,loadedOwner:string|undefined,generation=0,loadFailureShown=false,loading:{owner:string;promise:Promise<void>}|undefined;
     const key=(message:any)=>`${message.channel_id}:${message.id}`;
-    const update=(message:any)=>dispatch({type:"MESSAGE_UPDATE",message:{id:message.id,channel_id:message.channel_id,content:stores.messages?.getMessage?.(message.channel_id,message.id)?.content??message.content??""},xrayLocalEdit:true});
+    // Some Discord builds dispatch synchronously and return void. Always expose a Promise.
+    const update=async(message:any)=>{await dispatch({type:"MESSAGE_UPDATE",message:{id:message.id,channel_id:message.channel_id,content:stores.messages?.getMessage?.(message.channel_id,message.id)?.content??message.content??""},xrayLocalEdit:true});};
     const rowFor=(message:any)=>document.getElementById(`chat-messages-${message.channel_id}-${message.id}`);
     const nativeFor=(message:any)=>rowFor(message)?.querySelector<HTMLElement>('[id^="message-content-"], [class*="systemMessage_"] [class*="content_"]');
     const styleFor=(message:any)=>{const native=nativeFor(message);return {className:native?.className??"",fontFamily:native?getComputedStyle(native).fontFamily:"inherit"};};
-    const mark=(row:Element)=>{const match=/^chat-messages-(\d+)-(\d+)$/.exec(row.id);if(match)row.toggleAttribute("data-xray-session-hidden",!!sessionMessageView.get({channel_id:match[1],id:match[2]})?.hidden);};
-    const redraw=()=>{for(const message of touched.values())if(stores.messages?.getMessage?.(message.channel_id,message.id))void update(message).catch(error=>ctx.log("Could not redraw local view",error));};
+    const mark=(row:Element)=>{const match=/^chat-messages-(\d+)-(\d+)$/.exec(row.id);if(match){const view=sessionMessageView.get({channel_id:match[1],id:match[2]});row.toggleAttribute("data-xray-session-hidden",!!view?.hidden);paintLocalEdit(row,view?.content);}};
+    const redraw=()=>{for(const message of touched.values()){const row=rowFor(message);if(row)mark(row);if(stores.messages?.getMessage?.(message.channel_id,message.id))void update(message).catch(error=>ctx.log("Could not redraw local view",error));}};
     const applySaved=(raw:string|null)=>{
       sessionMessageView.load(raw,true);
       for(const message of sessionMessageView.entries()){touched.set(key(message),message);if(message.system&&!systemStyles.has(key(message))&&rowFor(message))systemStyles.set(key(message),styleFor(message));}
@@ -76,7 +78,8 @@ export default definePlugin({
     }
     const fail=(error:unknown)=>showDialog({title:"Saved local edits",body:String((error as Error)?.message??error)});
     const restore=()=>{if(canEditLocally({author:{id:"local"}}))void loadCurrent().catch(error=>{if(!active||loadFailureShown)return;loadFailureShown=true;showDialog({title:"Saved local edits unavailable",body:`Original messages are shown because saved edits could not load. Your saved overrides were not erased. Use Retry saved local edits in XRay's command search. ${String((error as Error)?.message??error)}`});});};
-    ctx.css("li[data-xray-session-hidden]{display:none!important}");ctx.watch('li[id^="chat-messages-"]',mark);
+    ctx.css("li[data-xray-session-hidden],[data-xray-edit-original]{display:none!important}");ctx.watch('li[id^="chat-messages-"]',mark);
+    ctx.watch('[id^="message-content-"], [class*="systemMessage_"] [class*="content_"]',node=>{const row=node.closest('li[id^="chat-messages-"]');if(row)mark(row);});
     requestHide=message=>{sessionMessageView.hide(message);touched.set(key(message),message);const row=rowFor(message);if(row)mark(row);void update(message).catch(error=>ctx.log("Could not hide local message",error));};
     requestReset=message=>persist(message);
     requestEdit=async message=>{

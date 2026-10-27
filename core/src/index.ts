@@ -23,6 +23,7 @@ import { installKeyRouter } from "./ui/root";
 import { openVoiceDiagnostics } from "./ui/voiceDiagnostics";
 import { hookWebpack, webpackStats } from "./webpack";
 import { startProfileHistory } from "./history";
+import { startDmArchive } from "./history/dmArchive";
 import { currentTimeFormat, setTimeFormat, synchronizeTimeFormat } from "./time";
 import { toggleVoiceControl } from "./plugins/voiceBar";
 import { installVoiceRecording } from "./voice/recorder";
@@ -43,6 +44,7 @@ function boot(): void {
   installReporting();
   hookWebpack();
   startProfileHistory();
+  startDmArchive();
   startMonitoring();
   startPlugins();
   // Pull your settings from your server if sync is on (fails soft otherwise).

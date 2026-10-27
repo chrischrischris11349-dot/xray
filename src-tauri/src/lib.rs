@@ -48,7 +48,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         // Every command Discord's page may call (see capabilities/main.json).
-        .invoke_handler(tauri::generate_handler![downloads::save_file_as, updates::app_update, notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, documents::history_media, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
+        .invoke_handler(tauri::generate_handler![downloads::save_file_as, updates::app_update, notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, documents::history_media, documents::message_archive, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);

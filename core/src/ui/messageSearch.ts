@@ -25,12 +25,16 @@ export async function searchMessagePage(get:(request:{url:string})=>Promise<any>
   const total=Number.isFinite(body?.total_results)?body.total_results:null;
   return {messages:all.filter((m:any)=>m.author?.id===userId),total,next:total!==null && cursor+25<total && cursor+25<=9975?cursor+25:null};
 }
-export async function searchDmPage(get:(request:{url:string})=>Promise<any>,id:string,userId:string,before?:string):Promise<{messages:any[];before?:string}> {
+export async function searchDmPage(get:(request:{url:string})=>Promise<any>,id:string,userId:string,before?:string):Promise<{messages:any[];before?:string;oldest?:string;newest?:string}> {
   if(!/^\d{14,20}$/.test(id) || !/^\d{14,20}$/.test(userId) || before && !/^\d{14,20}$/.test(before))throw Error("Invalid DM search ID.");
   const params=new URLSearchParams({limit:"100",...(before?{before}:{})});
   const response=await get({url:`/channels/${id}/messages?${params}`});
+  if(response?.status===429)throw Error(`Discord rate limited history loading. Wait ${response.body?.retry_after??'a few'} seconds before resuming.`);
   if(response?.status>=400)throw Error(`DM history unavailable (HTTP ${response.status}).`);
   const rows=response?.body??response;if(!Array.isArray(rows))throw Error("DM history response unavailable.");
-  const valid=rows.filter(m=>typeof m?.id==="string");
-  return {messages:valid.filter(m=>m.author?.id===userId),before:rows.length===100?valid.reduce((old,m)=>!old || BigInt(m.id)<BigInt(old)?m.id:old,undefined as string|undefined):undefined};
+  if(rows.length>100||rows.some(m=>!/^\d{14,20}$/.test(m?.id)))throw Error('DM history returned invalid message IDs; progress was not advanced.');
+  const oldest=rows.reduce((old,m)=>!old||BigInt(m.id)<BigInt(old)?m.id:old,undefined as string|undefined);
+  const newest=rows.reduce((last,m)=>!last||BigInt(m.id)>BigInt(last)?m.id:last,undefined as string|undefined);
+  if(before&&rows.some(m=>BigInt(m.id)>=BigInt(before)))throw Error('DM history cursor did not advance. Saved pages were kept.');
+  return {messages:rows.filter(m=>m.author?.id===userId).map(m=>({...m,channel_id:id})),oldest,newest,before:rows.length===100?oldest:undefined};
 }

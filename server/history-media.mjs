@@ -43,12 +43,12 @@ export function historyMedia(db,directory,{secret,fetcher=fetch,now=Date.now,max
   if(!db.prepare("SELECT id FROM history_media WHERE blob=? LIMIT 1").get(blob))throw Error("History reference was removed during upload");
   await rename(path(blob)+".part",path(blob));db.prepare("UPDATE history_media SET state='ready',mime=?,bytes=?,error=NULL WHERE blob=?").run(mime,bytes,blob);
  }catch(error){await file?.close().catch(()=>{});used=Math.max(0,used-bytes);if(blob)try{unlinkSync(path(blob)+".part");}catch{}db.prepare("UPDATE history_media SET state='failed',bytes=0,error=? WHERE id=?").run(String(error.message).slice(0,180),id);}}
- function syncDocument(ns,value){
-  if(!/^(profile-history|bot-history)\.\d{14,20}$/.test(ns))return;
+ function syncDocument(ns,value,pruneAfter=true){
+  if(!/^(?:(profile-history|bot-history)\.\d{14,20}|message-archive\.\d{14,20}\.\d{14,20}\.\d{14,20})$/.test(ns))return;
   const doc=JSON.parse(value),owner=ns.split(".")[1],refs=new Map();
   for(const person of Object.values(doc.people??{})){
    const days=Number.isInteger(person.retentionDays)&&person.retentionDays>=0&&person.retentionDays<=365000?person.retentionDays:30;
-   for(const event of (person.events??[]).slice(-2000))for(const source of [...event.messageImages??[],...event.messageVideos??[]].slice(0,8)){
+   for(const event of (person.events??[]).slice(-2000))for(const source of [...event.messageImages??[],...event.messageVideos??[]].slice(0,ns.startsWith('message-archive.')?40:8)){
     const url=attachmentUrl(source);if(!url||!Number.isFinite(event.at))continue;const expires=days===0?null:event.at+days*DAY;if(expires!==null&&expires<=now())continue;
     const id=key(owner,url),old=refs.get(id);refs.set(id,{source:url.href,expires:old?.expires===null||expires===null?null:Math.max(old?.expires??0,expires)});
    }
@@ -56,7 +56,7 @@ export function historyMedia(db,directory,{secret,fetcher=fetch,now=Date.now,max
   db.exec("BEGIN");try{db.prepare("DELETE FROM history_media_refs WHERE ns=?").run(ns);
    for(const [id,ref]of refs){db.prepare("INSERT INTO history_media_refs VALUES (?,?,?)").run(ns,id,ref.expires);db.prepare("INSERT INTO history_media(id,owner,source,state,blob) VALUES (?,?,?,'queued',?) ON CONFLICT(id) DO UPDATE SET state=CASE WHEN history_media.state='failed' AND history_media.source<>excluded.source THEN 'queued' ELSE history_media.state END,source=excluded.source").run(id,owner,ref.source,blobKey(ref.source));}
    db.exec("COMMIT");}catch(error){db.exec("ROLLBACK");throw error;}
-  prune();for(const id of refs.keys())if(read(id)?.state==="queued")enqueue(id);
+  if(pruneAfter)prune();for(const id of refs.keys())if(read(id)?.state==="queued")enqueue(id);
  }
  function prune(){db.prepare("DELETE FROM history_media_refs WHERE expires IS NOT NULL AND expires<=?").run(now());
   for(const row of db.prepare("SELECT id,blob,bytes,state FROM history_media WHERE id NOT IN (SELECT id FROM history_media_refs)").all()){
