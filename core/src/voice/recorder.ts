@@ -3,8 +3,8 @@ import { myId,stores } from "../discord";
 import { onAction,intercept } from "../api/flux";
 import { h } from "../ui/dom";
 import { confirmAction,showDialog,showSheet,closeDialog } from "../ui/dialog";
+import {recordingLibrary} from "../ui/recordingLibrary";
 import { uiRoot } from "../ui/root";
-import { formatDateTime } from "../time";
 import { recordingTrackOwner,includeRecordingTrack } from "./recordingSelection";
 
 const peers=new Set<RTCPeerConnection>(),listeners=new Set<()=>void>();
@@ -100,7 +100,7 @@ async function start(expectedChannel?:string):Promise<void> {
   if(!ready())throw Error("Voice channel or participants changed. Reopen recording.");
   const selected=await chooseRecordingAudio([...membersSet],new Set(identities.filter((id):id is string=>!!id)));if(selected===undefined)return;selection=selected;
   if(!ready())throw Error("Voice channel, account or participants changed. Confirm consent again.");
-  const saved=await transfer({action:"start",consent:true,channelId:current});
+  const saved=await transfer({action:"start",consent:true,channelId:current,owner:account,participantIds:selection?[...selection]:members.split(",").filter(id=>id!==account)});
   session=saved.id;channel=current;owner=myId()??"";index=bytes=0;queued=[];error="";partialReason="";finishing=false;
   try {
     if(!ready())throw Error("Voice channel, account or participants changed. Confirm consent again.");
@@ -129,7 +129,7 @@ async function start(expectedChannel?:string):Promise<void> {
   } finally { starting=false;update(); }
 }
 export function recordingPanel():{element:HTMLElement;close():void} {
-  const element=h("section"),status=h("p",{class:"pf-note",attrs:{role:"status"}}),list=h("div");let active=true;
+  const element=h("section"),status=h("p",{class:"pf-note",attrs:{role:"status"}});let active=true;
   const begin=h("button",{class:"btn",attrs:{type:"button"},text:"Start VC recording",on:{click:()=>{begin.disabled=true;void start().catch(e=>{error=String((e as Error)?.message??e);update();if(!active)showDialog({title:"Recording could not start",body:error});}).finally(draw);}}});
   const stopButton=h("button",{class:"btn ghost",attrs:{type:"button"},text:"Stop and save",on:{click:stop}});
   const discard=h("button",{class:"btn ghost",attrs:{type:"button"},text:"Discard incomplete recording",on:{click:()=>void (async()=>{if(uploading || recorder || !session)return;if(!await confirmAction("Discard captured audio?","This removes the unfinished recording on your server and pending audio in memory.","Discard recording"))return;try{await transfer({action:"abort",id:session});queued=[];session="";finishing=false;error="";label="Incomplete recording discarded.";update();}catch(e){error=String(e);update();}})()}});
@@ -140,10 +140,8 @@ export function recordingPanel():{element:HTMLElement;close():void} {
   })()}});
   const retry=h("button",{class:"btn ghost",attrs:{type:"button"},text:"Retry pending upload",on:{click:()=>void drain()}});
   function draw(){if(!active)return;status.textContent=[label,error,error && session?"Pending audio is in memory only. Keep XRay open; do not switch accounts or exit.":""].filter(Boolean).join(" · ");begin.disabled=!!session || uploading || starting;stopButton.disabled=!recorder;retry.hidden=!session || !error;discard.hidden=!session || !error || !!recorder;discard.disabled=uploading;partial.hidden=discard.hidden;partial.disabled=uploading;}
-  async function refresh(){try{const rows=await transfer({action:"list"});if(!active)return;list.replaceChildren(...rows.map((row:any)=>h("div",{class:"pf-block"},h("p",{text:`${formatDateTime(new Date(row.startedAt))} · ${Math.ceil(row.bytes/1024)} KB · ${row.complete?(row.partial?"Partial recording":"Saved"):"Incomplete"}`}),h("button",{class:"btn ghost",attrs:{type:"button",...(row.complete?{}:{disabled:""})},text:"Download recording",on:{click:()=>void download(row.id)}}))));}catch(e){if(active)status.textContent=String(e);}}
-  async function download(id:string){try{status.textContent="Downloading from your server…";const file=await transfer({action:"read",id});const bytes=Uint8Array.from(atob(file.data),c=>c.charCodeAt(0));const url=URL.createObjectURL(new Blob([bytes],{type:"audio/webm"}));const a=h("a",{attrs:{href:url,download:`xray-vc-${id}.webm`}});a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);draw();}catch(e){status.textContent=String(e);}}
-  element.append(h("h2",{text:"VC recordings"}),h("p",{class:"pf-note",text:"VC audio only; no microphone access. Explicit participant consent is required. Server limit: 32 MB per recording, 512 MB total, seven-day retention. No persistent local audio copy; save a download only when you choose."}),h("div",{class:"pf-journal-actions"},begin,stopButton,retry,partial,discard,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Refresh server recordings",on:{click:()=>void refresh()}})),status,list);
-  listeners.add(draw);draw();void refresh();return{element,close(){active=false;listeners.delete(draw);}};
+  element.append(h("h2",{text:"VC recordings"}),h("p",{class:"pf-note",text:"VC audio only; no microphone access. Explicit participant consent is required. Server limit: 32 MB per recording, 512 MB total, seven-day retention. No persistent local audio copy; save a download only when you choose."}),h("div",{class:"pf-journal-actions"},begin,stopButton,retry,partial,discard,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Refresh server recordings",on:{click:()=>void library.refresh()}})),status);
+  const library=recordingLibrary();element.append(library.element);listeners.add(draw);draw();return{element,close(){active=false;listeners.delete(draw);library.close();}};
 }
 /** Prevent restarting while audio or pending recording chunks remain in memory. */
 export function recordingNeedsAttention():boolean{return !!session||!!recorder||uploading||queued.length>0;}

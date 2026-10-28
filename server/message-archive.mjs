@@ -8,7 +8,7 @@ function clean(raw){
  for(const field of ['content','sentAt','editedAt'])if(typeof raw[field]==='string'){
   if(raw[field].length>(field==='content'?4000:80))throw Error('Archive text exceeds its limit');out[field]=raw[field];
  }
- for(const field of ['images','videos'])if(Array.isArray(raw[field])){if(raw[field].length>20)throw Error('Too many archive attachments');out[field]=raw[field].map(source=>{const url=attachmentUrl(source);if(!url)throw Error('Invalid archive attachment');return url.href;});}
+ for(const field of ['images','videos','audio','downloads'])if(Array.isArray(raw[field])){if(raw[field].length>20)throw Error('Too many archive attachments');out[field]=raw[field].map(source=>{const url=attachmentUrl(source);if(!url)throw Error('Invalid archive attachment');return url.href;});}
  if(Array.isArray(raw.files)){if(raw.files.length>20||raw.files.some(name=>typeof name!=='string'||name.length>256))throw Error('Invalid archive filenames');out.files=raw.files;}
  return out;
 }
@@ -38,7 +38,7 @@ export function messageArchive(db,{maxBytes=500*1024*1024,onMedia=()=>{}}={}){
    const deletion=db.prepare('SELECT at FROM dm_archive_deletions WHERE owner=? AND channel=? AND id=?').get(owner,channel,row.id);if(deletion){value.deleted=true;value.deletedAt=deletion.at;}
    // Saved attachments remain evidence even if a later edit removes them. Rotated
    // signatures replace URLs for the same pathname rather than adding duplicates.
-   for(const field of ['images','videos']){
+   for(const field of ['images','videos','audio','downloads']){
     const links=new Map([...(previous?.[field]??[]),...(row[field]??[])].map(source=>[new URL(source).pathname,source]));
     if(links.size>20)throw Error('Saved attachment history exceeds 20 files of one media type; earlier data was kept.');value[field]=[...links.values()];
    }
@@ -63,7 +63,7 @@ export function messageArchive(db,{maxBytes=500*1024*1024,onMedia=()=>{}}={}){
    const row=db.prepare('SELECT value,author,bytes FROM dm_archive_messages WHERE owner=? AND channel=? AND id=?').get(owner,channel,message);if(!row||!scope(owner,row.author,channel)?.enabled)continue;const value=JSON.parse(row.value);if(value.deleted)continue;value.deleted=true;value.deletedAt=Date.now();const text=JSON.stringify(value),bytes=Buffer.byteLength(text);db.prepare('UPDATE dm_archive_messages SET value=?,bytes=? WHERE owner=? AND channel=? AND id=?').run(text,bytes,owner,channel,message);db.prepare('UPDATE dm_archive_usage SET bytes=bytes+? WHERE owner=?').run(bytes-row.bytes,owner);changed++;
   }db.exec('COMMIT');}catch(error){db.exec('ROLLBACK');throw error;}return {changed};
  }
- function page({owner,target,before}){id(owner);id(target);if(before!==undefined)id(before);const rows=db.prepare(`SELECT value,id FROM dm_archive_messages WHERE owner=? AND author=? ${before?'AND (length(id)<length(?) OR (length(id)=length(?) AND id<?))':''} ORDER BY length(id) DESC,id DESC LIMIT 11`).all(...(before?[owner,target,before,before,before]:[owner,target]));
+ function page({owner,target,before,filter="all"}){id(owner);id(target);if(before!==undefined)id(before);if(!['all','text','media'].includes(filter))throw Error('Invalid archive filter');const selected=filter==='text'?"AND length(trim(COALESCE(json_extract(value,'$.content'),'')))>0":filter==='media'?"AND (COALESCE(json_array_length(json_extract(value,'$.images')),0)+COALESCE(json_array_length(json_extract(value,'$.videos')),0)+COALESCE(json_array_length(json_extract(value,'$.audio')),0)+COALESCE(json_array_length(json_extract(value,'$.downloads')),0))>0":'';const rows=db.prepare(`SELECT value,id FROM dm_archive_messages WHERE owner=? AND author=? ${selected} ${before?'AND (length(id)<length(?) OR (length(id)=length(?) AND id<?))':''} ORDER BY length(id) DESC,id DESC LIMIT 11`).all(...(before?[owner,target,before,before,before]:[owner,target]));
   const messages=[];let bytes=0,last;for(const row of rows.slice(0,10)){const size=Buffer.byteLength(row.value);if(messages.length&&bytes+size>1300000)break;messages.push(JSON.parse(row.value));bytes+=size;last=row.id;}return {messages,next:rows.length>messages.length?last:null};}
  return {status,configure,ingest,checkpoint,deleted,page,restoreMedia(){for(const row of db.prepare('SELECT owner,value FROM dm_archive_messages').iterate())onMedia(row.owner,JSON.parse(row.value));}};
 }

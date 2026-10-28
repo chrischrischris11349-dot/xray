@@ -1,4 +1,10 @@
 export interface SearchScope {id:string;kind:"guild"|"dm";}
+export function dmMessageLink(value:string):{channel:string;message:string}{
+ let url:URL;try{url=new URL(value.trim());}catch{throw Error('Paste a Discord DM message link.');}
+ const match=/^\/channels\/@me\/(\d{14,20})\/(\d{14,20})\/?$/.exec(url.pathname);
+ if(url.protocol!=='https:'||!['discord.com','ptb.discord.com','canary.discord.com'].includes(url.hostname)||url.username||url.password||url.port||!match)throw Error('Use an HTTPS Discord DM message link from the current account.');
+ return {channel:match[1],message:match[2]};
+}
 /** One explicit read of an existing message; never substitutes a neighbouring result. */
 export async function originalMessage(get:(request:{url:string})=>Promise<any>,channel:string,message:string,author:string):Promise<any>{
  if(![channel,message,author].every(id=>/^\d{14,20}$/.test(id)))throw Error("Invalid original message ID");

@@ -25,11 +25,12 @@ export const css = `
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .moderation-indicator { position:fixed; right:16px; bottom:8px; z-index:2147482990; min-height:28px; padding:0 10px; border:1px solid var(--line2); border-radius:8px; background:var(--raised); color:var(--muted); font:600 11px ${type.family}; cursor:pointer; }
 .moderation-indicator[aria-pressed="true"] { color:var(--text); box-shadow:0 0 0 1px var(--accent); }
-:host([data-presentation]) > :not(.win-btns,.presentation-button,.recording-status) { display:none!important; }
+:host([data-presentation]) > :not(.win-btns,.presentation-button,.recording-status,.dialog-scrim[data-explicit-dialog]) { display:none!important; }
 .presentation-button { position: fixed; top: calc((var(--xr-titlebar-height, 46px) - 28px) / 2); right: 132px; z-index: 2147482993; height: 28px; width: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: ${radius.m}; background: transparent; color: var(--faint); opacity: .55; cursor: pointer; }
 .presentation-button:hover, .presentation-button:focus-visible { opacity: 1; background: var(--hover); }
 .presentation-button[aria-pressed="true"] { color: var(--text); background: var(--seg); opacity: .8; }
 :host([data-presentation]) .scrim, :host([data-presentation]) .dialog-scrim, :host([data-presentation]) .panel, :host([data-presentation]) .qr, :host([data-presentation]) .bubble, :host([data-presentation]) .palette, :host([data-presentation]) .notification-stack { display: none !important; }
+:host([data-presentation]) .dialog-scrim[data-explicit-dialog] { display:flex!important; }
 :host([data-presentation]) :is(.xray-vbar,.xray-launch,.cmdbar,.calltimer,.welcome) { display:none!important; }
 .notification-stack { position: fixed; top: 58px; right: 16px; width: min(360px,calc(100vw - 32px)); z-index: 2147483200; display: flex; flex-direction: column; gap: 10px; }
 .notification-card { display: flex; align-items: flex-start; border-radius: ${radius.l}; background: var(--raised); border: 1px solid var(--line2); box-shadow: 0 12px 36px rgba(0,0,0,.25); overflow: hidden; animation: pop 140ms var(--ease); }
@@ -503,4 +504,18 @@ select.opt-input option { background: var(--raised); color: var(--text); }
 }
 ${seasonalShadowCss}
 ${shadowDropdownCss}
+
+.pf-view-tabs { display:flex;flex-wrap:wrap;gap:6px;position:sticky;top:-20px;z-index:2;padding:8px 0;background:var(--raised);border-bottom:1px solid var(--line); }
+.pf-view-tabs [aria-selected="true"] { background:var(--accentSoft);box-shadow:inset 0 0 0 1px var(--accent);color:var(--text); }
+.profile-change-tags { display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0; }
+  .pf-presence-details { display:grid;grid-template-columns:minmax(128px,1fr) minmax(0,2fr);align-items:baseline;gap:8px 16px;margin:12px 0;overflow-wrap:anywhere; }
+  .pf-presence-details .pf-note { grid-column:1/-1;margin:0; }
+.profile-change-tag { display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:12px;border:1px solid var(--line2);font-size:11px;line-height:1.2;background:var(--seg);color:var(--muted); }
+.profile-change-tag.important { color:var(--text);background:var(--accentSoft);border-color:var(--accent); }
+.pf-timeline li[data-unreviewed] { border-left:2px solid var(--accent);background:var(--inset);border-radius:0 8px 8px 0; }
+.profile-art-change { display:flex;flex-wrap:wrap;gap:16px; }
+.profile-art-change figure { margin:8px 0;flex:1;min-width:120px;max-width:240px; }
+.profile-art-change figcaption { font-size:12px;color:var(--muted); }
+.history-audio audio,.recording-row audio { max-width:100%;width:100%;margin:8px 0; }
+.recording-row { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line); }
 `;

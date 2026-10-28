@@ -22,6 +22,10 @@ test('quota failure is atomic and checkpoints/page boundaries never lose previou
 test('a deletion delivered while a history page is in flight marks the later saved snapshot deleted',()=>{
  const db=new DatabaseSync(':memory:'),store=messageArchive(db);store.configure({owner,target,channels:[channel],enabled:true});store.deleted({owner,channel,ids:[message]});store.ingest({owner,target,channel,mode:'history',messages:[row]});assert.equal(store.page({owner,target}).messages[0].deleted,true);assert.equal(store.page({owner,target}).messages[0].content,'Original');db.close();
 });
+
+test('text and media filters paginate saved audio without leaking another author into the selected profile',()=>{
+ const db=new DatabaseSync(':memory:'),store=messageArchive(db);store.configure({owner,target,channels:[channel],enabled:true});store.ingest({owner,target,channel,mode:'history',messages:[{...row,images:[],content:'Text only'},{...row,id:'423456789012345679',content:'',images:[],audio:['https://cdn.discordapp.com/attachments/123/456/voice-message.ogg']}]});assert.equal(store.page({owner,target,filter:'media'}).messages.length,1);assert.equal(store.page({owner,target,filter:'text'}).messages[0].content,'Text only');assert.equal(store.page({owner,target:'623456789012345678',filter:'media'}).messages.length,0);assert.throws(()=>store.page({owner,target,filter:'sql'}),/filter/);db.close();
+});
 test('saved-message pages cover more than the rolling 200-event cap without duplicates',()=>{
  const db=new DatabaseSync(':memory:'),store=messageArchive(db);store.configure({owner,target,channels:[channel],enabled:true});
  for(let n=0;n<300;n++)store.ingest({owner,target,channel,mode:'history',messages:[{...row,id:String(BigInt(message)+BigInt(n))}]});

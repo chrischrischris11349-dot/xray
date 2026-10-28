@@ -10,10 +10,10 @@ import { renderChatMessage } from "./chatMessage";
 /** Reuse mini-chat's safe native image/video/embed renderer in the full report. */
 export function renderAvailableMessage(row:AvailableMessage,channel?:any):HTMLElement {
   const attachments=[...row.attachments],seen=new Set(attachments.flatMap(a=>[a.url,a.proxy_url]));
-  for(const [kind,urls]of [["image",row.images],["video",row.videos]] as const)for(const url of urls){
+  for(const [kind,urls]of [["image",row.images],["video",row.videos],["audio",row.audio??[]]] as const)for(const url of urls){
     if(seen.has(url))continue;seen.add(url);
     let filename=kind==="image"?"Observed image":"Observed video";try{filename=decodeURIComponent(new URL(url).pathname.split("/").pop()??filename);}catch{/* Keep the descriptive label. */}
-    attachments.push({url,filename,content_type:`${kind}/${kind==="image"?"png":"mp4"}`});
+    attachments.push({url,filename,content_type:`${kind}/${kind==="image"?"png":kind==="audio"?"ogg":"mp4"}`});
   }
   const message=renderChatMessage({id:row.id,timestamp:row.timestamp,deleted:row.deleted,attachments,embeds:row.embeds},false,row.content??"Text was not retained.");
   const marker=message.querySelector(".qr-deleted-label");if(marker)marker.textContent="Deleted · retained observation";

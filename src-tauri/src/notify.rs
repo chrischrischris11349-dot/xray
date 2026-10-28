@@ -39,7 +39,8 @@ pub async fn notify<R: Runtime>(app: AppHandle<R>, id: u32, title: String, body:
 
 fn avatar_url(value: &str) -> Option<tauri::Url> {
     let mut url = tauri::Url::parse(value).ok()?;
-    if url.scheme() != "https" || url.host_str() != Some("cdn.discordapp.com") || url.port_or_known_default() != Some(443) || !url.username().is_empty() || url.password().is_some() { return None; }
+    if url.scheme() != "https" || !matches!(url.host_str(),Some("cdn.discordapp.com"|"media.discordapp.net")) || url.port_or_known_default() != Some(443) || !url.username().is_empty() || url.password().is_some() { return None; }
+    url.set_host(Some("cdn.discordapp.com")).ok()?;
     let segments: Vec<_> = url.path_segments()?.collect();
     if segments.len()==6 && segments[0]=="guilds" && segments[2]=="users" && segments[4]=="avatars" && [segments[1],segments[3]].iter().all(|id|!id.is_empty() && id.bytes().all(|b|b.is_ascii_digit())) {
         let hash=segments[5].rsplit_once('.')?.0;
@@ -62,7 +63,7 @@ fn cached_avatar<R: Runtime>(app: &AppHandle<R>, value: &str) -> Option<PathBuf>
     let mut hash = std::collections::hash_map::DefaultHasher::new(); url.as_str().hash(&mut hash);
     let path = dir.join(format!("{:x}.png", hash.finish()));
     if path.exists() { return Some(path); }
-    let response = ureq::AgentBuilder::new().timeout(Duration::from_secs(5)).redirects(0).build().get(url.as_str()).call().ok()?;
+    let response = ureq::AgentBuilder::new().timeout(Duration::from_secs(5)).redirects(0).build().get(url.as_str()).set("Accept","image/png").call().ok()?;
     let mut bytes = Vec::new(); response.into_reader().take(262_145).read_to_end(&mut bytes).ok()?;
     if bytes.len() > 262_144 || !bytes.starts_with(b"\x89PNG\r\n\x1a\n") { return None; }
     let _cache = AVATAR_CACHE.lock().ok()?;

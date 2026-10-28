@@ -4,7 +4,7 @@ import {mkdirSync,existsSync,unlinkSync,createReadStream,openSync,readSync,close
 import {open,rename} from "node:fs/promises";
 import {join} from "node:path";
 const DAY=864e5,ID=/^[a-f0-9]{64}$/,OWNER=/^\d{14,20}$/;
-export function attachmentUrl(value){try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&["cdn.discordapp.com","media.discordapp.net"].includes(u.hostname)&&/^\/(?:ephemeral-)?attachments\/\d+\/\d+\/[^/]+$/.test(u.pathname)&&u.href.length<=2048?u:null;}catch{return null;}}
+export function attachmentUrl(value){try{const u=new URL(value);return u.protocol==="https:"&&!u.username&&!u.password&&!u.port&&["cdn.discordapp.com","media.discordapp.net"].includes(u.hostname)&&(/^\/(?:ephemeral-)?attachments\/\d+\/\d+\/[^/]+$/.test(u.pathname)||u.hostname==='cdn.discordapp.com'&&/^\/(avatars|banners)\/\d{14,20}\/(?:a_)?[a-f\d]{32}\.(png|gif|webp)$/i.test(u.pathname))&&u.href.length<=2048?u:null;}catch{return null;}}
 export function historyMedia(db,directory,{secret,fetcher=fetch,now=Date.now,maxFileBytes=250*1024*1024,totalBytes=20*1024**3}={}){
  if(!secret)throw Error("Media signing secret required");mkdirSync(directory,{recursive:true,mode:0o700});
  db.exec("CREATE TABLE IF NOT EXISTS history_media (id TEXT PRIMARY KEY,owner TEXT NOT NULL,source TEXT NOT NULL,state TEXT NOT NULL,mime TEXT,bytes INTEGER NOT NULL DEFAULT 0,error TEXT); CREATE TABLE IF NOT EXISTS history_media_refs (ns TEXT NOT NULL,id TEXT NOT NULL,expires INTEGER,PRIMARY KEY(ns,id));");
@@ -35,7 +35,7 @@ export function historyMedia(db,directory,{secret,fetcher=fetch,now=Date.now,max
   const response=await fetcher(row.source,{redirect:"manual",signal:AbortSignal.timeout(120000)});
   if(!response.ok)throw Error(`Discord attachment unavailable (HTTP ${response.status})`);
   const mime=(response.headers.get("content-type")??"").split(";")[0].trim().toLowerCase();
-  if(!/^(image\/(png|jpeg|gif|webp|avif)|video\/(mp4|webm|quicktime))$/.test(mime))throw Error("Unsupported attachment media type");
+  if(!/^(image\/(png|jpeg|gif|webp|avif)|video\/(mp4|webm|quicktime)|audio\/(ogg|webm|mpeg|mp4|wav|x-wav|flac|opus)|application\/(ogg|pdf|zip|octet-stream))$/.test(mime))throw Error("Unsupported attachment media type");
   if(Number(response.headers.get("content-length"))>maxFileBytes)throw Error("Attachment exceeds 250 MB archive limit");
   file=await open(path(blob)+".part","w",0o600);
   for await(const chunk of response.body){if(bytes+chunk.length>maxFileBytes||used+chunk.length>totalBytes)throw Error("Media archive storage quota reached");used+=chunk.length;bytes+=chunk.length;await file.writeFile(chunk);}
@@ -46,9 +46,9 @@ export function historyMedia(db,directory,{secret,fetcher=fetch,now=Date.now,max
  function syncDocument(ns,value,pruneAfter=true){
   if(!/^(?:(profile-history|bot-history)\.\d{14,20}|message-archive\.\d{14,20}\.\d{14,20}\.\d{14,20})$/.test(ns))return;
   const doc=JSON.parse(value),owner=ns.split(".")[1],refs=new Map();
-  for(const person of Object.values(doc.people??{})){
+  for(const [subject,person] of Object.entries(doc.people??{})){
    const days=Number.isInteger(person.retentionDays)&&person.retentionDays>=0&&person.retentionDays<=365000?person.retentionDays:30;
-   for(const event of (person.events??[]).slice(-2000))for(const source of [...event.messageImages??[],...event.messageVideos??[]].slice(0,ns.startsWith('message-archive.')?40:8)){
+   for(const event of (person.events??[]).slice(-2000))for(const source of [...event.messageImages??[],...event.messageVideos??[],...event.messageAudio??[],...event.messageDownloads??[],...(['avatar','banner'].includes(event.kind)&&/^\d{14,20}$/.test(subject)?[event.before,event.after].filter(hash=>typeof hash==='string'&&/^(?:a_)?[a-f\d]{32}$/i.test(hash)).map(hash=>`https://cdn.discordapp.com/${event.kind==='avatar'?'avatars':'banners'}/${subject}/${hash}.${hash.startsWith('a_')?'gif':'png'}?size=256`):[])].slice(0,82)){
     const url=attachmentUrl(source);if(!url||!Number.isFinite(event.at))continue;const expires=days===0?null:event.at+days*DAY;if(expires!==null&&expires<=now())continue;
     const id=key(owner,url),old=refs.get(id);refs.set(id,{source:url.href,expires:old?.expires===null||expires===null?null:Math.max(old?.expires??0,expires)});
    }
@@ -74,7 +74,7 @@ export function historyMedia(db,directory,{secret,fetcher=fetch,now=Date.now,max
  function serve(req,res,url){const id=url.pathname.slice("/media/file/".length),expires=Number(url.searchParams.get("expires")),signature=url.searchParams.get("signature")??"";
   if(!ID.test(id)||!Number.isSafeInteger(expires)||expires<now()||expires>now()+3600_000||!/^[a-f0-9]{64}$/.test(signature)||!timingSafeEqual(Buffer.from(signature),Buffer.from(sign(id,expires)))){res.writeHead(401);res.end();return;}
   const row=read(id);if(!row||row.state!=="ready"||!existsSync(path(row.blob))){res.writeHead(404);res.end();return;}
-  const headers={"content-type":row.mime,"cache-control":"private, no-store","x-content-type-options":"nosniff","accept-ranges":"bytes","referrer-policy":"no-referrer"};
+  const headers={"content-type":row.mime,"cache-control":"private, no-store","x-content-type-options":"nosniff","accept-ranges":"bytes","referrer-policy":"no-referrer",...(row.mime?.startsWith("application/")?{"content-disposition":"attachment"}:{})};
   let start=0,end=row.bytes-1,status=200;
   if(req.headers.range){const match=/^bytes=(\d*)-(\d*)$/.exec(req.headers.range);if(!match||!match[1]&&!match[2]){res.writeHead(416);res.end();return;}
    if(!match[1])start=Math.max(0,row.bytes-Number(match[2]));else{start=Number(match[1]);if(match[2])end=Math.min(end,Number(match[2]));}

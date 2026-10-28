@@ -30,6 +30,7 @@ import { renderImportedReport } from "./importedReport";
 import { discordDate, memberJoinedAt } from "./memberDates";
 import { profileJournal } from "./profileJournal";
 import { dmArchivePanel } from "./dmArchive";
+import {recordingLibrary} from './recordingLibrary';
 import { observeProfileResponse } from "../history";
 import { onAction } from "../api/flux";
 import { linkedText, connectionUrl } from "./reportText";
@@ -492,6 +493,17 @@ export function showProfile(user: any, guildId?: string | null): void {
   const oathnet = oathnetSection(user.id);
   const journal = profileJournal(data);
   const dmArchive = dmArchivePanel(data.id);
+  let view='Overview',recordings:ReturnType<typeof recordingLibrary>|undefined;
+  const tabs=h('div',{class:'pf-view-tabs wide',attrs:{role:'tablist','aria-label':'Profile report views'}});
+  const applyView=()=>{
+    const body=sheet?.querySelector('.pf-body');if(!body)return;body.id=`xray-profile-view-${data.id}`;body.setAttribute('role','tabpanel');body.setAttribute('aria-labelledby',`xray-profile-tab-${data.id}-${view}`);
+    if(view==='Recordings'&&!recordings){recordings=recordingLibrary(data.id);body.append(recordings.element);}
+    for(const child of [...body.children] as HTMLElement[]){if(child===tabs)continue;child.hidden=view==='Overview'?child===recordings?.element||child===counts&&!counts.childElementCount:child===journal.element?!['Changes','Text','Media'].includes(view):child===dmArchive.element?!['Text','Media'].includes(view):child===recordings?.element?view!=='Recordings':true;}
+    for(const button of tabs.querySelectorAll('button')){const selected=button.textContent===view;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;}
+    if(view!=='Recordings')recordings?.element.querySelectorAll('audio').forEach(audio=>audio.pause());
+  };
+  for(const label of ['Overview','Changes','Text','Media','Recordings'])tabs.append(h('button',{class:'btn ghost',attrs:{role:'tab',id:`xray-profile-tab-${data.id}-${label}`,'aria-controls':`xray-profile-view-${data.id}`,'aria-selected':String(label==='Overview'),tabindex:label==='Overview'?'0':'-1'},text:label,on:{click:()=>{view=label;journal.setFilter(label==='Changes'?'changes':label==='Text'?'text':label==='Media'?'media':'all');if(['Overview','Text','Media'].includes(label))dmArchive.setFilter(label==='Text'?'text':label==='Media'?'media':'all');applyView();}}}));
+  tabs.addEventListener('keydown',event=>{const buttons=[...tabs.querySelectorAll('button')],index=buttons.indexOf(tabs.ownerDocument.activeElement as HTMLButtonElement),focused=buttons.indexOf((tabs.getRootNode() as ShadowRoot).activeElement as HTMLButtonElement),current=focused>=0?focused:index;if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(current+(event.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;buttons[next].click();buttons[next].focus();});
   const counts = h("section", { class: "pf-block wide", attrs: { "aria-label": "Loaded-message counts" } });
   counts.hidden = true;
   const actions: ProfileActions = {
@@ -512,6 +524,7 @@ export function showProfile(user: any, guildId?: string | null): void {
     const keepFocus = active instanceof HTMLElement && journal.element.contains(active) ? active : null;
     const next = renderProfile(data, actions);
     journal.update(data);
+    next.querySelector('.pf-names')?.append(journal.changes);
     next.querySelector(".pf-body")?.prepend(journal.element,dmArchive.element,oathnet.element);
     if (data.mutualServers.state === "ready" && data.mutualServers.value.length) {
       const select = h("select",{class:"dialog-input",attrs:{"aria-label":"Profile server context"}},h("option",{attrs:{value:""},text:"Choose a shared server"}),...data.mutualServers.value.map(server=>h("option",{attrs:{value:server.id},text:server.name})));
@@ -520,6 +533,8 @@ export function showProfile(user: any, guildId?: string | null): void {
       next.querySelector(".pf-body")?.prepend(h("section",{class:"pf-block wide pf-server-context"},h("span",{class:"pf-title",text:"Server context"}),select,h("span",{class:"pf-note",text:"Join dates, roles and nicknames belong to this server."})));
     }
     next.querySelector(".pf-body")?.append(counts);
+    next.querySelector('.pf-body')?.prepend(tabs);
+    if(recordings)next.querySelector('.pf-body')?.append(recordings.element);
     const countButton = h("button", { class:"btn ghost", attrs:{type:"button"},text:"Browse available messages",on:{click:()=>{counts.hidden=false;try{counts.replaceChildren(availableMessages(data.id));}catch{counts.replaceChildren(h("p",{class:"pf-note",text:"Message stores are unavailable. Open a conversation and try again."}));}counts.scrollIntoView({block:"nearest"});}}});
     const linkedReports=reportsFor(data.id);
     if(linkedReports.length){const section=h("section",{class:"pf-block wide"},h("h3",{class:"pf-title",text:"Saved results matching this profile query"}),h("p",{class:"pf-note",text:"Associated by the supplied/query subject ID. Provider matches are not independently verified identities."}));for(const report of linkedReports)section.append(renderImportedReport(report,data.id,data.avatar));next.querySelector(".pf-body")?.append(section);}
@@ -531,12 +546,14 @@ export function showProfile(user: any, guildId?: string | null): void {
     next.querySelector(".pf-foot .pf-spacer")?.after(reportButton);
     if (sheet) sheet.replaceWith(next);
     sheet = next;
+    applyView();
     if (keepFocus) keepFocus.focus({preventScroll:true});
   };
   draw();
   let stopMembers = () => {};
   let stopLogout = () => {};
-  showSheet(sheet!, () => { open = false; oathnet.close(); journal.close(); dmArchive.close(); stopMembers(); stopLogout(); });
+  showSheet(sheet!, () => { open = false; oathnet.close(); journal.close(); dmArchive.close();recordings?.close(); stopMembers(); stopLogout(); });
+  dmArchive.setFilter('all');
   stopLogout = onAction("LOGOUT",closeDialog);
   sheet!.querySelector<HTMLButtonElement>(".pf-close")?.focus();
   if (guildId) stopMembers = onStoresChanged([stores.members],()=>{

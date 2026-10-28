@@ -9,7 +9,7 @@ import { warn } from "../env";
 import { invoke } from "./bridge";
 import { safeImage, stores, userView, whenStore } from "../discord";
 import { NotificationMessages, notificationIdentity } from "./notificationIdentity";
-import { onAction } from "../api/flux";
+import { intercept } from "../api/flux";
 import { h } from "../ui/dom";
 import { uiRoot } from "../ui/root";
 
@@ -150,7 +150,7 @@ class XrayNotification extends EventTarget {
 }
 
 export function installNotifications(): void {
-  onAction("MESSAGE_CREATE",action=>recentMessages.remember(action.message));
+  intercept(action=>{if(action.type==="MESSAGE_CREATE")recentMessages.remember(action.message);});
   Object.defineProperty(window, "Notification", { value: XrayNotification, writable: true, configurable: true });
   whenStore("StreamerModeStore", store => {
     const update = () => { streamerHidden = store.enabled === true; syncPrivacy(); };

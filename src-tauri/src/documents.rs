@@ -33,7 +33,7 @@ fn valid_ns(ns: &str) -> bool {
 #[tauri::command]
 pub async fn history_media<R: Runtime>(app: AppHandle<R>, owner: String, url: String, retry: Option<bool>, offset: Option<u64>) -> Result<Value,String> {
     let source=tauri::Url::parse(&url).map_err(|_|"Invalid attachment URL")?;
-    if !(14..=20).contains(&owner.len()) || !owner.bytes().all(|b|b.is_ascii_digit()) || url.len()>2048 || source.scheme()!="https" || !source.username().is_empty() || source.password().is_some() || source.port().is_some() || !matches!(source.host_str(),Some("cdn.discordapp.com"|"media.discordapp.net")) || !(source.path().starts_with("/attachments/") || source.path().starts_with("/ephemeral-attachments/")) {return Err("Invalid history media request".into());}
+    if !(14..=20).contains(&owner.len()) || !owner.bytes().all(|b|b.is_ascii_digit()) || url.len()>2048 || source.scheme()!="https" || !source.username().is_empty() || source.password().is_some() || source.port().is_some() || !matches!(source.host_str(),Some("cdn.discordapp.com"|"media.discordapp.net")) || !(source.path().starts_with("/attachments/") || source.path().starts_with("/ephemeral-attachments/") || source.host_str()==Some("cdn.discordapp.com") && (source.path().starts_with("/avatars/") || source.path().starts_with("/banners/"))) {return Err("Invalid history media request".into());}
     let settings=crate::settings::load(&app);
     let endpoint=tauri::Url::parse(&settings.sync_endpoint).map_err(|_|"Configure HTTPS server storage first")?;
     if endpoint.scheme()!="https" || !endpoint.username().is_empty() || endpoint.password().is_some() || endpoint.query().is_some() || endpoint.fragment().is_some() || settings.sync_token.is_empty(){return Err("Configure HTTPS server storage first".into());}

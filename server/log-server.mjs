@@ -385,7 +385,7 @@ load();
 export function start({ db = openDb(), port = PORT, bind = BIND, recordings = recordingStore(process.env.XRAY_RECORDINGS_DIR ?? join(dirname(DB_PATH),"recordings")) } = {}) {
   const data = store(db);
   const media=historyMedia(db,process.env.XRAY_MEDIA_DIR??join(dirname(DB_PATH),"history-media"),{secret:TOKEN});
-  const archive=messageArchive(db,{maxBytes:Number(process.env.XRAY_MESSAGE_ARCHIVE_BYTES??500*1024*1024),onMedia:(owner,row)=>media.syncDocument(`message-archive.${owner}.${row.channel}.${row.id}`,JSON.stringify({people:{[row.author]:{retentionDays:0,events:[{at:row.firstSavedAt,messageImages:row.images,messageVideos:row.videos}]}}}),false)});
+  const archive=messageArchive(db,{maxBytes:Number(process.env.XRAY_MESSAGE_ARCHIVE_BYTES??500*1024*1024),onMedia:(owner,row)=>media.syncDocument(`message-archive.${owner}.${row.channel}.${row.id}`,JSON.stringify({people:{[row.author]:{retentionDays:0,events:[{at:row.firstSavedAt,messageImages:row.images,messageVideos:row.videos,messageAudio:row.audio,messageDownloads:row.downloads}]}}}),false)});
   archive.restoreMedia();
   data.onDocumentWrite((ns,value)=>media.syncDocument(ns,value));
   for(const row of db.prepare("SELECT ns,value FROM documents WHERE ns LIKE 'profile-history.%' OR ns LIKE 'bot-history.%'").all()){try{media.syncDocument(row.ns,row.value);}catch{console.error("Could not index existing history media");}}

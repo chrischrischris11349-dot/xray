@@ -99,7 +99,8 @@ export function renderChatMessage(message: any, mine: boolean, text: string): HT
     if (typeof attachment.size === "number") parts.append(h("span", { class: "qr-file-size", text: `${Math.max(1, Math.ceil(attachment.size / 1024))} KB` }));
     bubble.append(parts);
     const render = () => {
-      if (type.startsWith("image/") || /\.(png|jpe?g|webp|gif|avif)$/i.test(name)) image(preview, name);
+      if(type.startsWith("audio/")||/\.(ogg|oga|opus|mp3|m4a|wav|flac)$/i.test(name)){const source=mediaUrl(preview);if(source)bubble.append(h("audio",{attrs:{src:source,controls:"",preload:"none","aria-label":name}}));}
+      else if (type.startsWith("image/") || /\.(png|jpe?g|webp|gif|avif)$/i.test(name)) image(preview, name);
       else if (type.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(name)) video(preview, name);
       else if (type.startsWith("audio/")) { const source = mediaUrl(preview); if (source) bubble.append(h("audio", { attrs: { src: source, controls: "", preload: "none", "aria-label": name } })); }
     };

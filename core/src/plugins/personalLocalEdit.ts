@@ -1,4 +1,4 @@
-import { myId } from "../discord";
+import { myId,whenStore,onStoresChanged } from "../discord";
 import { personalBuild } from "../personalBuild";
 import { confirmAction } from "../ui/dialog";
 import { h } from "../ui/dom";
@@ -21,7 +21,9 @@ export default definePlugin({id:"personalLocalEditControls",name:"Personal local
   const mount=()=>uiRoot().append(button);if(document.documentElement)mount();else document.addEventListener("DOMContentLoaded",mount,{once:true});
   const refresh=()=>{const previous=account,owner=myId();account=owner&&preferences()[owner]===true?owner:undefined;button.textContent=`Local edits · ${personalEditingEnabled()?"On":"Off"}`;button.setAttribute("aria-pressed",String(personalEditingEnabled()));if(previous!==account)emit();};
   const reset=()=>{account=undefined;button.textContent="Local edits · Off";button.setAttribute("aria-pressed","false");emit();};
+  let alive=true,stopUser=()=>{};
+  whenStore('UserStore',store=>{if(!alive)return;stopUser=onStoresChanged([store],refresh);refresh();});
   ctx.onAction("LOGOUT",reset);ctx.onAction("CONNECTION_OPEN",refresh);refresh();
-  ctx.onStop(()=>{reset();button.remove();document.removeEventListener("DOMContentLoaded",mount);});
+  ctx.onStop(()=>{alive=false;stopUser();reset();button.remove();document.removeEventListener("DOMContentLoaded",mount);});
  }
 });

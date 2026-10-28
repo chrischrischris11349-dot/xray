@@ -3,7 +3,7 @@ import { customStatusSnapshot } from "./customStatus";
 
 /** Passive, bounded cache. Excerpts are persisted only on an opted-in deletion. */
 export class HistoryObserver {
-  private messages = new Map<string, { userId: string; channelId: string; guildId?: string } & Pick<HistoryEvent,"messageText"|"messageFiles"|"messageImages"|"messageVideos"|"messageSentAt">>();
+  private messages = new Map<string, { userId: string; channelId: string; guildId?: string } & Pick<HistoryEvent,"messageText"|"messageFiles"|"messageImages"|"messageVideos"|"messageAudio"|"messageDownloads"|"messageSentAt">>();
   constructor(readonly history: ProfileHistory, private getMessage: (channel: string, id: string) => any = () => null) {}
   clear(): void { this.messages.clear(); }
   private remember(message: any): void {
@@ -13,7 +13,7 @@ export class HistoryObserver {
     const old = this.messages.get(key);
     const excerpt = this.history.get(userId)?.categories.some(c=>c==="deletions"||c==="messages"||c==="edits") ? deletionExcerpt(message) : {};
     this.messages.delete(key); this.messages.set(key, { userId, channelId, guildId: message.guild_id ?? message.guildId ?? old?.guildId,
-      messageText: excerpt.messageText ?? old?.messageText, messageFiles: excerpt.messageFiles ?? old?.messageFiles, messageImages: excerpt.messageImages ?? old?.messageImages, messageVideos: excerpt.messageVideos ?? old?.messageVideos, messageSentAt: excerpt.messageSentAt ?? old?.messageSentAt });
+      messageText: excerpt.messageText ?? old?.messageText, messageFiles: excerpt.messageFiles ?? old?.messageFiles, messageImages: excerpt.messageImages ?? old?.messageImages, messageVideos: excerpt.messageVideos ?? old?.messageVideos,messageAudio:excerpt.messageAudio??old?.messageAudio,messageDownloads:excerpt.messageDownloads??old?.messageDownloads, messageSentAt: excerpt.messageSentAt ?? old?.messageSentAt });
     if (this.messages.size > 5000) this.messages.delete(this.messages.keys().next().value!);
   }
   handle(action: any): Set<string> {
@@ -21,8 +21,8 @@ export class HistoryObserver {
     if (!action || action.xrayLocalEdit || action.xrayLocalDelete || action.mlDeleted) return changed;
     const observe = (id: string, patch: Snapshot) => {
       const record = this.history.get(id); if (!record?.enabled) return;
-      const old = record.events.at(-1); this.history.observe(id, patch);
-      if (record.events.at(-1) !== old) changed.add(id);
+      const old = record.events.at(-1),lastPresence=record.lastPresenceAt; this.history.observe(id, patch);
+      if (record.events.at(-1) !== old||record.lastPresenceAt!==lastPresence) changed.add(id);
     };
     if(action.type==="LOAD_MESSAGES_SUCCESS"){
       const rows=Array.isArray(action.messages)?action.messages:action.messages?._array??action.messages?.toArray?.()??[];
@@ -31,13 +31,13 @@ export class HistoryObserver {
         const channelId=message.channel_id??message.channelId??action.channelId??action.channel_id;
         const loaded={...message,channel_id:channelId};this.remember(loaded);
         const excerpt=deletionExcerpt(loaded);
-        if(!excerpt.messageImages?.length&&!excerpt.messageVideos?.length)continue;
+        if(!excerpt.messageImages?.length&&!excerpt.messageVideos?.length&&!excerpt.messageAudio?.length&&!excerpt.messageDownloads?.length)continue;
         // Older entries may have retained only a filename. Enrich media references
         // from the exact loaded message without changing the historical text.
         const record=this.history.get(message.author?.id);
         if(record?.enabled&&record.categories.includes("messages"))for(const event of record.events){
           if(event.channelId!==channelId||event.messageId!==message.id)continue;
-          for(const field of ["messageImages","messageVideos","messageFiles"] as const)if(!event[field]?.length&&excerpt[field]?.length){event[field]=excerpt[field];changed.add(message.author.id);}
+          for(const field of ["messageImages","messageVideos","messageAudio","messageDownloads","messageFiles"] as const)if(!event[field]?.length&&excerpt[field]?.length){event[field]=excerpt[field];changed.add(message.author.id);}
         }
         if(typeof channelId==="string"&&typeof message.id==="string"&&this.history.add(message.author?.id,"messages",{id:`message:${channelId}:${message.id}`,kind:"messageLoaded",messageId:message.id,channelId,guildId:message.guild_id??message.guildId,...excerpt}))changed.add(message.author.id);
       }
@@ -86,7 +86,7 @@ export class HistoryObserver {
       const metadata = this.messages.get(`${channelId}:${message.id}`);
       if (action.type === "MESSAGE_CREATE" && metadata && this.history.add(metadata.userId,"messages",{id:`message:${channelId}:${message.id}`,kind:"messageObserved",messageId:message.id,channelId,guildId:metadata.guildId,...deletionExcerpt(message)})) changed.add(metadata.userId);
       const edited = message.edited_timestamp ?? message.editedTimestamp;
-      if (action.type === "MESSAGE_UPDATE" && metadata && edited != null && this.history.add(metadata.userId, "edits", { id: `edit:${channelId}:${message.id}:${String(edited)}`, kind: "messageEdited", messageId: message.id, channelId, guildId: metadata.guildId, ...(this.history.get(metadata.userId)?.categories.includes("messages") ? {messageText:metadata.messageText,messageBefore:previous?.messageText ?? (typeof existing?.content==="string"?existing.content:undefined),messageSentAt:metadata.messageSentAt,messageFiles:metadata.messageFiles,messageImages:metadata.messageImages,messageVideos:metadata.messageVideos} : {}) })) changed.add(metadata.userId);
+      if (action.type === "MESSAGE_UPDATE" && metadata && edited != null && this.history.add(metadata.userId, "edits", { id: `edit:${channelId}:${message.id}:${String(edited)}`, kind: "messageEdited", messageId: message.id, channelId, guildId: metadata.guildId, ...(this.history.get(metadata.userId)?.categories.includes("messages") ? {messageText:metadata.messageText,messageBefore:previous?.messageText ?? (typeof existing?.content==="string"?existing.content:undefined),messageSentAt:metadata.messageSentAt,messageFiles:metadata.messageFiles,messageImages:metadata.messageImages,messageVideos:metadata.messageVideos,messageAudio:metadata.messageAudio,messageDownloads:metadata.messageDownloads} : {}) })) changed.add(metadata.userId);
     }
     if (action.type === "MESSAGE_DELETE" || action.type === "MESSAGE_DELETE_BULK") {
       const channelId = action.channelId ?? action.channel_id;
@@ -95,7 +95,7 @@ export class HistoryObserver {
         const key = `${channelId}:${id}`;
         if (!this.messages.has(key)) this.remember(this.getMessage(channelId, id));
         const metadata = this.messages.get(key);
-        if (metadata && this.history.add(metadata.userId, "deletions", { id: `delete:${key}`, kind: "messageDeleted", messageId: id, channelId, guildId: metadata.guildId ?? action.guildId ?? action.guild_id, messageText: metadata.messageText, messageSentAt:metadata.messageSentAt, messageFiles: metadata.messageFiles, messageImages: metadata.messageImages,messageVideos:metadata.messageVideos })) changed.add(metadata.userId);
+        if (metadata && this.history.add(metadata.userId, "deletions", { id: `delete:${key}`, kind: "messageDeleted", messageId: id, channelId, guildId: metadata.guildId ?? action.guildId ?? action.guild_id, messageText: metadata.messageText, messageSentAt:metadata.messageSentAt, messageFiles: metadata.messageFiles, messageImages: metadata.messageImages,messageVideos:metadata.messageVideos,messageAudio:metadata.messageAudio,messageDownloads:metadata.messageDownloads })) changed.add(metadata.userId);
         this.messages.delete(key);
       }
     }

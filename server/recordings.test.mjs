@@ -23,3 +23,7 @@ test("recording quotas, abort and retention constrain persistent data",()=>{
  now+=8*864e5;assert.equal(store.list().length,0);assert.equal(readdirSync(dir).length,0);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test('consented recordings retain participant associations and support exact bounded playback chunks',()=>{
+ const directory=mkdtempSync(join(tmpdir(),'xray-recording-'));try{const store=recordingStore(directory),participant='223456789012345678';assert.throws(()=>store.start({consent:false}),/consent/);const row=store.start({consent:true,owner:'123456789012345678',channelId:'323456789012345678',participantIds:[participant,participant,'invalid']});const bytes=Buffer.alloc(128*1024,7);for(let index=0;index<5;index++)store.chunk({id:row.id,index,data:bytes.toString('base64')});assert.throws(()=>store.read({id:row.id,offset:0}),/incomplete/);store.finish({id:row.id});assert.deepEqual(store.list()[0].participantIds,[participant]);const first=store.read({id:row.id,offset:0}),last=store.read({id:row.id,offset:first.next});assert.equal(first.next,512*1024);assert.equal(last.next,640*1024);assert.deepEqual(Buffer.concat([Buffer.from(first.data,'base64'),Buffer.from(last.data,'base64')]),Buffer.concat(Array(5).fill(bytes)));assert.throws(()=>store.read({id:row.id,offset:-1}),/offset/);}finally{rmSync(directory,{recursive:true,force:true});}
+});

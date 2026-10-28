@@ -26,7 +26,7 @@ test("server copies survive source deletion and restart, provide authenticated s
   const response=await fetch(base+ready.path);assert.equal(response.status,200);assert.deepEqual(Buffer.from(await response.arrayBuffer()),png);
   const part=await fetch(base+ready.path,{headers:{range:"bytes=2-6"}});assert.equal(part.status,206);assert.deepEqual(Buffer.from(await part.arrayBuffer()),png.subarray(2,7));
   assert.equal((await fetch(base+ready.path,{headers:{range:"bytes=999999-"}})).status,416);
-  assert.equal((await fetch(base+ready.path.replace(/signature=./,"signature=0"))).status,401);
+  assert.equal((await fetch(base+ready.path.replace(/signature=(.)/,(_all,first)=>"signature="+(first==="0"?"1":"0")))).status,401);
   now+=3601_000;assert.equal((await fetch(base+ready.path)).status,401);
   assert.equal(media.resolve("300760994454437899",source).state,"missing");
   now+=31*864e5;media.prune();assert.equal(media.resolve(owner,source).state,"missing");
@@ -62,6 +62,12 @@ test('archive media reindexing after restart can stream stored messages without 
  const media=historyMedia(db,directory,{secret:'test',fetcher:async()=>new Response(png,{headers:{'content-type':'image/png'}})});
  const archive=messageArchive(db,{onMedia:(account,row)=>media.syncDocument(`message-archive.${account}.${row.channel}.${row.id}`,JSON.stringify({people:{[target]:{retentionDays:0,events:[{at:Date.now(),messageImages:row.images}]}}}),false)});
  try{archive.configure({owner,target,channels:['300760994454437892'],enabled:true});archive.ingest({owner,target,channel:'300760994454437892',mode:'history',messages:[{id:'300760994454437893',author:target,channel:'300760994454437892',images:[source]}]});await media.idle();archive.restoreMedia();await media.idle();assert.equal(media.resolve(owner,source).state,'ready');}finally{db.close();rmSync(directory,{recursive:true,force:true});}
+});
+
+test('voice messages and before/after profile photos are copied with independent retained references',async()=>{
+ const directory=mkdtempSync(join(tmpdir(),'xray-media-')),db=openDb(':memory:'),voice='https://cdn.discordapp.com/attachments/123/456/voice-message.ogg',photo=`https://cdn.discordapp.com/avatars/${target}/${'a'.repeat(32)}.png?size=256`,data=Buffer.from('OggS-test-archive-bytes');
+ const media=historyMedia(db,directory,{secret:'test',fetcher:async url=>new Response(url.includes('.ogg')?data:png,{headers:{'content-type':url.includes('.ogg')?'audio/ogg':'image/png'}})});
+ try{media.syncDocument(`profile-history.${owner}`,JSON.stringify({people:{[target]:{retentionDays:0,events:[{at:Date.now(),kind:'messageObserved',messageAudio:[voice]},{at:Date.now(),kind:'avatar',before:'a'.repeat(32),after:'b'.repeat(32)}]}}}));await media.idle();assert.equal(media.resolve(owner,voice).state,'ready');assert.equal(media.resolve(owner,voice).mime,'audio/ogg');assert.deepEqual(Buffer.from(media.resolve(owner,voice,false,0).data,'base64'),data);assert.equal(media.resolve(owner,photo).state,'ready');}finally{db.close();rmSync(directory,{recursive:true,force:true});}
 });
 test("existing account-specific files migrate to shared storage without losing playback",()=>{
  const directory=mkdtempSync(join(tmpdir(),"xray-media-")),db=openDb(":memory:"),id=createHash("sha256").update(owner+":"+new URL(source).pathname).digest("hex");

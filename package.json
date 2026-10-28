@@ -1,7 +1,7 @@
 {
   "name": "xray",
   "private": true,
-  "version": "0.5.13",
+  "version": "0.5.14",
   "description": "xray \u00e2\u20ac\u201d a lightweight Discord client",
   "type": "module",
   "scripts": {
@@ -13,7 +13,7 @@
     "tauri": "tauri",
     "app:dev": "tauri dev",
     "app:build": "tauri build",
-    "test:server": "node server/test.mjs && node --test server/bot-history.test.mjs server/history-media.test.mjs server/message-archive.test.mjs"
+    "test:server": "node server/test.mjs && node --test server/bot-history.test.mjs server/history-media.test.mjs server/message-archive.test.mjs server/recordings.test.mjs"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.0",

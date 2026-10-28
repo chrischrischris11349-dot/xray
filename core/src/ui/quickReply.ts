@@ -10,7 +10,7 @@
 import { currentChannelId, loggedIn, messageActions, myId, navigate, onStoresChanged, safeImage, stores, userView, whenStore } from "../discord";
 import { h } from "./dom";
 import { messageVisualKey, renderChatMessage } from "./chatMessage";
-import { sessionMessageView } from "./localMessageView";
+import { sessionMessageView,onLocalMessageViewChanged } from "./localMessageView";
 import { reconcileChildren, StableRows } from "./reconcile";
 import { ImageDrafts } from "./imageDrafts";
 import { sendMiniChatMessage } from "./imageUpload";
@@ -60,6 +60,7 @@ let scrolledFor: string | null = null;
 let sending = false;
 let sendingChannel: string | null = null;
 let stopBadgeWatch: (() => void) | undefined;
+let stopEditWatch:(()=>void)|undefined;
 let stopOpenWatch: (() => void) | undefined;
 let stopTimeWatch: (() => void) | undefined;
 let badgeTimer: number | undefined;
@@ -260,7 +261,7 @@ function close(): void {
   clearTimeout(refreshTimer); refreshTimer = undefined;
   messageRows.clear();
   stopOpenWatch?.();
-  stopOpenWatch = undefined;
+  stopOpenWatch = undefined;stopEditWatch?.();stopEditWatch=undefined;
   popover?.remove();
   popover = messagesEl = replyInput = sendButton = errorEl = attachmentTray = attachButton = undefined;
   replyTray = typingEl = undefined;
@@ -399,6 +400,7 @@ function openConversation(id: string): void {
   renderMessages();
   stopOpenWatch?.();
   stopOpenWatch = onStoresChanged([stores.messages], scheduleRefresh);
+  stopEditWatch?.();stopEditWatch=onLocalMessageViewChanged(scheduleRefresh);
   stopTimeWatch?.(); stopTimeWatch = onTimeFormatChanged(scheduleRefresh);
   whenStore("TypingStore", store => { if (channelId !== id || !popover) return; stopTypingWatch?.(); stopTypingWatch = onStoresChanged([store], renderTyping); renderTyping(); });
   replyInput.focus();
@@ -408,7 +410,7 @@ function backToList(): void {
   stopTimeWatch?.(); stopTimeWatch = undefined;
   closeMiniMenu(); stopTypingWatch?.(); stopTypingWatch = undefined;
   stopOpenWatch?.();
-  stopOpenWatch = undefined;
+  stopOpenWatch = undefined;stopEditWatch?.();stopEditWatch=undefined;
   channelId = null;
   messagesEl = replyInput = sendButton = errorEl = attachmentTray = attachButton = undefined;
   replyTray = typingEl = undefined;

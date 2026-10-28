@@ -86,7 +86,7 @@ export function historyFor(id: string) { const model = current(); model?.prune(f
 /** Archive only opted-in media already loaded by the user; no network search. */
 export function retainLoadedMedia(id:string,messages:any[]):void{
   if(storageSwitching())return;const record=current()?.get(id);if(!record?.enabled||!record.categories.includes("messages"))return;
-  for(const target of observer?.handle({type:"LOAD_MESSAGES_SUCCESS",messages:messages.slice(-1000).filter(message=>{if(message?.author?.id!==id)return false;const media=deletionExcerpt(message);return media.messageImages?.length||media.messageVideos?.length;}).slice(-100)})??[])changed(target);
+  for(const target of observer?.handle({type:"LOAD_MESSAGES_SUCCESS",messages:messages.slice(-1000).filter(message=>{if(message?.author?.id!==id)return false;const media=deletionExcerpt(message);return media.messageImages?.length||media.messageVideos?.length||media.messageAudio?.length||media.messageDownloads?.length;}).slice(-100)})??[])changed(target);
 }
 export function retryHistoryLoad(): void {
   if(loading || pending || flight || engine)return;
@@ -106,6 +106,7 @@ export async function configureHistory(id: string, enabled: boolean, categories?
   captureProfile(id);
 }
 export async function saveProfileNote(id: string, note: string): Promise<void> { writable().note(id,note); changed(id); await flushHistory(); }
+export async function markProfileReviewed(id:string,at:number):Promise<void>{writable().review(id,at);changed(id);await flushHistory();}
 export async function clearProfileHistory(id: string): Promise<void> { writable().clear(id); changed(id); await flushHistory(); }
 export async function removeProfileHistory(id: string): Promise<void> { writable().remove(id); observer?.clear(); changed(id); await flushHistory(); }
 /** User-requested recovery of attachment references; preserve historical text. */
@@ -113,8 +114,8 @@ export async function retainRecoveredMedia(id:string,message:any):Promise<void>{
   if(message?.author?.id!==id)throw Error("Original message author does not match this profile");
   const record=writable().get(id);if(!record)throw Error("History is no longer configured");
   const excerpt=deletionExcerpt(message),channel=message.channel_id??message.channelId;
-  if(!excerpt.messageImages?.length&&!excerpt.messageVideos?.length)throw Error("The original message returned no supported photo/video attachment URLs");
-  for(const event of record.events)if(event.channelId===channel&&event.messageId===message.id){event.messageImages=excerpt.messageImages;event.messageVideos=excerpt.messageVideos;event.messageFiles=excerpt.messageFiles;}
+  if(!excerpt.messageImages?.length&&!excerpt.messageVideos?.length&&!excerpt.messageAudio?.length&&!excerpt.messageDownloads?.length)throw Error("The original message returned no supported photo/video attachment URLs");
+  for(const event of record.events)if(event.channelId===channel&&event.messageId===message.id){event.messageImages=excerpt.messageImages;event.messageVideos=excerpt.messageVideos;event.messageAudio=excerpt.messageAudio;event.messageDownloads=excerpt.messageDownloads;event.messageFiles=excerpt.messageFiles;}
   changed(id);await flushHistory();
 }
 export function subscribeHistory(listener: (id: string) => void): () => void { listeners.add(listener); return () => listeners.delete(listener); }

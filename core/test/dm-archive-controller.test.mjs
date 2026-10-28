@@ -27,3 +27,12 @@ test('stopping one person does not await another person’s history request',asy
  let stopped=false;const other='623456789012345678',stop=f.api.stopDmArchive(other).then(()=>stopped=true);for(let n=0;n<24;n++)await Promise.resolve();
  try{assert.equal(stopped,true);assert.ok(f.calls.some(call=>call.action==='configure'&&call.target===other&&call.enabled===false));}finally{f.api.pauseDmArchive();f.releasePage();await running;await stop;}
 });
+
+
+test('exact linked recovery saves only the selected author and keeps the original ID',async()=>{
+ const f=await fixture(),id='723456789012345678',url=`https://discord.com/channels/@me/${channel}/${id}`;
+ f.context.fixturePage=async()=>({body:{id,author:{id:target},attachments:[{filename:'voice-message.ogg',content_type:'audio/ogg',url:'https://cdn.discordapp.com/attachments/123/456/voice-message.ogg'}],content:''}});
+ await f.api.saveDmMessageLink(target,url);const saved=f.calls.find(call=>call.action==='ingest');assert.equal(saved.messages[0].id,id);assert.equal(saved.messages[0].audio.length,1);
+ const writes=f.calls.filter(call=>call.action==='ingest').length;f.context.fixturePage=async()=>({body:{id,author:{id:owner}}});await assert.rejects(f.api.saveDmMessageLink(target,url),/unavailable/);assert.equal(f.calls.filter(call=>call.action==='ingest').length,writes);
+ await assert.rejects(f.api.saveDmMessageLink(target,'https://attacker.example/channels/@me/'+channel+'/'+id),/HTTPS Discord/);
+});
