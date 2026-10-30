@@ -34,7 +34,8 @@ for path in files:
         raise SystemExit(f"Credential-shaped content detected; source package stopped: {path.relative_to(root)}")
 
 destination = output / f"XRay-{version}-source.zip"
-with zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
+# Some upstream archive members use the Unix epoch; ZIP timestamps start in 1980.
+with zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED, compresslevel=6, strict_timestamps=False) as archive:
     for path in sorted(files):
         archive.write(path, f"XRay-{version}/" + path.relative_to(root).as_posix())
 print(f"Source package: {len(files)} files, {destination.stat().st_size:,} bytes")
