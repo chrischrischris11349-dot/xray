@@ -94,6 +94,27 @@ test("screen picker keeps explicit higher quality choices available", async () =
   assert.deepEqual(actual.video.height, { ideal: 2160, max: 2160 });
 });
 
+test('capture budgets never raise a lower numeric frame-rate or resolution request',async()=>{
+ let actual;const previous={...globalThis.captureFixture.options};Object.assign(globalThis.captureFixture.options,{frameRate:'60',resolution:'1080'});
+ try{globalThis.captureFixture.native=async options=>{actual=options;return{getVideoTracks:()=>[]};};const input={video:{frameRate:30,width:1280,height:720},audio:false};const pending=navigator.mediaDevices.getDisplayMedia(input);await globalThis.captureFixture.modal.actions[0].onClick();await pending;
+ assert.equal(actual.video.frameRate.ideal,30);assert.equal(actual.video.width.ideal,1280);assert.equal(actual.video.height.ideal,720);assert.deepEqual(input.video,{frameRate:30,width:1280,height:720});}finally{Object.assign(globalThis.captureFixture.options,previous);}
+});
+
+test('capture budgets preserve lower ideal values as well as hard maxima',async()=>{
+ let actual;const previous={...globalThis.captureFixture.options};Object.assign(globalThis.captureFixture.options,{frameRate:'60',resolution:'1080'});
+ try{globalThis.captureFixture.native=async options=>{actual=options;return{getVideoTracks:()=>[]};};const pending=navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:15,max:30},width:{ideal:640,max:1280},height:{ideal:360,max:720}},audio:false});await globalThis.captureFixture.modal.actions[0].onClick();await pending;
+ assert.deepEqual(actual.video.frameRate,{ideal:15,max:30});assert.deepEqual(actual.video.width,{ideal:640,max:1280});assert.deepEqual(actual.video.height,{ideal:360,max:720});}finally{Object.assign(globalThis.captureFixture.options,previous);}
+});
+
+test('lower game impact preset selects 720p30 without changing audio settings',async()=>{
+ const previous={...globalThis.captureFixture.options};let actual;
+ try{globalThis.captureFixture.native=async options=>{actual=options;return{getVideoTracks:()=>[]};};const pending=navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
+ const visited=new Set();function find(value){if(!value||typeof value!=='object'||visited.has(value))return;visited.add(value);if(value.type==='input'&&value.props?.name==='preset'&&value.props.value==='low-impact')return value;for(const child of Object.values(value)){const hit=find(child);if(hit)return hit;}}
+ const choice=find(globalThis.captureFixture.modal);assert.ok(choice);choice.props.onChange();assert.equal(globalThis.captureFixture.options.frameRate,'30');assert.equal(globalThis.captureFixture.options.resolution,'720');assert.equal(globalThis.captureFixture.options.systemAudio,previous.systemAudio);
+ await globalThis.captureFixture.modal.actions[0].onClick();await pending;assert.deepEqual(actual.video.frameRate,{ideal:30,max:30});assert.deepEqual(actual.video.height,{ideal:720,max:720});assert.equal(actual.audio,false);
+ }finally{Object.assign(globalThis.captureFixture.options,previous);}
+});
+
 test("disabling capture preferences while the native picker is open leaves the share intact", async () => {
   let hooks, stop, resolveCapture;
   corePlugin.default.start({

@@ -43,7 +43,14 @@ temporary audio nodes after playback, preserving their tone/timing. The picker h
 a **Typing** filter for SmoothType, Keyboard Sounds and Character Counter, where
 bundled. These are discoverable options rather than forced changes to everyone's feel.
 
-Validation: 157 core TAP tests and 36 native tests pass (one separate live Tor
+Screen-share capture also keeps lower numeric and ideal frame-rate/resolution
+requests instead of raising them to the picker's higher budget. This corrects
+unnecessary capture work; the exact game-FPS impact still needs comparison on
+the affected PC. The picker adds explicit 720p/30 lower-impact and 720p/60 motion
+presets, preserving audio choices and higher quality options. Neither preset
+promises a specific game FPS or forces a hardware encoder.
+
+Validation: 160 core TAP tests and 36 native tests pass (one separate live Tor
 test is ignored by default). UI tests cover saved versus active state, failed
 save rollback, recording/unsaved-data restart guards, the plugin filter and
 cancelled queued rendering. Native tests cover migration defaults, persistence

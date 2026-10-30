@@ -2,7 +2,14 @@
 function capped(value: ConstrainDouble | undefined, maximum: number): ConstrainDouble {
   const current = typeof value === "object" && value ? value : {};
   const max = typeof current.max === "number" && Number.isFinite(current.max) ? Math.min(current.max, maximum) : maximum;
-  return { ...current, ideal: max, max };
+  const preferred=typeof value==='number'?value:current.ideal;
+  const ideal=typeof preferred==='number'&&Number.isFinite(preferred)&&preferred>0?Math.min(preferred,max):max;
+  return { ...current, ideal, max };
+}
+
+/** Explicit tradeoff for game headroom; never changes audio or Discord limits. */
+export function gamingSharePreset(mode:'low-impact'|'smooth'){
+  return {resolution:'720',frameRate:mode==='low-impact'?'30':'60',contentHint:'motion'} as const;
 }
 
 export function boundedCaptureOptions(

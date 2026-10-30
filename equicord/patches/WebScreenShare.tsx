@@ -17,7 +17,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import { Checkbox, closeModal, Modal, openModal, Text, } from "@webpack/common";
 
 import managedStyle from "./styles.css?managed";
-import { boundedCaptureOptions,captureAudioOptions } from "./captureConstraints";
+import { boundedCaptureOptions,captureAudioOptions,gamingSharePreset } from "./captureConstraints";
 import { confirmSharePreview } from "./sharePreview";
 
 const cl = classNameFactory("vc-screen-picker-");
@@ -164,6 +164,11 @@ function ModalComponent({ modalProps, submit, close, options }: {
             >
 
                 <div>
+                    <section className={cl("padding")}>
+                        <Text tag="h2" variant="heading-md/semibold" color="text-strong">Gaming presets</Text>
+                        <OptionRadio options={["low-impact","smooth"] as const} labels={["Lower game impact · 720p / 30fps","Smoother stream · 720p / 60fps"]} settings={{preset:liveSettings.resolution==="720"&&liveSettings.contentHint==="motion"?(liveSettings.frameRate==="30"?"low-impact":liveSettings.frameRate==="60"?"smooth":""):""}} settingsKey="preset" onChange={value=>Object.assign(liveSettings,gamingSharePreset(value))} />
+                        <Text variant="text-sm/normal" color="text-subtle">Lower game impact reduces capture and encoding work at the cost of stream resolution and frame rate. Choose an application window when practical. Compare game FPS at the same stream settings.</Text>
+                    </section>
                     <div className={cl("flex", "padding")}>
                         <section className={cl("quality-section")}>
                             <Text tag="h2" variant="heading-md/semibold" color="text-strong">Resolution</Text>
@@ -219,7 +224,8 @@ function ModalComponent({ modalProps, submit, close, options }: {
                     <Text variant="text-sm/normal" color="text-subtle">
                         Capture is capped at your selection; Discord's stream quality, account limits,
                         available hardware and upload bandwidth still determine what viewers receive.
-                        For a busy game or a slower connection, try 720p at 60fps with Smoother video.
+                        If game FPS drops while sharing, start with 720p at 30fps.
+                        Choose 720p at 60fps when you have more headroom and want smoother motion.
                     </Text>
                 </div>
             </Modal>
