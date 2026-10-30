@@ -53,7 +53,7 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
         .initialization_script(crate::network::privacy_script())
         .initialization_script(EQUICORD)
         .initialization_script(CORE)
-        .additional_browser_args(&crate::network::browser_args(BROWSER_ARGS))
+        .additional_browser_args(&crate::graphics::configured_args(app,BROWSER_ARGS))
         .on_navigation(move |url| {
             if is_discord(url) {
                 return true;

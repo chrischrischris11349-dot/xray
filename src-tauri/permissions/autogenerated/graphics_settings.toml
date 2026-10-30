@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-graphics-settings"
+description = "Enables the graphics_settings command without any pre-configured scope."
+commands.allow = ["graphics_settings"]
+
+[[permission]]
+identifier = "deny-graphics-settings"
+description = "Denies the graphics_settings command without any pre-configured scope."
+commands.deny = ["graphics_settings"]

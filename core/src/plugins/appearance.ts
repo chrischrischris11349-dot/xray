@@ -244,6 +244,7 @@ const keyboardSounds = definePlugin({
       gain.gain.setValueAtTime((volume / 100) * (event.key === " " || event.key === "Enter" ? 0.9 : 0.6), now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + tone.decay * (event.key === "Enter" ? 2 : 1));
       source.connect(filter).connect(gain).connect(audio.destination);
+      source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();};
       source.start(now);
       source.stop(now + 0.1);
     };

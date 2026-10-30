@@ -59,19 +59,30 @@ const characterCounter = definePlugin({
       [data-xray-count-over]::before { color: #ff7a66; }
     `);
     const limit = () => (stores.users?.getCurrentUser?.()?.premiumType === 2 ? 4000 : 2000);
+    const formatter=new Intl.NumberFormat();
+    const pending=new Set<Element>();let frame:number|undefined;
+    const paint=()=>{
+      frame=undefined;
+      for(const editor of pending){
+        if(!editor.isConnected)continue;
+        const box=editor.closest('[class*="channelTextArea_"]');if(!box)continue;
+        const length=(editor.textContent??'').replace(/﻿/g,'').length,max=limit();
+        const label=length?`${formatter.format(length)} / ${formatter.format(max)}`:null;
+        if(box.getAttribute('data-xray-count')!==label){if(label===null)box.removeAttribute('data-xray-count');else box.setAttribute('data-xray-count',label);}
+        box.toggleAttribute('data-xray-count-over',length>max);
+      }
+      pending.clear();
+    };
     const count = (event: Event) => {
       const editor = event.target instanceof Element ? event.target.closest('[role="textbox"]') : null;
       const box = editor?.closest('[class*="channelTextArea_"]');
       if (!box || !editor) return;
-      const length = (editor.textContent ?? "").replace(/﻿/g, "").length;
-      const max = limit();
-      if (length === 0) box.removeAttribute("data-xray-count");
-      else box.setAttribute("data-xray-count", `${length.toLocaleString()} / ${max.toLocaleString()}`);
-      box.toggleAttribute("data-xray-count-over", length > max);
+      pending.add(editor);if(frame===undefined)frame=requestAnimationFrame(paint);
     };
     window.addEventListener("input", count, true);
     ctx.onStop(() => {
       window.removeEventListener("input", count, true);
+      if(frame!==undefined)cancelAnimationFrame(frame);pending.clear();
       document.querySelectorAll("[data-xray-count]").forEach((box) => {
         box.removeAttribute("data-xray-count");
         box.removeAttribute("data-xray-count-over");

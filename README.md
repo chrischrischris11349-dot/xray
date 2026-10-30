@@ -11,6 +11,9 @@ Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). See
 rules it follows, and [docs/DESIGN.md](docs/DESIGN.md) for the look (design
 tokens) and the extended profile view.
 
+See [0.5.18 graphics and performance](docs/RELEASE_0.5.18.md) for the hardware
+acceleration option, performance-plugin filter and faster plugin search.
+
 See [0.5.17 Sonar voice-output routing](docs/RELEASE_0.5.17.md) for separating
 XRay voice from other WebView2 apps without changing the microphone.
 

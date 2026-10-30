@@ -32,6 +32,7 @@ import { collectorStatusControl } from "./collectorStatus";
 import { personalBuild } from "../personalBuild";
 import {offlineStorageControl} from './offlineStorage';
 import {voiceOutputControl} from '../voice/outputRouting';
+import {graphicsControl} from './graphics';
 
 const LOGO = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f2f3f5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" fill="none" stroke="#0b0b0d" stroke-width="2.2" stroke-linecap="round"/></svg>`;
 const CLOSE = icon("x", 16, 1.75);
@@ -250,6 +251,7 @@ function render(): void {
     appearanceControl(),
     timeFormatControl(),
     voiceOutputControl(),
+    graphicsControl(),
     loggingCard(),
     syncCard(),
     serverStorageCard(),

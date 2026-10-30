@@ -23,7 +23,7 @@ function participants(id:string):string {
 }
 function releaseAudio():void {for(const {node,cleanup} of sources.values()){node.disconnect();cleanup();}sources.clear();destination?.stream.getTracks().forEach(track=>track.stop());void context?.close().catch(()=>{});context=destination=undefined;}
 const voiceChannel=()=>stores.voiceStates?.getVoiceStateForUser?.(myId())?.channelId as string|undefined;
-const update=()=>{if(indicator){indicator.hidden=!session;indicator.textContent=recorder?.state==="recording"?`● Recording VC audio · ${Math.ceil(bytes/1024)} KB sent · click to stop`:error?"Recording upload needs attention · open Recordings":"Saving recording…";}if(indicator)indicator.setAttribute("aria-label",indicator.textContent??"VC recording status");listeners.forEach(fn=>fn());};
+const update=()=>{if(indicator){indicator.hidden=!session;indicator.textContent=recorder?.state==="recording"?`● Recording VC audio · ${Math.ceil(bytes/1024)} KB saved · click to stop`:error?"Recording upload needs attention · open Recordings":"Saving recording…";}if(indicator)indicator.setAttribute("aria-label",indicator.textContent??"VC recording status");listeners.forEach(fn=>fn());};
 const transfer=(payload:any)=>invoke("recording_transfer",{payload}) as Promise<any>;
 function attach(track:MediaStreamTrack):void {
   if(!context || !destination || track.kind!=="audio" || track.readyState!=="live" || sources.has(track))return;
@@ -51,7 +51,7 @@ async function chooseRecordingAudio(ids:string[],available:Set<string>):Promise<
   const start=h("button",{class:"btn",text:"Start recording",on:{click:()=>{if(!consent.checked||!all&&!chosen.size)return;result=all?null:new Set(chosen);closeDialog();}}});
   const draw=()=>{list.hidden=all;start.disabled=!consent.checked||!all&&!chosen.size;status.textContent=all?"Includes incoming call audio and watched stream audio; your microphone is excluded.":available.size?"Only selected, separately identified incoming audio is captured. Unidentified audio is excluded.":"Discord has not exposed separate participant audio in this session. All incoming audio is still available.";};
   scope.onchange=()=>{all=scope.value==="all";draw();};consent.onchange=draw;draw();
-  showSheet(h("section",{class:"dialog",attrs:{role:"dialog","aria-label":"Record VC audio"}},h("h2",{class:"dialog-title",text:"Record VC audio"}),scope,list,status,h("label",{class:"recording-choice"},consent,h("span",{text:"Everyone whose audio is captured has agreed"})),h("p",{class:"pf-note",text:"Audio is saved on your configured server. A visible indicator stays on while recording. Joining participants or changing the voice channel stops capture."}),h("div",{class:"dialog-actions"},h("button",{class:"btn ghost",text:"Cancel",on:{click:closeDialog}}),start)),()=>resolve(result));
+  showSheet(h("section",{class:"dialog",attrs:{role:"dialog","aria-label":"Record VC audio"}},h("h2",{class:"dialog-title",text:"Record VC audio"}),scope,list,status,h("label",{class:"recording-choice"},consent,h("span",{text:"Everyone whose audio is captured has agreed"})),h("p",{class:"pf-note",text:"Server storage is preferred, with a local fallback if unreachable. A visible indicator stays on while recording. Joining participants or changing the voice channel stops capture."}),h("div",{class:"dialog-actions"},h("button",{class:"btn ghost",text:"Cancel",on:{click:closeDialog}}),start)),()=>resolve(result));
  });
 }
 export function installVoiceRecording():void {
@@ -140,11 +140,11 @@ export function recordingPanel():{element:HTMLElement;close():void} {
   })()}});
   const retry=h("button",{class:"btn ghost",attrs:{type:"button"},text:"Retry pending upload",on:{click:()=>void drain()}});
   function draw(){if(!active)return;status.textContent=[label,error,error && session?"Pending audio is in memory only. Keep XRay open; do not switch accounts or exit.":""].filter(Boolean).join(" · ");begin.disabled=!!session || uploading || starting;stopButton.disabled=!recorder;retry.hidden=!session || !error;discard.hidden=!session || !error || !!recorder;discard.disabled=uploading;partial.hidden=discard.hidden;partial.disabled=uploading;}
-  element.append(h("h2",{text:"VC recordings"}),h("p",{class:"pf-note",text:"VC audio only; no microphone access. Explicit participant consent is required. Server limit: 32 MB per recording, 512 MB total, seven-day retention. No persistent local audio copy; save a download only when you choose."}),h("div",{class:"pf-journal-actions"},begin,stopButton,retry,partial,discard,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Refresh server recordings",on:{click:()=>void library.refresh()}})),status);
+  element.append(h("h2",{text:"VC recordings"}),h("p",{class:"pf-note",text:"VC audio only; no microphone access. Explicit participant consent is required. Server limit: 32 MB per recording, 512 MB total, seven-day retention. Captured chunks also have a local backup. Manage downloaded playback copies in Local backup & cache."}),h("div",{class:"pf-journal-actions"},begin,stopButton,retry,partial,discard,h("button",{class:"btn ghost",attrs:{type:"button"},text:"Refresh server recordings",on:{click:()=>void library.refresh()}})),status);
   const library=recordingLibrary();element.append(library.element);listeners.add(draw);draw();return{element,close(){active=false;listeners.delete(draw);library.close();}};
 }
 /** Prevent restarting while audio or pending recording chunks remain in memory. */
-export function recordingNeedsAttention():boolean{return !!session||!!recorder||uploading||queued.length>0;}
+export function recordingNeedsAttention():boolean{return starting||finishing||!!session||!!recorder||uploading||queued.length>0;}
 /** Shared by the recordings panel and native context menu; consent checks stay in start(). */
 export function voiceRecordingState(){return {channel:voiceChannel(),recordingChannel:channel,recording:recorder?.state==="recording",busy:starting||finishing||uploading||!!session};}
 export async function startVoiceRecording(channelId:string):Promise<void>{await start(channelId);}

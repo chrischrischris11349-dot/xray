@@ -47,6 +47,11 @@ a[data-xray-masked-link]::after { content:" → " attr(data-xray-link-host);font
 .notification-dismiss { margin: 8px 8px 0 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 .mono { font-family: "Cascadia Mono", Consolas, ui-monospace, monospace; }
+.card.graphics-card { display:grid;grid-template-columns:minmax(0,1fr);gap:10px; }
+.graphics-card .graphics-row { display:flex;align-items:center;gap:16px; }
+.graphics-card .card-text { flex:1;min-width:0; }
+.graphics-card p { margin:0; }
+.graphics-card .dialog-actions { display:flex;align-items:center;flex-wrap:wrap;gap:8px;justify-content:flex-start; }
 .label { font-size: 12px; font-weight: ${type.heavy}; color: var(--faint); }
 
 .panel {

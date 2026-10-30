@@ -34,6 +34,8 @@ await build({
 });
 
 try {
+  execFileSync(process.execPath, ["--test", "core/test/typing-performance.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/graphics.test.mjs", "core/test/performance-picker.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/output-routing.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/offline-storage.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/link-safety.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });

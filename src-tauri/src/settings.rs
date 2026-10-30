@@ -12,6 +12,8 @@ use crate::hotkeys::Hotkeys;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ShellSettings {
+    /// WebView2's automatic GPU path; false is an opt-in compatibility mode.
+    pub hardware_acceleration: bool,
     /// Local-only strict SOCKS routing; changing this requires a full restart.
     pub tor_proxy: bool,
     /// External links may use Tor Browser while Discord/voice use normal routing.
@@ -40,6 +42,7 @@ pub struct ShellSettings {
 impl Default for ShellSettings {
     fn default() -> Self {
         Self {
+            hardware_acceleration: true,
             tor_proxy: false,
             tor_browser_links: false,
             tor_browser_path: String::new(),
@@ -68,17 +71,34 @@ pub fn load<R: Runtime>(app: &AppHandle<R>) -> ShellSettings {
 }
 
 pub fn save<R: Runtime>(app: &AppHandle<R>, settings: &ShellSettings) {
-    let Some(path) = path(app) else { return };
-    if let Some(dir) = path.parent() {
-        let _ = fs::create_dir_all(dir);
-    }
-    if let Ok(json) = serde_json::to_string_pretty(settings) {
-        let _ = fs::write(path, json);
-    }
+    let _ = save_checked(app, settings);
+}
+
+pub fn save_checked<R: Runtime>(app: &AppHandle<R>, settings: &ShellSettings) -> Result<(),String> {
+    let destination=path(app).ok_or("XRay's settings directory is unavailable")?;
+    write_settings(&destination,settings).map_err(|_|"Settings could not be saved. Check disk space and retry; the previous preference was kept.".into())
+}
+
+fn write_settings(destination:&std::path::Path,settings:&ShellSettings)->std::io::Result<()> {
+    use std::io::Write;
+    if let Some(parent)=destination.parent(){fs::create_dir_all(parent)?;}
+    let staged=destination.with_extension(format!("{}.tmp",std::process::id()));
+    let data=serde_json::to_vec_pretty(settings)?;
+    let mut file=fs::File::create(&staged)?;file.write_all(&data)?;file.sync_all()?;drop(file);
+    fs::rename(&staged,destination)
 }
 
 #[cfg(test)] mod tests {
     use super::*;
+    #[test] fn graphics_defaults_and_saved_preferences_survive_restart() {
+        let mut value:ShellSettings=serde_json::from_str("{}").unwrap();assert!(value.hardware_acceleration);
+        value.hardware_acceleration=false;value.zoom=1.25;value.tor_browser_links=true;
+        let directory=std::env::temp_dir().join(format!("xray-settings-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        let destination=directory.join("shell.json");write_settings(&destination,&value).unwrap();
+        let restored:ShellSettings=serde_json::from_slice(&fs::read(&destination).unwrap()).unwrap();assert!(!restored.hardware_acceleration);assert_eq!(restored.zoom,1.25);assert!(restored.tor_browser_links);
+        value.hardware_acceleration=true;write_settings(&destination,&value).unwrap();let restored:ShellSettings=serde_json::from_slice(&fs::read(&destination).unwrap()).unwrap();assert!(restored.hardware_acceleration);
+        fs::remove_file(destination).unwrap();fs::remove_dir(directory).unwrap();
+    }
     #[test] fn tor_links_can_survive_restart_without_disabling_voice() {
         let normal:ShellSettings=serde_json::from_str("{}").unwrap();
         assert!(!normal.tor_proxy&&!normal.tor_browser_links);

@@ -15,7 +15,8 @@ import type { Plugin } from "../plugins/types";
 import { markPluginsPicked, pickedPlugins } from "../settings";
 import { h } from "./dom";
 import { uiRoot } from "./root";
-import { score } from "./search";
+import { rank } from "./search";
+import {isPerformancePlugin,isTypingFeelPlugin} from './performancePlugins';
 
 type Source = "xray" | "Equicord";
 
@@ -49,7 +50,7 @@ const RECOMMENDED = new Set([
 /** xray plugins kept by "Just the basics". */
 const BASICS = new Set(["voiceBar", "fakeDeafen", "declutter", "accountDetails"]);
 
-type Filter = "All" | "On" | Source;
+type Filter = "All" | "On" | "Performance" | "Typing" | Source;
 
 let open = false;
 
@@ -69,25 +70,24 @@ export function offerPickerOnFirstRun(): void {
   }
 }
 
-export function showPicker(): void {
+export function showPicker(initialFilter:Filter='All'): void {
   if (open) return;
   open = true;
   const choices = gather();
+  const searchIndex=new Map(choices.map(choice=>[choice,{title:choice.name,keywords:choice.description,choice}]));
   const wanted = new Map(choices.map((c) => [c.key, c.current]));
   let query = "";
-  let filter: Filter = "All";
+  let filter: Filter = initialFilter;
+  let frame:number|undefined;
+  const schedule=()=>{if(frame===undefined)frame=requestAnimationFrame(()=>{frame=undefined;render();});};
 
   const count = h("span", { class: "pk-count" });
   const list = h("div", { class: "pk-list", attrs: { role: "list" } });
   const render = () => {
     const q = query.trim();
-    let shown = choices.filter((c) => (filter === "All" ? true : filter === "On" ? wanted.get(c.key) : c.source === filter));
+    let shown = choices.filter((c) => (filter === "All" ? true : filter === "On" ? wanted.get(c.key) : filter==='Performance'?isPerformancePlugin(c.source,c.id):filter==='Typing'?isTypingFeelPlugin(c.source,c.id):c.source === filter));
     if (q) {
-      shown = shown
-        .map((c) => ({ c, s: Math.max(score(q, c.name), score(q, c.description) * 0.6) }))
-        .filter((r) => r.s > 0)
-        .sort((a, b) => b.s - a.s)
-        .map((r) => r.c);
+      shown = rank(q,shown.map(choice=>searchIndex.get(choice)!),shown.length).map(item=>item.choice);
     }
     list.replaceChildren(...(shown.length ? shown.map(row) : [h("div", { class: "pk-empty", text: "No plugins match." })]));
     const on = [...wanted.values()].filter(Boolean).length;
@@ -137,7 +137,7 @@ export function showPicker(): void {
   const filters = h(
     "div",
     { class: "chips", attrs: { role: "tablist", "aria-label": "Show" } },
-    ...(["All", "On", "xray", "Equicord"] as Filter[]).map((f) =>
+    ...(["All", "On", "Performance", "Typing", "xray", "Equicord"] as Filter[]).map((f) =>
       h("button", {
         class: f === filter ? "chip-filter on" : "chip-filter",
         attrs: { type: "button", role: "tab", "aria-selected": String(f === filter) },
@@ -161,12 +161,13 @@ export function showPicker(): void {
     on: {
       input: (event: Event) => {
         query = (event.target as HTMLInputElement).value;
-        render();
+        schedule();
       },
     },
   });
 
   const close = () => {
+    if(frame!==undefined)cancelAnimationFrame(frame);
     scrim.remove();
     open = false;
     markPluginsPicked();
