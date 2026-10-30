@@ -245,13 +245,13 @@ const settings = definePluginSettings({
         type: OptionType.SELECT,
         description: "Resolution",
         hidden: true,
-        options: StreamResolution.map(res => ({ label: res, value: res, default: res === "1080" }))
+        options: StreamResolution.map(res => ({ label: res, value: res, default: res === "720" }))
     },
     frameRate: {
         type: OptionType.SELECT,
         description: "Frame Rate",
         hidden: true,
-        options: StreamFps.map(fps => ({ label: fps, value: fps, default: fps === "60" }))
+        options: StreamFps.map(fps => ({ label: fps, value: fps, default: fps === "30" }))
     },
     contentHint: {
         type: OptionType.SELECT,

@@ -10,7 +10,7 @@ mkdirSync(resolve("node_modules/.cache/xray"), { recursive: true });
 globalThis.captureFixture = { options: { frameRate: "60", resolution: "1080", contentHint: "motion", systemAudio: false }, native: async () => ({ getVideoTracks: () => [] }) };
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: { mediaDevices: { getDisplayMedia: options => globalThis.captureFixture.native(options) } } });
 const mocks = {
-  "@api/Settings": "export const definePluginSettings=()=>({use:()=>globalThis.captureFixture.options});",
+  "@api/Settings": "export const definePluginSettings=definitions=>(globalThis.captureFixture.definitions=definitions,{use:()=>globalThis.captureFixture.options});",
   "@api/UserSettings": "export const getUserSettingLazy=()=>({useSetting:()=>false,updateSetting(){}});",
   "@components/index": "export const Divider=()=>null,Span=props=>props;",
   "@utils/constants": "export const Devs={ThaUnknown:{}};",
@@ -93,6 +93,7 @@ test("screen picker keeps explicit higher quality choices available", async () =
   assert.deepEqual(actual.video.width, { ideal: 3840, max: 3840 });
   assert.deepEqual(actual.video.height, { ideal: 2160, max: 2160 });
 });
+test('fresh screen-share defaults use a 720p30 capture budget',()=>{const values=globalThis.captureFixture.definitions;assert.equal(values.resolution.options.find(o=>o.default).value,'720');assert.equal(values.frameRate.options.find(o=>o.default).value,'30');});
 
 test('capture budgets never raise a lower numeric frame-rate or resolution request',async()=>{
  let actual;const previous={...globalThis.captureFixture.options};Object.assign(globalThis.captureFixture.options,{frameRate:'60',resolution:'1080'});

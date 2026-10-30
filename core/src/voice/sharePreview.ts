@@ -23,8 +23,9 @@ export function confirmSharePreview(initial: MediaStream, choose: () => Promise<
     const bind = () => {
       video.srcObject = current; void video.play().catch(() => { status.textContent = "Preview playback is unavailable. Choose another source or cancel."; });
       const track = current.getVideoTracks()[0], size = track?.getSettings();
+      const fps=Number(size?.frameRate),rate=Number.isFinite(fps)&&fps>0?` · ${Math.round(fps*10)/10} FPS capture`:" · Capture FPS unavailable";
       const audio=current.getAudioTracks?.().filter(track=>track.readyState==="live").length??0;
-      status.textContent = `${track?.label || "Selected source"}${size?.width ? ` · ${size.width} × ${size.height}` : ""}. ${audio?"Audio capture available; preview is muted to prevent feedback.":"No audio track supplied. Enable audio in the system picker or choose a supported source."} Preview only — choose Share this source to go live.`;
+      status.textContent = `${track?.label || "Selected source"}${size?.width ? ` · ${size.width} × ${size.height}` : ""}${rate}. ${audio?"Audio capture available; preview is muted to prevent feedback.":"No audio track supplied. Enable audio in the system picker or choose a supported source."} Preview only — choose Share this source to go live.`;
       current.getVideoTracks().forEach(t => t.addEventListener("ended", ended, { once: true }));
     };
     button("Cancel", cancel);
