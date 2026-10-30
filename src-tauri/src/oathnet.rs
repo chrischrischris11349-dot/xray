@@ -47,8 +47,9 @@ pub async fn oathnet_lookup(app: tauri::AppHandle, kind: String, user_id: String
         return tauri::async_runtime::spawn_blocking(move||crate::intelligence::transfer(&app,"oathnet",&kind,&user_id,"discord").map(|body|LookupResponse{status:200,body})).await.map_err(|_|"Oathnet task failed".to_string())?;
     }
     let url = helper_url(&kind, &user_id)?;
+    if crate::network::tor_enabled(){return Err("The local lookup helper is unavailable in strict Tor mode. Configure the provider key in XRay to use its remote HTTPS API through Tor.".into());}
     tauri::async_runtime::spawn_blocking(move || {
-        let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(20)).redirects(0).build();
+        let agent = crate::network::agent_builder().timeout(Duration::from_secs(20)).redirects(0).build();
         let response = match agent.get(&url).set("Origin", "https://discord.com").call() {
             Ok(response) | Err(ureq::Error::Status(_, response)) => response,
             Err(_) => return Err("Could not reach the Oathnet helper on port 43991. Start the helper with your API key, then retry.".into()),

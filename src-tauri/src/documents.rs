@@ -11,7 +11,7 @@ pub async fn message_archive<R:Runtime>(app:AppHandle<R>,payload:Value)->Result<
     if endpoint.scheme()!="https"||!endpoint.username().is_empty()||endpoint.password().is_some()||endpoint.query().is_some()||endpoint.fragment().is_some()||settings.sync_token.is_empty(){return Err("Configure HTTPS server storage first".into());}
     tauri::async_runtime::spawn_blocking(move||{
         use std::io::Read;
-        let agent=ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(30)).redirects(0).build();
+        let agent=crate::network::agent_builder().timeout(std::time::Duration::from_secs(30)).redirects(0).build();
         let response=match agent.post(&format!("{}/message-archive",settings.sync_endpoint.trim_end_matches('/'))).set("Authorization",&format!("Bearer {}",settings.sync_token)).send_json(payload){
             Ok(response)=>response,
             Err(ureq::Error::Status(400,response))=>response,
@@ -40,7 +40,7 @@ pub async fn history_media<R: Runtime>(app: AppHandle<R>, owner: String, url: St
     tauri::async_runtime::spawn_blocking(move||{
         use std::io::Read;
         let base=settings.sync_endpoint.trim_end_matches('/');
-        let agent=ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(15)).redirects(0).build();
+        let agent=crate::network::agent_builder().timeout(std::time::Duration::from_secs(15)).redirects(0).build();
         let mut payload=serde_json::json!({"owner":owner,"url":url,"retry":retry.unwrap_or(false)});if let Some(offset)=offset{if offset>250*1024*1024{return Err("Invalid media offset".into());}payload["offset"]=Value::from(offset);}
         let response=agent.post(&format!("{base}/media")).set("Authorization",&format!("Bearer {}",settings.sync_token)).send_json(payload).map_err(|error|match error{ureq::Error::Status(404,_)=>"Update the XRay server; media archiving is unavailable".to_string(),ureq::Error::Status(401,_)=>"The media server rejected its configured token".to_string(),_=>"The media archive server is unavailable".to_string()})?;
         let mut bytes=Vec::new();response.into_reader().take(750001).read_to_end(&mut bytes).map_err(|_|"Could not read media archive status")?;
@@ -70,7 +70,7 @@ pub async fn document_store<R: Runtime>(app: AppHandle<R>, ns: String, value: Op
 fn transfer(endpoint: &str, token: &str, ns: &str, value: Option<String>, revision: Option<u64>) -> Result<Value, String> {
     use std::io::Read;
     let url = format!("{}/documents?ns={ns}", endpoint.trim_end_matches('/'));
-    let agent = ureq::AgentBuilder::new().timeout(std::time::Duration::from_secs(15)).redirects(0).build();
+    let agent = crate::network::agent_builder().timeout(std::time::Duration::from_secs(15)).redirects(0).build();
     let request = agent.request(if value.is_some() { "PUT" } else { "GET" }, &url).set("authorization", &format!("Bearer {token}"));
     let response = match value { Some(value) => request.send_json(serde_json::json!({"value":value,"revision":revision})), None => request.call() };
     let response = response.map_err(|error| match error {

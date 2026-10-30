@@ -1,5 +1,4 @@
 import { myId } from "../discord";
-import { serverDataEnabled } from "../shell/serverStorage";
 import { invoke } from "../shell/bridge";
 import { h } from "./dom";
 import { registerArchiveImage,forgetArchiveImage } from "./imageViewer";
@@ -15,7 +14,7 @@ function request(args:Record<string,unknown>):Promise<any>{return new Promise((r
 });}
 /** Only short-lived playback URLs enter the page; server credentials stay in Rust. */
 export function archivedMedia(source:string,kind:"image"|"video"|"audio"|"file",show:(url:string,external?:string)=>void):HTMLElement|null {
- const account=myId();if(!account||!serverDataEnabled(account))return null;const owner:string=account;
+ const account=myId();if(!account)return null;const owner:string=account;
  let busy=false,attempt=0,timer:ReturnType<typeof setTimeout>|undefined,ready:any;
  const status=h("span",{attrs:{role:"status"},text:"Checking server copy…"}),retry=h("button",{class:"btn ghost",text:"Retry archive",on:{click:()=>void (ready&&kind!=="file"?loadFile(true):load(true))}});
  retry.hidden=true;const block=h("div",{class:"pf-note"},status,retry);
@@ -36,13 +35,13 @@ export function archivedMedia(source:string,kind:"image"|"video"|"audio"|"file",
      const url=URL.createObjectURL(new Blob(parts,{type:ready.mime}));created.url=url;return url;
     })().catch(error=>{for(const [stored,value]of blobs)if(value===created){blobs.delete(stored);retainedBytes-=bytes;}throw error;});
    }else entry.users.add(block);
-   const url=await entry!.promise;if(myId()!==owner||!block.isConnected){collectBlobs();return;}watchBlob(block.getRootNode());if(kind==="image")registerArchiveImage(url,ready.url);show(url,ready.url);status.textContent=`${kind==="image"?"Photo":"Video"} · loaded from your server copy`;retry.textContent="Reload server copy";retry.hidden=false;
+   const url=await entry!.promise;if(myId()!==owner||!block.isConnected){collectBlobs();return;}watchBlob(block.getRootNode());if(kind==="image")registerArchiveImage(url,ready.url);show(url,ready.url);status.textContent=`${kind==="image"?"Photo":kind==='audio'?'Voice message':'Video'} · loaded from ${ready.local?'this device':'your server copy'}`;retry.textContent="Reload saved copy";retry.hidden=false;
   }catch(error){status.textContent=String((error as Error)?.message??error);retry.textContent="Retry loading server copy";retry.hidden=false;}finally{busy=false;}
  }
  async function load(force=false){if(busy||myId()!==owner)return;busy=true;retry.hidden=true;clearTimeout(timer);
   try{const key=`${owner}:${source}`;let flight=flights.get(key);if(!flight){flight=request({owner,url:source,retry:force});flights.set(key,flight);void flight.finally(()=>{if(flights.get(key)===flight)flights.delete(key);}).catch(()=>{});}
    const result=await flight;if(myId()!==owner)return;
-   if(result?.state==="ready"){ready=result;if(kind==='file'){show(result.url);status.textContent='File saved on your server';retry.textContent='Refresh saved file link';retry.hidden=false;return;}status.textContent=`${kind==="image"?"Photo":kind==='audio'?'Voice message':'Video'} · saved on your server`;retry.textContent=`Load ${kind} from server · ${(result.bytes/1048576).toFixed(1)} MB`;retry.hidden=false;
+   if(result?.state==="ready"){ready=result;if(kind==='file'){show(result.url);status.textContent=result.local?'File available from this device':'File saved on your server';retry.textContent='Refresh saved file link';retry.hidden=false;return;}status.textContent=`${kind==="image"?"Photo":kind==='audio'?'Voice message':'Video'} · ${result.local?result.partial?'local backup downloading':'available on this device':'saved on your server'}`;retry.textContent=`Load ${kind} · ${(result.bytes/1048576).toFixed(1)} MB`;retry.hidden=false;
     if(kind==="image"){const begin=()=>{if(!busy)void loadFile();else queueMicrotask(()=>void loadFile());};if(typeof IntersectionObserver!=="undefined"){const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting)){observer.disconnect();begin();}},{rootMargin:"160px"});observer.observe(block);}else queueMicrotask(begin);}return;}
    if(["queued","saving","missing"].includes(result?.state)){status.textContent="Saving attachment on your server…";if(attempt++<(result?.state==="missing"?5:30)){timer=setTimeout(()=>{if(block.isConnected)void load();},2000);return;}}
    status.textContent=result?.error??"Server copy not ready. The original link may still be available.";retry.hidden=false;

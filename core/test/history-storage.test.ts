@@ -6,8 +6,9 @@ import { parseHTML } from "linkedom";
 import { profileJournal } from "../src/ui/profileJournal";
 import { archivedMedia } from "../src/ui/archivedMedia";
 import { viewerUrl } from "../src/ui/imageViewer";
+import {offlineDb} from '../src/shell/offlineDb';
 
-test("history coalesces slow writes, retains offline changes in memory and isolates account reads",async()=>{
+test("history coalesces slow writes, durably saves offline changes and isolates accounts",async()=>{
   const id="300760994454437890",owner="300760994454437899";
   let value:string|null=null,revision=0,offline=false,slow=false,release:(()=>void)|undefined;
   const writes:string[]=[];let inFlight=0,maxInFlight=0;
@@ -28,7 +29,8 @@ test("history coalesces slow writes, retains offline changes in memory and isola
   slow=false;release!();await save;await flushHistory();
   assert.equal(writes.length,2);assert.equal(maxInFlight,1);assert.match(value!,/observed 49/);assert.match(value!,/note waiting/);
   assert.equal(window.localStorage.getItem(`xray.profileHistory.v1:${owner}`),null);
-  offline=true;await assert.rejects(saveProfileNote(id,"unsaved offline note"),/offline/);assert.match(historyError(),/only in memory/);assert.equal(historyFor(id)?.notes,"unsaved offline note");
+  offline=true;await saveProfileNote(id,"saved offline note");assert.match(historyError(),/device/);assert.equal(historyFor(id)?.notes,"saved offline note");
+  const backup=await offlineDb.get(owner,'document',`profile-history.${owner}`);assert.equal(backup?.pending,true);assert.match(backup?.data.value,/saved offline note/);
   assert.equal(window.localStorage.getItem(`xray.profileHistory.v1:${owner}`),null);
   switchHistoryAccount();assert.equal(historyFor(id),undefined);
 });
@@ -40,7 +42,7 @@ test("a failed server-history load can be retried without restarting or replacin
  let offline=true;
  const value=JSON.stringify({version:1,people:{[target]:{enabled:true,startedAt:Date.now(),retentionDays:30,categories:["messages"],notes:"restored from server",events:[]}}});
  (window as any).__TAURI_INTERNALS__={invoke:async(_command:string,args:any)=>{if(offline)throw Error("server offline");return args.value===null?{value,revision:1}:{revision:2};}};
- historyFor(target);await new Promise(resolve=>setTimeout(resolve,0));assert.match(historyError(),/offline/);assert.equal(historyFor(target),undefined);
+ historyFor(target);await new Promise(resolve=>setTimeout(resolve,0));assert.match(historyError(),/unavailable/);assert.equal(historyFor(target),undefined);
  offline=false;retryHistoryLoad();await new Promise(resolve=>setTimeout(resolve,0));assert.equal(historyFor(target)?.notes,"restored from server");
 });
 
@@ -75,7 +77,7 @@ test("server archive playback uses native authenticated URLs and reports failure
  dom.document.body.append(a,b);
  await new Promise(r=>setTimeout(r,0));assert.equal(calls,2);assert.match(shown,/^blob:/);assert.match(a.textContent!,/server copy/);assert.equal(viewerUrl(shown),shown);
  fail=true;const failed=archivedMedia("https://cdn.discordapp.com/attachments/123/456/video.mp4","video",()=>{})!;await new Promise(r=>setTimeout(r,0));assert.match(failed.textContent!,/Archive unavailable/);assert.equal(failed.querySelector("button")!.hidden,false);
- a.remove();b.remove();window.localStorage.setItem(`xray.serverData.v1:${owner}`,"false");assert.equal(archivedMedia("unused","image",()=>{}),null);
+ a.remove();b.remove();window.localStorage.setItem(`xray.serverData.v1:${owner}`,"false");assert.ok(archivedMedia("unused","image",()=>{}),'Local media fallback remains available without server mode');
 });
 
 test("recovered photo/video metadata persists and refreshes the existing journal immediately",async()=>{

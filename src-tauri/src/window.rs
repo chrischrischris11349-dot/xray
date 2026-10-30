@@ -6,6 +6,7 @@ use tauri::webview::NewWindowResponse;
 use tauri::window::Color;
 use tauri::{AppHandle, Manager, Runtime, Url, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_dialog::{DialogExt,MessageDialogButtons};
 
 pub const MAIN: &str = "main";
 /// Passed by the launch-at-login entry, so startup can tell it apart from a normal launch.
@@ -23,6 +24,7 @@ const EQUICORD: &str = include_str!("../inject/equicord.js");
 const BROWSER_ARGS: &str = "--autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI";
 
 pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()> {
+    crate::network::validate_environment().map_err(|message|tauri::Error::Io(std::io::Error::new(std::io::ErrorKind::PermissionDenied,message)))?;
     let url = WebviewUrl::External(Url::parse(DISCORD_APP).expect("DISCORD_APP is a valid URL"));
     let nav_app = app.clone();
     let popup_app = app.clone();
@@ -48,9 +50,10 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
     };
     if let Some(script) = crate::installer::script(app) { builder = builder.initialization_script(script); }
     let window = builder
+        .initialization_script(crate::network::privacy_script())
         .initialization_script(EQUICORD)
         .initialization_script(CORE)
-        .additional_browser_args(BROWSER_ARGS)
+        .additional_browser_args(&crate::network::browser_args(BROWSER_ARGS))
         .on_navigation(move |url| {
             if is_discord(url) {
                 return true;
@@ -122,9 +125,24 @@ fn is_discord(url: &Url) -> bool {
 }
 
 fn open_in_browser<R: Runtime>(app: &AppHandle<R>, url: &Url) {
-    if matches!(url.scheme(), "http" | "https") {
-        let _ = app.opener().open_url(url.as_str(), None::<&str>);
-    }
+ let Ok(url)=external_url(url.as_str())else{return;};
+ // Fallback guard for popups/context menus outside the core's anchor handlers.
+ let handle=app.clone();let text=format!("Actual website: {}\n\n{}\n\nThis site sees the network address used by your browser. Redirects can change the destination.",url.host_str().unwrap_or(""),url.as_str());
+ app.dialog().message(text).title("XRay · Open external website?").buttons(MessageDialogButtons::OkCancelCustom("Open link".into(),"Cancel".into())).show(move|allowed|{if allowed{let owner=handle.clone();tauri::async_runtime::spawn_blocking(move||{if let Err(message)=launch_reviewed(&owner,&url){owner.dialog().message(message).title("XRay · Link kept closed").show(|_|{});}});}});
+}
+fn external_url(value:&str)->Result<Url,String>{
+ let url=Url::parse(value).map_err(|_|"Invalid link")?;
+ if value.len()>8192||!matches!(url.scheme(),"https"|"http")||url.host_str().is_none()||!url.username().is_empty()||url.password().is_some(){return Err("Only HTTP(S) links without embedded credentials may open".into());}Ok(url)
+}
+fn launch_reviewed<R:Runtime>(app:&AppHandle<R>,url:&Url)->Result<(),String>{
+ if crate::network::tor_links_enabled(){return crate::network::open_browser(url.as_str());}
+ app.opener().open_url(url.as_str(),None::<&str>).map_err(|_|"The browser could not be opened".into())
+}
+/// A web-only opener after the core's sheet. Not an authorization boundary
+/// against scripts already executing inside Discord's web origin.
+#[tauri::command]
+pub async fn open_reviewed_link(app:AppHandle,url:String)->Result<(),String>{
+ let url=external_url(&url)?;tauri::async_runtime::spawn_blocking(move||launch_reviewed(&app,&url)).await.map_err(|_|"Browser launch failed".to_string())?
 }
 
 /// Native page zoom scales Discord and the closed-shadow UI together.
@@ -144,5 +162,6 @@ fn next_zoom(current:f64,step:i32)->f64 {
     ((current*10.0).round()+step as f64).clamp(5.0,20.0)/10.0
 }
 #[cfg(test)] mod zoom_tests { use super::*;
+ #[test] fn external_links_do_not_accept_files_scripts_or_credentials(){for value in ["file:///C:/secret","javascript:alert(1)","https://name:secret@example.com",""]{assert!(external_url(value).is_err());}assert!(external_url("https://example.com/path").is_ok());}
  #[test] fn zoom_limits_reset_and_invalid_saved_value(){assert_eq!(next_zoom(1.0,1),1.1);assert_eq!(next_zoom(0.5,-1),0.5);assert_eq!(next_zoom(2.0,1),2.0);assert_eq!(next_zoom(1.7,0),1.0);assert_eq!(next_zoom(f64::NAN,1),1.1);}
 }

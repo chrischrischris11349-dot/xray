@@ -52,9 +52,10 @@ const accountDetails = definePlugin({
     // A Details button beside Add Friend and More on Discord's profile popout and full profile.
     if (typeof ctx.watch !== "function") return;
     ctx.css(`[data-xray-profile-actions] { align-items:center!important; }
-      .xray-details { position:relative!important; inset:auto!important; transform:none!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; align-self:center!important; flex:0 0 auto!important; box-sizing:border-box!important; width:var(--xray-profile-action-width)!important; min-width:var(--xray-profile-action-width)!important; height:var(--xray-profile-action-height)!important; margin:0!important; padding:0!important; border:0; border-radius:50%; color:var(--interactive-normal,var(--text-normal)); background:var(--background-modifier-hover); line-height:1!important; cursor:pointer; }
-      .xray-details > svg { display:block; flex:none; width:18px; height:18px; }
-      .xray-details:focus-visible { outline:2px solid var(--text-normal); outline-offset:2px; }`);
+      .xray-details { position:relative!important; inset:auto!important; transform:none!important; display:inline-flex!important; align-items:center!important; justify-content:center!important; align-self:center!important; flex:0 0 auto!important; box-sizing:border-box!important; width:var(--xray-profile-action-width)!important; min-width:var(--xray-profile-action-width)!important; height:var(--xray-profile-action-height)!important; margin:0!important; padding:0!important; border:1px solid var(--xr-line,transparent)!important; border-radius:50%!important; color:var(--xr-strong,var(--interactive-normal,var(--text-normal,#f2f3f5)))!important; -webkit-text-fill-color:currentColor!important; background:var(--xr-raised,var(--background-surface-high,var(--background-secondary,#292a2d)))!important; line-height:1!important; cursor:pointer; }
+      .xray-details > svg { display:block; flex:none; width:18px; height:18px; color:inherit!important; stroke:currentColor!important; fill:none!important; }
+      .xray-details:hover { filter:brightness(1.12); }
+      .xray-details:focus-visible { outline:2px solid var(--xr-strong,var(--text-normal,#f2f3f5)); outline-offset:2px; }`);
     ctx.watch('[class*="bannerButton_"], button[aria-label="More"], [role="button"][aria-label="More"]', (existing) => {
       if (existing.closest(".xray-details")) return;
       const row = profileActionRow(existing);

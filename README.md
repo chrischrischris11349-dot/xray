@@ -11,6 +11,15 @@ Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). See
 rules it follows, and [docs/DESIGN.md](docs/DESIGN.md) for the look (design
 tokens) and the extended profile view.
 
+See [0.5.17 Sonar voice-output routing](docs/RELEASE_0.5.17.md) for separating
+XRay voice from other WebView2 apps without changing the microphone.
+
+See [0.5.16 local backups and navigation fixes](docs/RELEASE_0.5.16.md) and
+[offline storage](docs/OFFLINE_STORAGE.md) for cache controls and outage recovery.
+
+See [0.5.15 link review and optional Tor](docs/RELEASE_0.5.15.md) and
+[local network privacy](docs/NETWORK_PRIVACY.md) for setup and limitations.
+
 See [0.5.11 reload-sync fix](docs/RELEASE_0.5.11.md) for the final saved-mode reload guard.
 
 See [0.5.10 saved edits and control fixes](docs/RELEASE_0.5.10.md) for persistent
@@ -45,6 +54,8 @@ Equicord and Vencord (GPL-3.0-or-later) by Vendicated, the Equicord team and
 their contributors; xray builds them from source, minus the plugins listed in
 [equicord/excluded.json](equicord/excluded.json). Icons are
 [Lucide](https://lucide.dev) (ISC).
+
+Native SOCKS transport includes rust-socks (MIT); see [its license](docs/SOCKS_LICENSE.txt).
 
 Custom-status observations: see [the 0.5.6 release notes](docs/RELEASE_0.5.6.md)
 and [custom-status history](docs/CUSTOM_STATUS_HISTORY.md) for setup and PC-off coverage.

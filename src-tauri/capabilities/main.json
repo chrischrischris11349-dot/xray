@@ -12,6 +12,7 @@
     ]
   },
   "permissions": [
+    "allow-open-reviewed-link",
     "allow-save-file-as",
     "allow-notify",
     "allow-set-notification-privacy",

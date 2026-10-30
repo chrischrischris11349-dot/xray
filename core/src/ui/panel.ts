@@ -30,6 +30,8 @@ import { bubblePositionControl } from "./quickReply";
 import { appUpdatesControl, installAppUpdates } from "./appUpdates";
 import { collectorStatusControl } from "./collectorStatus";
 import { personalBuild } from "../personalBuild";
+import {offlineStorageControl} from './offlineStorage';
+import {voiceOutputControl} from '../voice/outputRouting';
 
 const LOGO = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="6" fill="#f2f3f5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" fill="none" stroke="#0b0b0d" stroke-width="2.2" stroke-linecap="round"/></svg>`;
 const CLOSE = icon("x", 16, 1.75);
@@ -247,9 +249,11 @@ function render(): void {
     themeCard(),
     appearanceControl(),
     timeFormatControl(),
+    voiceOutputControl(),
     loggingCard(),
     syncCard(),
     serverStorageCard(),
+    offlineStorageControl(),
     bubblePositionControl(),
     appUpdatesControl(),
     collectorStatusControl(),
@@ -379,12 +383,12 @@ function serverStorageCard(): HTMLElement {
     storageBusy = true; storageMessage = { account, text: "Checking storage and migrating existing records…" }; render();
     void (async () => {
       await flushHistory(); await setServerData(!on);
-      storageMessage = { account, text: !on ? "Server storage verified. Persistent local history and audit copies removed." : "History and audits now save on this device. The server copy is retained." };
+      storageMessage = { account, text: !on ? "Server preference saved. Local fallback backups remain available." : "History and audits now save on this device. The server copy is retained." };
     })().catch(error => { storageMessage = { account, text: String((error as Error)?.message ?? error) }; }).finally(() => { storageBusy = false; render(); });
   });
   button.toggleAttribute("disabled", storageBusy);
   return h("div", { class: "card" }, h("div", { class: "card-text" }, h("div", { class: "card-title", text: "Store profile data on my server" }),
-    h("div", { class: "card-sub", attrs: { role: "status" }, text: (storageMessage.account === account ? storageMessage.text : "") || (on ? "Notes, opted-in history and moderation audits save remotely. No persistent local fallback. Keep XRay open until saves finish." : "Moves notes, history and audits after a verified upload. Set sync_endpoint and sync_token in shell.json. App files and Discord caches still use disk.") })),button);
+    h("div", { class: "card-sub", attrs: { role: "status" }, text: (storageMessage.account === account ? storageMessage.text : "") || (on ? "Server preferred. Notes, history, audits and edits keep a local backup and save locally during outages. See Local backup & cache below." : "Notes, history and audits save on this device. Enable to prefer your configured server while retaining local fallback.") })),button);
 }
 
 function hotkeyList(): HTMLElement {

@@ -29,6 +29,9 @@ import { toggleVoiceControl } from "./plugins/voiceBar";
 import { installVoiceRecording } from "./voice/recorder";
 import { startMonitoring } from "./monitoring";
 import { installZoom } from "./shell/zoom";
+import {installLinkSafety,confirmExternalLink} from './ui/linkSafety';
+import {installOfflineBackups} from './shell/offlineStartup';
+import {installVoiceOutputRouting} from './voice/outputRouting';
 
 const DISCORD_HOSTS = new Set(["discord.com", "ptb.discord.com", "canary.discord.com"]);
 
@@ -38,6 +41,7 @@ function boot(): void {
 
   // First, so xray's keys are handled before any of Discord's listeners exist.
   installKeyRouter();
+  installLinkSafety();
   installZoom();
   installNotifications();
   installVoiceRecording();
@@ -46,6 +50,8 @@ function boot(): void {
   startProfileHistory();
   startDmArchive();
   startMonitoring();
+  installOfflineBackups();
+  installVoiceOutputRouting();
   startPlugins();
   // Pull your settings from your server if sync is on (fails soft otherwise).
   void initSync().then(synchronizeTimeFormat);
@@ -60,6 +66,7 @@ function boot(): void {
   Object.defineProperty(window, "__xray", {
     value: Object.freeze({
       version: __XRAY_VERSION__,
+      confirmExternalLink,
       timeFormat: currentTimeFormat,
       setTimeFormat,
       taskbarVoice: (action: "mute" | "deafen" | "leave") => { if(action === "mute" || action === "deafen" || action === "leave") toggleVoiceControl(action); },

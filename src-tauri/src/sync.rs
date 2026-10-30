@@ -55,7 +55,7 @@ pub async fn sync_config<R: Runtime>(
 fn transfer(endpoint: &str, token: &str, ns: &str, payload: Option<Value>) -> Result<Value, String> {
     let base = endpoint.trim_end_matches('/');
     let url = format!("{base}/config?ns={ns}");
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::network::agent_builder()
         .timeout(std::time::Duration::from_secs(TIMEOUT_SECS))
         .build();
     let bearer = format!("Bearer {token}");

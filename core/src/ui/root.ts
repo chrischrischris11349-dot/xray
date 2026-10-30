@@ -13,6 +13,7 @@
  */
 import { css } from "./styles";
 import { installClipboard } from "./clipboard";
+import {installLinkSafetySurface} from './linkSafety';
 
 type KeyHandler = (event: KeyboardEvent) => boolean;
 
@@ -31,6 +32,8 @@ export function uiRoot(): ShadowRoot {
   sheet.replaceSync(css);
   root.adoptedStyleSheets = [sheet];
   document.documentElement.append(host);
+  installLinkSafetySurface(root);
+  if((window as any).__xrayTorMode){const badge=document.createElement('span');badge.className='tor-mode-badge';badge.textContent='Tor · chat only';badge.title='Strict Tor routing is enabled. Voice, video, screenshare and native update downloads are blocked. Links open in Tor Browser. Signing in still identifies your Discord account.';root.append(badge);}
   return root;
 }
 

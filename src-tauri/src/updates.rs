@@ -12,6 +12,7 @@ fn snapshot(state:&State)->Value{json!({"phase":if state.phase.is_empty(){"idle"
 pub async fn app_update(app:AppHandle,action:String)->Result<Value,String>{
  let shared=app.state::<Updates>();
  if action=="status" {return shared.0.lock().map(|s|snapshot(&s)).map_err(|_|"Update state unavailable".into());}
+ if crate::network::tor_enabled()&&["check","download"].contains(&action.as_str()){return Err("Strict Tor mode pauses the native updater. Download the signed installer through your Tor-configured Firefox; no direct update request was sent.".into());}
  if !["check","download","apply"].contains(&action.as_str()){return Err("Invalid update action".into());}
  {let mut state=shared.0.lock().map_err(|_|"Update state unavailable")?;if state.busy{return Err("An update operation is already running".into());}state.busy=true;state.phase=if action=="check"{"checking"}else if action=="download"{"downloading"}else{"installing"}.into();}
  let result=operate(&app,&action).await;

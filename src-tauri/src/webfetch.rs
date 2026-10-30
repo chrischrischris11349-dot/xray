@@ -50,7 +50,7 @@ fn fetch(method: &str, url: &str, headers: &[(String, String)], body: Option<&st
     let parsed = tauri::Url::parse(url).map_err(|err| err.to_string())?;
     check_public(&parsed)?;
 
-    let agent = ureq::AgentBuilder::new()
+    let agent = crate::network::agent_builder()
         .timeout(Duration::from_secs(TIMEOUT_SECS))
         // Redirects are followed by hand below, so each hop is checked too.
         .redirects(0)
@@ -121,6 +121,12 @@ pub(crate) fn check_public(url: &tauri::Url) -> Result<(), String> {
         return Err("only https is allowed".into());
     }
     let host = url.host_str().ok_or("no host")?;
+    if crate::network::tor_enabled(){
+        let normalized=host.trim_matches(['[',']']).to_ascii_lowercase();
+        if normalized=="localhost"||normalized.ends_with(".localhost")||normalized.ends_with(".local")||normalized.ends_with(".internal")||normalized.parse::<IpAddr>().is_ok_and(|ip|!is_public(ip)){return Err("Local/private destinations are not allowed".into());}
+        // Tor resolves hostnames remotely; resolving them here would leak DNS.
+        return Ok(());
+    }
     let port = url.port_or_known_default().unwrap_or(443);
     let addresses = (host, port).to_socket_addrs().map_err(|err| err.to_string())?;
     for address in addresses {

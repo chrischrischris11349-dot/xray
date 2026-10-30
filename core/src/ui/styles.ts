@@ -23,6 +23,12 @@ export const css = `
   -webkit-font-smoothing: antialiased;
 }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.link-warning-scrim { z-index:2147483645; }
+a[data-xray-masked-link] { text-decoration-style:dashed; }
+a[data-xray-masked-link]::after { content:" → " attr(data-xray-link-host);font-size:.8em;opacity:.85;unicode-bidi:isolate; }
+.tor-mode-badge { position:fixed;top:10px;left:80px;z-index:2147482992;padding:3px 8px;border:1px solid var(--line2);border-radius:6px;background:var(--raised);color:var(--muted);font-size:11px;line-height:18px; }
+.link-warning .link-destination-host { font-size:20px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;unicode-bidi:isolate; }
+.link-warning .link-destination { user-select:text;overflow-wrap:anywhere;white-space:pre-wrap;unicode-bidi:isolate; }
 .moderation-indicator { position:fixed; right:16px; bottom:8px; z-index:2147482990; min-height:28px; padding:0 10px; border:1px solid var(--line2); border-radius:8px; background:var(--raised); color:var(--muted); font:600 11px ${type.family}; cursor:pointer; }
 .moderation-indicator[aria-pressed="true"] { color:var(--text); box-shadow:0 0 0 1px var(--accent); }
 :host([data-presentation]) > :not(.win-btns,.presentation-button,.recording-status,.dialog-scrim[data-explicit-dialog]) { display:none!important; }

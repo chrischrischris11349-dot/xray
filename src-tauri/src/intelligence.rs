@@ -117,7 +117,7 @@ fn transfer_context(app:&AppHandle,provider:&str,operation:&str,query:&str,kind:
 
     let vault=load(app)?;let key=vault.keys.get(provider).ok_or("Open Provider keys and configure this provider first")?;
     let (base,header)=match provider {"snusbase"=>("https://api.snusbase.com".to_owned(),"Auth"),"intelx"=>(format!("https://{}",if vault.intelx_host=="free.intelx.io"{"free.intelx.io"}else{"2.intelx.io"}),"X-Key"),_=>("https://oathnet.org".to_owned(),"x-api-key")};
-    let agent=ureq::AgentBuilder::new().timeout(Duration::from_secs(25)).redirects(0).build();
+    let agent=crate::network::agent_builder().timeout(Duration::from_secs(25)).redirects(0).build();
     let req=agent.request(if body.is_some(){"POST"}else{"GET"},&format!("{base}{path}")).set(header,key);
     let response=match body {Some(body)=>req.send_json(body),None=>req.call()};
     let response=match response {Ok(r)=>r,Err(ureq::Error::Status(429,response))=>{

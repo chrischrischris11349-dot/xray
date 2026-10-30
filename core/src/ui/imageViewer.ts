@@ -39,7 +39,7 @@ export function showImage(value: string, name="Image"): void {
   let actual=false;
   const zoom=h("button",{class:"btn ghost",attrs:{type:"button"},text:"Actual size",on:{click:()=>{actual=!actual;image.style.maxWidth=actual?"none":"100%";image.style.maxHeight=actual?"none":"72vh";zoom.textContent=actual?"Fit image":"Actual size";}}});
   const download=archiveDownloads.get(url)??url;
-  dialog.append(status,viewport,h("div",{class:"dialog-actions"},zoom,...(hasNativeSave()&&download.startsWith("https:")?[saveAsButton(download,url.startsWith("blob:")?"photo.png":suggestedFilename(url,"photo.png"))]:[]),button));uiRoot().append(dialog);
+  dialog.append(status,viewport,h("div",{class:"dialog-actions"},zoom,...(hasNativeSave()&&(download.startsWith("https:")||download.startsWith('blob:'))?[saveAsButton(download,url.startsWith("blob:")?"photo.png":suggestedFilename(url,"photo.png"))]:[]),button));uiRoot().append(dialog);
   try {dialog.showModal();button.focus();}catch{close();}
 }
 export function imageLink(link: HTMLAnchorElement, url: string, name: string): void {

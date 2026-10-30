@@ -13,3 +13,5 @@ src-tauri/windows/generated/
 .env.*
 !.env.example
 Thumbs.db
+__pycache__/
+*.pyc

@@ -23,6 +23,8 @@ export function accountDocument(kind: Kind, account: string): DocumentSession {
   return document;
 }
 export function onStorageModeChanged(listener: () => void): () => void { listeners.add(listener); return () => listeners.delete(listener); }
+export async function reloadSavedDocuments():Promise<void>{for(const document of documents.values())await document.idle();documents.clear();listeners.forEach(listener=>listener());}
+export function invalidateSavedDocument(kind:Kind,account:string):void{if(activeAccount===account)documents.delete(kind);}
 export async function setServerData(on: boolean): Promise<void> {
   const account = myId(); if (!account || !storage) throw new Error("Sign in before changing storage.");
   if (switching) throw new Error("A storage change is already running.");

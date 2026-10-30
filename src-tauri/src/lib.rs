@@ -13,6 +13,7 @@ mod recordings;
 mod taskbar;
 mod sandbox;
 mod notify;
+mod network;
 mod oathnet;
 mod report;
 mod settings;
@@ -48,10 +49,14 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         // Every command Discord's page may call (see capabilities/main.json).
-        .invoke_handler(tauri::generate_handler![downloads::save_file_as, updates::app_update, notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, documents::history_media, documents::message_archive, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
+        .invoke_handler(tauri::generate_handler![window::open_reviewed_link, downloads::save_file_as, updates::app_update, notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, documents::history_media, documents::message_archive, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
+            // The separate local marker keeps routing fail-closed if shell.json is
+            // unreadable or an older executable rewrites unknown settings fields.
+            let required=handle.path().app_config_dir().map(|path|path.join("tor-required.flag").try_exists().unwrap_or(true)).unwrap_or(true);
+            network::configure(shell.tor_proxy||required,&shell.tor_browser_path,shell.tor_browser_links);
             sync_autostart(handle, &mut shell);
             notify::register(handle);
             let at_login = std::env::args().any(|arg| arg == window::AUTOSTART_ARG);

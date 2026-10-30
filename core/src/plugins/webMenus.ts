@@ -7,6 +7,7 @@
 import { menu } from "../api/menus";
 import { copyText } from "../ui/dialog";
 import { definePlugin, type Plugin } from "./types";
+import {openExternalLink} from '../ui/linkSafety';
 
 const EMOJI = /^https:\/\/cdn\.discordapp\.com\/emojis\/(\d+)\.(webp|png|gif|jpg)/;
 
@@ -44,7 +45,7 @@ const webContextMenus = definePlugin({
         const href = link.href;
         entries.push(
           menu.item({ id: "copy-link", label: "Copy link", action: () => copyText(href) }),
-          menu.item({ id: "open-link", label: "Open link", action: () => window.open(href, "_blank", "noopener,noreferrer") }),
+          menu.item({ id: "open-link", label: "Inspect and open link", action: () => void openExternalLink(href,link.innerText||link.textContent||'') }),
         );
       }
       const img = element instanceof HTMLImageElement ? element : null;

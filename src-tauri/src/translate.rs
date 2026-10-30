@@ -39,7 +39,7 @@ fn language(code: &str) -> Option<String> {
 }
 
 fn request(text: &str, to: &str) -> Result<Translation, String> {
-    let body: Value = ureq::AgentBuilder::new()
+    let body: Value = crate::network::agent_builder()
         .timeout(std::time::Duration::from_secs(TIMEOUT_SECS))
         .build()
         .post(ENDPOINT)

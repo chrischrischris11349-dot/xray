@@ -9,7 +9,7 @@ pub async fn recording_transfer(app:AppHandle,payload:Value)->Result<Value,Strin
     let url=tauri::Url::parse(&settings.sync_endpoint).map_err(|_|"Configure your HTTPS storage server first")?;
     if url.scheme()!="https" || !url.username().is_empty() || url.password().is_some() || url.query().is_some() || url.fragment().is_some() || settings.sync_token.is_empty(){return Err("Configure HTTPS server storage first".into());}
     tauri::async_runtime::spawn_blocking(move||{
-        let agent=ureq::AgentBuilder::new().timeout(Duration::from_secs(25)).redirects(0).build();
+        let agent=crate::network::agent_builder().timeout(Duration::from_secs(25)).redirects(0).build();
         let result=agent.post(&format!("{}/recordings",settings.sync_endpoint.trim_end_matches('/'))).set("Authorization",&format!("Bearer {}",settings.sync_token)).send_json(payload);
         let response=match result{Ok(response)=>response,Err(ureq::Error::Status(400,response))=>{let mut bytes=Vec::new();let _=response.into_reader().take(2048).read_to_end(&mut bytes);let body:Value=serde_json::from_slice(&bytes).unwrap_or_default();return Err(body["error"].as_str().unwrap_or("Recording request rejected").chars().take(180).collect());},Err(ureq::Error::Status(401,_))=>return Err("Recording server rejected the token".into()),Err(_)=>return Err("Recording server unavailable. Keep XRay open to retry pending audio.".into())};
         let mut bytes=Vec::new();response.into_reader().take(46_000_001).read_to_end(&mut bytes).map_err(|_|"Could not read recording response")?;

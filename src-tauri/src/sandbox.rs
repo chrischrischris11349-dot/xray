@@ -1,4 +1,4 @@
-use std::{io::Read,sync::atomic::{AtomicU64,AtomicUsize,Ordering},time::Duration,net::ToSocketAddrs};
+use std::{io::Read,sync::atomic::{AtomicU64,AtomicUsize,Ordering},time::Duration};
 use tauri::{AppHandle,Manager,WebviewUrl,WebviewWindowBuilder};
 static NEXT:AtomicU64=AtomicU64::new(1);
 static PENDING:AtomicUsize=AtomicUsize::new(0);
@@ -23,10 +23,7 @@ pub async fn open_sandbox_preview(app:AppHandle,url:String,html_mode:bool,allow_
     let label=format!("sandbox-{}",NEXT.fetch_add(1,Ordering::Relaxed));
     if html_mode {
         let (text,base_url)=tauri::async_runtime::spawn_blocking(move||{
-            let agent=ureq::AgentBuilder::new().resolver(|host:&str|{
-                let addresses:Vec<_>=host.to_socket_addrs()?.collect();
-                if addresses.is_empty() || addresses.iter().any(|a|!crate::webfetch::is_public(a.ip())){return Err(std::io::Error::new(std::io::ErrorKind::PermissionDenied,"Non-public preview destination"));}Ok(addresses)
-            }).timeout(Duration::from_secs(15)).redirects(0).build();
+            let agent=crate::network::agent_builder().resolver(crate::network::public_resolver).timeout(Duration::from_secs(15)).redirects(0).build();
             let mut destination=source;
             let mut response=None;
             for _ in 0..5 {
@@ -45,9 +42,9 @@ pub async fn open_sandbox_preview(app:AppHandle,url:String,html_mode:bool,allow_
             Ok::<_, &str>((text,destination.to_string()))
         }).await.map_err(|_|"Preview fetch failed")??;
         let payload=serde_json::json!({"html":text,"scripts":allow_scripts,"baseUrl":base_url});
-        WebviewWindowBuilder::new(&app,label,WebviewUrl::App("sandbox.html".into())).title(format!("XRay sandbox · HTML from {host}")).inner_size(960.,720.).incognito(true).initialization_script(format!("window.__sandboxContent={payload};")).on_download(|_,_|false).on_permission_request(|_,_|tauri::webview::PermissionResponse::Deny).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny).build().map_err(|_|"Could not open HTML sandbox")?;
+        WebviewWindowBuilder::new(&app,label,WebviewUrl::App("sandbox.html".into())).title(format!("XRay sandbox · HTML from {host}")).inner_size(960.,720.).incognito(true).additional_browser_args(&crate::network::browser_args("")).initialization_script(crate::network::privacy_script()).initialization_script(format!("window.__sandboxContent={payload};")).on_download(|_,_|false).on_permission_request(|_,_|tauri::webview::PermissionResponse::Deny).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny).build().map_err(|_|"Could not open HTML sandbox")?;
     } else {
-        let mut builder=WebviewWindowBuilder::new(&app,label,WebviewUrl::External(source)).title(format!("XRay sandbox · {host}")).inner_size(1024.,760.).incognito(true).on_navigation(|url|crate::webfetch::check_public(url).is_ok() && url.host_str().is_some_and(|h|h!="discord.com" && !h.ends_with(".discord.com"))).on_download(|_,_|false).on_permission_request(|_,_|tauri::webview::PermissionResponse::Deny).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny);
+        let mut builder=WebviewWindowBuilder::new(&app,label,WebviewUrl::External(source)).title(format!("XRay sandbox · {host}")).inner_size(1024.,760.).incognito(true).additional_browser_args(&crate::network::browser_args("")).initialization_script(crate::network::privacy_script()).on_navigation(|url|crate::webfetch::check_public(url).is_ok() && url.host_str().is_some_and(|h|h!="discord.com" && !h.ends_with(".discord.com"))).on_download(|_,_|false).on_permission_request(|_,_|tauri::webview::PermissionResponse::Deny).on_new_window(|_,_|tauri::webview::NewWindowResponse::Deny);
         if !allow_scripts{builder=builder.disable_javascript();}
         builder.build().map_err(|_|"Could not open website sandbox")?;
     }Ok(())

@@ -84,6 +84,9 @@ function PreviewCard({ url }: { url: string; }) {
         try {
             const invoke = (window as any).__TAURI_INTERNALS__?.invoke;
             if (!invoke) throw Error("Sandbox previews require the XRay desktop app.");
+            const inspect=(window as any).__xray?.confirmExternalLink;
+            if(!inspect)throw Error("Restart XRay to enable destination checks before opening a website.");
+            if(!await inspect(url,"Sandbox preview"))return;
             await invoke("open_sandbox_preview", {url, htmlMode: false, allowScripts: settings.store.allowScripts});
         } catch (e) { setError(String((e as Error)?.message ?? e)); }
         finally { setBusy(false); }

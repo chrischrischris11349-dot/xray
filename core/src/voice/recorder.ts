@@ -79,7 +79,7 @@ async function drain():Promise<void> {
       await transfer({action:"chunk",id:session,index,data:btoa(text)});
       queued.shift();index++;bytes+=chunk.byteLength;error="";update();
     }
-    if(finishing){const saved=await transfer({action:"finish",id:session,partial:!!partialReason});label=`Saved ${saved.partial?"partial recording ":""}on your server · ${Math.ceil(saved.bytes/1024)} KB`;session="";finishing=false;error="";}
+    if(finishing){const saved=await transfer({action:"finish",id:session,partial:!!partialReason});label=`Saved ${saved.partial?"partial recording ":""}${saved.local?"on this device · server upload pending":"on your server + local backup"} · ${Math.ceil(saved.bytes/1024)} KB`;session="";finishing=false;error="";}
   }catch(failure){error=String((failure as Error)?.message??failure);if(recorder?.state==="recording")stop();}
   finally{uploading=false;update();}
 }

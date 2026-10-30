@@ -60,7 +60,7 @@ fn post(endpoint: &str, token: &str, batch: &[Value]) -> Result<(), String> {
 
 #[cfg(not(test))]
 fn agent() -> ureq::Agent {
-    ureq::AgentBuilder::new()
+    crate::network::agent_builder()
         .timeout(std::time::Duration::from_secs(TIMEOUT_SECS))
         .build()
 }

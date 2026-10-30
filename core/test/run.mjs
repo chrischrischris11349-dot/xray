@@ -34,6 +34,9 @@ await build({
 });
 
 try {
+  execFileSync(process.execPath, ["--test", "core/test/output-routing.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/offline-storage.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
+  execFileSync(process.execPath, ["--test", "core/test/link-safety.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/profile-media.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/dm-archive-controller.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/dm-backfill.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });

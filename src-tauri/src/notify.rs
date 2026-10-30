@@ -63,7 +63,7 @@ fn cached_avatar<R: Runtime>(app: &AppHandle<R>, value: &str) -> Option<PathBuf>
     let mut hash = std::collections::hash_map::DefaultHasher::new(); url.as_str().hash(&mut hash);
     let path = dir.join(format!("{:x}.png", hash.finish()));
     if path.exists() { return Some(path); }
-    let response = ureq::AgentBuilder::new().timeout(Duration::from_secs(5)).redirects(0).build().get(url.as_str()).set("Accept","image/png").call().ok()?;
+    let response = crate::network::agent_builder().timeout(Duration::from_secs(5)).redirects(0).build().get(url.as_str()).set("Accept","image/png").call().ok()?;
     let mut bytes = Vec::new(); response.into_reader().take(262_145).read_to_end(&mut bytes).ok()?;
     if bytes.len() > 262_144 || !bytes.starts_with(b"\x89PNG\r\n\x1a\n") { return None; }
     let _cache = AVATAR_CACHE.lock().ok()?;

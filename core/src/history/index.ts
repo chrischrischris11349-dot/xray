@@ -4,7 +4,8 @@ import { storage } from "../env";
 import { deletionExcerpt, ProfileHistory, type Category, type Snapshot } from "./model";
 import { HistoryObserver } from "./observer";
 import { customStatusSnapshot } from "./customStatus";
-import { accountDocument, onStorageModeChanged, serverDataEnabled, storageSwitching } from "../shell/serverStorage";
+import { accountDocument, onStorageModeChanged, serverDataEnabled, storageSwitching,invalidateSavedDocument } from "../shell/serverStorage";
+import {offlineDocumentMessage} from '../shell/offline';
 import type { DocumentSession } from "../shell/documentSession";
 
 let account: string | undefined, engine: ProfileHistory | undefined, observer: HistoryObserver | undefined;
@@ -89,11 +90,11 @@ export function retainLoadedMedia(id:string,messages:any[]):void{
   for(const target of observer?.handle({type:"LOAD_MESSAGES_SUCCESS",messages:messages.slice(-1000).filter(message=>{if(message?.author?.id!==id)return false;const media=deletionExcerpt(message);return media.messageImages?.length||media.messageVideos?.length||media.messageAudio?.length||media.messageDownloads?.length;}).slice(-100)})??[])changed(target);
 }
 export function retryHistoryLoad(): void {
-  if(loading || pending || flight || engine)return;
-  account=undefined;current();notify();
+  if(loading || pending || flight)return;
+  void flushHistory().then(()=>{const owner=account;if(owner)invalidateSavedDocument('profile-history',owner);account=undefined;engine=observer=undefined;document=undefined;current();notify();}).catch(failure=>{error=String(failure);notify();});
 }
-export function historyError(): string { return error || (loading ? "Loading history from your server…" : pending ? "Saving… Keep XRay open until this finishes." : ""); }
-export function historyStorageLabel(): string { return serverDataEnabled() ? "your server" : "this device"; }
+export function historyError(): string {const state=offlineDocumentMessage();return error || (loading ? "Loading saved history…" : pending ? "Saving…" : /unavailable|conflict|differs/i.test(state)?state:""); }
+export function historyStorageLabel(): string { return serverDataEnabled() ? /unavailable|conflict|differs/i.test(offlineDocumentMessage())?"this device · server retry pending":"your server + local backup" : "this device"; }
 function writable(): ProfileHistory {
   const model = current();
   if (storageSwitching()) throw new Error("Wait for the storage change to finish.");

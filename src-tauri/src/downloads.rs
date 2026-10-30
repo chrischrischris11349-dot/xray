@@ -1,5 +1,5 @@
 //! Explicit Save As only: the web page supplies content, never a filesystem path.
-use std::{fs::{self, OpenOptions}, io::{Read, Write}, net::ToSocketAddrs, sync::atomic::{AtomicBool,AtomicU64,Ordering}, time::Duration};
+use std::{fs::{self, OpenOptions}, io::{Read, Write},  sync::atomic::{AtomicBool,AtomicU64,Ordering}, time::Duration};
 use tauri::{AppHandle,Manager};
 use tauri_plugin_dialog::DialogExt;
 static BUSY:AtomicBool=AtomicBool::new(false);
@@ -36,10 +36,7 @@ pub async fn save_file_as(app:AppHandle,name:String,url:Option<String>,text:Opti
   let result=(||{
    let mut output=OpenOptions::new().write(true).create_new(true).open(&partial).map_err(|_|"Could not create the download in this folder")?;
    if let Some(mut current)=remote{
-    let agent=ureq::AgentBuilder::new().resolver(|host:&str|{
-     let addresses:Vec<_>=host.to_socket_addrs()?.collect();
-     if addresses.is_empty()||addresses.iter().any(|a|!crate::webfetch::is_public(a.ip())){return Err(std::io::Error::new(std::io::ErrorKind::PermissionDenied,"Non-public download destination"));}Ok(addresses)
-    }).redirects(0).timeout(Duration::from_secs(180)).build();
+    let agent=crate::network::agent_builder().resolver(crate::network::public_resolver).redirects(0).timeout(Duration::from_secs(180)).build();
     let mut saved=false;
     for _ in 0..5{
      let response=agent.get(current.as_str()).call().map_err(|_|"Download failed. The original may be expired or require its signed-in browser.")?;

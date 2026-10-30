@@ -12,6 +12,11 @@ use crate::hotkeys::Hotkeys;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ShellSettings {
+    /// Local-only strict SOCKS routing; changing this requires a full restart.
+    pub tor_proxy: bool,
+    /// External links may use Tor Browser while Discord/voice use normal routing.
+    pub tor_browser_links: bool,
+    pub tor_browser_path: String,
     pub zoom: f64,
     /// Closing the window hides it to the tray instead of quitting.
     pub close_to_tray: bool,
@@ -35,6 +40,9 @@ pub struct ShellSettings {
 impl Default for ShellSettings {
     fn default() -> Self {
         Self {
+            tor_proxy: false,
+            tor_browser_links: false,
+            tor_browser_path: String::new(),
             zoom: 1.0,
             close_to_tray: true,
             start_minimized: false,
@@ -66,5 +74,17 @@ pub fn save<R: Runtime>(app: &AppHandle<R>, settings: &ShellSettings) {
     }
     if let Ok(json) = serde_json::to_string_pretty(settings) {
         let _ = fs::write(path, json);
+    }
+}
+
+#[cfg(test)] mod tests {
+    use super::*;
+    #[test] fn tor_links_can_survive_restart_without_disabling_voice() {
+        let normal:ShellSettings=serde_json::from_str("{}").unwrap();
+        assert!(!normal.tor_proxy&&!normal.tor_browser_links);
+        let links:ShellSettings=serde_json::from_value(serde_json::json!({"tor_proxy":false,"tor_browser_links":true,"tor_browser_path":"existing-tor-browser","zoom":1.2})).unwrap();
+        let restored:ShellSettings=serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap();
+        assert!(!restored.tor_proxy&&restored.tor_browser_links);
+        assert_eq!(restored.tor_browser_path,"existing-tor-browser");assert_eq!(restored.zoom,1.2);
     }
 }
