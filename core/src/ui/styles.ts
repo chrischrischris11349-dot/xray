@@ -384,6 +384,7 @@ select.opt-input option { background: var(--raised); color: var(--text); }
 .xray-vbar button.cam[aria-pressed="true"] { background: rgba(61,214,140,.16); color: #3dd68c; }
 .xray-vbar button[disabled] { opacity: .35; pointer-events: none; }
 .xray-fd-state { position:absolute;right:100%;margin-right:8px;white-space:nowrap;border:1px solid var(--line2);border-radius:${radius.round};padding:3px 8px;background:var(--raised);color:var(--text);font-size:11px;font-weight:600; }
+:host([data-fake-deafen-active]) .xray-update-notice { right:390px!important; }
 :host-context(html:not(.xray-obsidian)) .xray-vbar { display: none; }
 /* Plugin picker (picker.ts): a tall glass sheet with one scrolling list. */
 .pk-scrim { align-items: center; padding: 24px; }

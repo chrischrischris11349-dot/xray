@@ -94,6 +94,7 @@ function mount(ctx: { onStop(fn: () => void): void }): void {
       const deaf = s.deafened || fakeVoice.active;
       fakeState.hidden=!fakeVoice.active;
       document.documentElement.toggleAttribute('data-xray-fd-active',fakeVoice.active);
+      (uiRoot().host as HTMLElement)?.toggleAttribute('data-fake-deafen-active',fakeVoice.active);
       fakeState.title='Fake Deafen active · local audio unchanged';
       deafen.setAttribute("aria-pressed", String(deaf));
       deafen.innerHTML = deaf ? HEADPHONE_OFF : HEADPHONE;
@@ -121,5 +122,6 @@ function mount(ctx: { onStop(fn: () => void): void }): void {
       bar.remove();
       document.documentElement.removeAttribute("data-xray-vbar");
       document.documentElement.removeAttribute('data-xray-fd-active');
+      (uiRoot().host as HTMLElement)?.removeAttribute('data-fake-deafen-active');
     });
 }

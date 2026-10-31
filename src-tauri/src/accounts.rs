@@ -73,7 +73,10 @@ pub fn restore<R:Runtime>(app:&AppHandle<R>,visible:bool){
  for tab in tabs.iter().filter(|tab|tab.open&&tab.id!="main"){let _=ensure(app,&tab.id);}
  if visible{if activate(app,&active(app)).is_err(){let _=activate(app,"main");}}
 }
-pub fn quit<R:Runtime>(app:&AppHandle<R>){let owner=app.clone();tauri::async_runtime::spawn(async move{match prepare(&owner,None).await{Ok(())=>owner.exit(0),Err(message)=>{use tauri_plugin_dialog::DialogExt;owner.dialog().message(message).title("XRay · Finish saving before quitting").show(|_|{});}}});}
+pub fn quit<R:Runtime>(app:&AppHandle<R>){let owner=app.clone();tauri::async_runtime::spawn(async move{match prepare(&owner,None).await{Ok(())=>owner.exit(0),Err(message)=>{
+ use tauri_plugin_dialog::{DialogExt,MessageDialogButtons};let exit=owner.clone();
+ owner.dialog().message(format!("{message}\n\nQuit anyway stops voice and recordings. Unsaved work may be lost.")).title("XRay · Sessions have not finished saving").buttons(MessageDialogButtons::OkCancelCustom("Quit anyway".into(),"Keep open".into())).show(move|quit|{if quit{exit.exit(0);}});
+}}});}
 #[tauri::command]
 pub async fn account_sessions(app:AppHandle,window:WebviewWindow,action:String,id:Option<String>,name:Option<String>,request:Option<u64>,ready:Option<bool>)->Result<Value,String>{
  if !is_account(window.label()){return Err("Account tabs are available only in XRay's Discord sessions".into());}
