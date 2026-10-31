@@ -5,8 +5,8 @@
 //! This is the one command Discord's page can call, so any script running on
 //! discord.com can reach it. Text is length-capped and bursts are dropped.
 
-use std::collections::VecDeque;
-use std::sync::Mutex;
+use std::collections::{VecDeque,HashMap};
+use std::sync::{Mutex,LazyLock};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 use std::{hash::{Hash, Hasher}, io::Read, path::PathBuf};
@@ -21,10 +21,15 @@ const BURST_WINDOW: Duration = Duration::from_secs(10);
 
 static RECENT: Mutex<VecDeque<Instant>> = Mutex::new(VecDeque::new());
 static PRIVATE: AtomicBool = AtomicBool::new(false);
+static PRIVATE_WINDOWS:LazyLock<Mutex<HashMap<String,bool>>>=LazyLock::new(||Mutex::new(HashMap::new()));
 static AVATAR_CACHE: Mutex<()> = Mutex::new(());
 
 #[tauri::command]
-pub fn set_notification_privacy(active: bool) { PRIVATE.store(active, Ordering::SeqCst); }
+pub fn set_notification_privacy(window:tauri::WebviewWindow,active: bool) {
+    match PRIVATE_WINDOWS.lock(){Ok(mut windows)=>{windows.insert(window.label().into(),active);PRIVATE.store(any_private(&windows),Ordering::SeqCst);},Err(_)=>PRIVATE.store(true,Ordering::SeqCst)}
+}
+fn any_private(windows:&HashMap<String,bool>)->bool{windows.values().any(|value|*value)}
+pub fn forget(window:&str){match PRIVATE_WINDOWS.lock(){Ok(mut windows)=>{windows.remove(window);PRIVATE.store(any_private(&windows),Ordering::SeqCst);},Err(_)=>PRIVATE.store(true,Ordering::SeqCst)}}
 
 #[tauri::command]
 pub async fn notify<R: Runtime>(app: AppHandle<R>, window:tauri::WebviewWindow<R>, id: u32, title: String, body: String, icon: Option<String>, context: Option<String>) {
@@ -165,6 +170,8 @@ pub fn register<R: Runtime>(_app: &AppHandle<R>) {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]fn another_accounts_startup_cannot_disable_private_notifications(){let mut windows=HashMap::new();windows.insert("main".into(),true);windows.insert("account-abc".into(),false);assert!(any_private(&windows));windows.insert("main".into(),false);assert!(!any_private(&windows));}
+    #[test]fn closing_a_private_session_only_clears_its_own_privacy_state(){let mut windows=HashMap::from([("main".into(),true),("account-abc".into(),true)]);windows.remove("main");assert!(any_private(&windows));windows.remove("account-abc");assert!(!any_private(&windows));}
     #[test]
     fn notification_avatars_are_narrow_and_bounded() {
         assert_eq!(avatar_url("https://cdn.discordapp.com/avatars/123/a_abc.webp?size=1024").unwrap().as_str(), "https://cdn.discordapp.com/avatars/123/a_abc.png?size=64");

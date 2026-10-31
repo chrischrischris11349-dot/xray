@@ -76,7 +76,7 @@ and restore on restart. Notification/voice/hotkey routing stays with the intende
 account, and restarts wait for every session's recording guard and data flush.
 See [account tabs](ACCOUNT_TABS.md) for storage, limits and memory tradeoffs.
 
-Validation: 177 core TAP tests and 42 native tests pass (one separate live Tor
+Validation: 177 core TAP tests and 44 native tests pass (one separate live Tor
 test is ignored by default). UI tests cover saved versus active state, failed
 save rollback, recording/unsaved-data restart guards, the plugin filter and
 cancelled queued rendering. Native tests cover migration defaults, persistence

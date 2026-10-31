@@ -38,3 +38,7 @@ Visuals reuse `docs/DESIGN.md` and `core/src/theme/tokens.ts`: existing dark
 surfaces, type, radii and selected accent. Tabs have explicit selected state,
 keyboard focus, 28px controls and horizontal overflow rather than clipped labels.
 No added blur, animation loop or UI dependency is used for this navigation.
+
+Presentation mode in any opened account hides notification previews app-wide.
+Opening another account cannot turn that protection off; a session clears only
+its own presentation state when it closes.

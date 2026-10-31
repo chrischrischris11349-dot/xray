@@ -78,7 +78,7 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|win, event| {
-            if matches!(event,WindowEvent::Destroyed)&&accounts::is_account(win.label()){badge::forget(win.app_handle(),win.label());downloads::forget(win.label());}
+            if matches!(event,WindowEvent::Destroyed)&&accounts::is_account(win.label()){badge::forget(win.app_handle(),win.label());downloads::forget(win.label());notify::forget(win.label());}
             if let WindowEvent::CloseRequested { api, .. } = event {
                 // Auxiliary windows must actually close: hidden sandboxes retain
                 // their WebView and consume the bounded preview-window allowance.
