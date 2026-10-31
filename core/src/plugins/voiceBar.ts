@@ -80,7 +80,8 @@ function mount(ctx: { onStop(fn: () => void): void }): void {
     deafen.addEventListener("click", () => toggleVoiceControl("deafen"));
     cam.addEventListener("click", () => audioActions()?.setVideoEnabled?.(!stores.mediaEngine?.isVideoEnabled?.()));
 
-    const bar = h("div", { class: "xray-vbar", attrs: { role: "group", "aria-label": "Voice controls" } }, mute, deafen, cam);
+    const fakeState=h('span',{class:'xray-fd-state',attrs:{role:'status','aria-live':'polite'},text:'FD active'});
+    const bar = h("div", { class: "xray-vbar", attrs: { role: "group", "aria-label": "Voice controls" } }, fakeState,mute, deafen, cam);
     uiRoot().append(bar);
     // Tells the theme to reserve room for these in Discord's top bar.
     document.documentElement.setAttribute("data-xray-vbar", "");
@@ -91,6 +92,9 @@ function mount(ctx: { onStop(fn: () => void): void }): void {
       mute.setAttribute("aria-pressed", String(s.muted || s.deafened));
       mute.innerHTML = s.muted || s.deafened ? MIC_OFF : MIC;
       const deaf = s.deafened || fakeVoice.active;
+      fakeState.hidden=!fakeVoice.active;
+      document.documentElement.toggleAttribute('data-xray-fd-active',fakeVoice.active);
+      fakeState.title='Fake Deafen active · local audio unchanged';
       deafen.setAttribute("aria-pressed", String(deaf));
       deafen.innerHTML = deaf ? HEADPHONE_OFF : HEADPHONE;
       deafen.title = fakeVoice.usesTopButton || fakeVoice.active ? `Fake Deafen ${fakeVoice.active ? "on" : "off"} · local audio stays on` : "Deafen";
@@ -116,5 +120,6 @@ function mount(ctx: { onStop(fn: () => void): void }): void {
     ctx.onStop(() => {
       bar.remove();
       document.documentElement.removeAttribute("data-xray-vbar");
+      document.documentElement.removeAttribute('data-xray-fd-active');
     });
 }

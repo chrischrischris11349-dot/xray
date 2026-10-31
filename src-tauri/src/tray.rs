@@ -91,7 +91,7 @@ fn handle_menu<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
             }
         }
         RELOAD => window::eval(app, "location.reload()"),
-        QUIT => app.exit(0),
+        QUIT => crate::accounts::quit(app),
         _ => {}
     }
 }

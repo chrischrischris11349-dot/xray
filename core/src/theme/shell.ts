@@ -118,6 +118,13 @@ html.xray-obsidian {
   [class*="base_"] > [class^="bar_"] [class*="title_"] svg { opacity: 0.7; }
 
   /* ---------- server dock ---------- */
+  /* ChannelTabs keeps its own drag/resize behavior; share the quiet tab finish. */
+  .vc-channeltabs-container { background:transparent!important;box-shadow:none!important; }
+  .vc-channeltabs-tab { border-radius:${radius.l}!important;min-height:32px!important;padding-block:4px!important;border-color:transparent!important;background:transparent!important;box-shadow:none!important; }
+  .vc-channeltabs-tab.vc-channeltabs-tab-selected { background:linear-gradient(${edge.hover},transparent),var(--xr-raised,${mist.m3})!important;border-color:${edge.soft}!important;box-shadow:0 2px 6px rgba(0,0,0,.16),inset 0 1px ${edge.soft}!important; }
+  .vc-channeltabs-tab.vc-channeltabs-tab-selected .vc-channeltabs-name-text { color:var(--xr-strong)!important;font-weight:${type.bold}!important; }
+  .vc-channeltabs-tab:not(.vc-channeltabs-tab-selected):hover { background:${edge.hover}!important; }
+  .vc-channeltabs-tab:focus-visible { outline:2px solid var(--xr-strong)!important;outline-offset:2px; }
   nav[class*="guilds_"] {
     width: 64px !important;
     margin: 0 var(--xr-gap) calc(52px + var(--xr-gap) * 2) var(--xr-gap) !important;

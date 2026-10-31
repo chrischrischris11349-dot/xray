@@ -59,11 +59,11 @@ all as `--xr-<group>-<name>` custom properties.
 
 | Token | Value | Role |
 | --- | --- | --- |
-| `mist.m0` | `#0B0C0D` | Backdrop behind the panes |
-| `mist.m1` | `#15181A` | Server dock, channel list, account bar |
-| `mist.m2` | `#1A1D20` | Chat and other content |
-| `mist.m3` | `#22262A` | Raised: menus, popouts, modals, sheets |
-| `mist.m4` | `#2B3034` | Hovered or pressed rows |
+| `mist.m0` | `#040506` | Backdrop behind the panes |
+| `mist.m1` | `#090B0D` | Server dock, channel list, account bar |
+| `mist.m2` | `#0E1114` | Chat and other content |
+| `mist.m3` | `#14181C` | Raised: menus, popouts, modals, sheets |
+| `mist.m4` | `#1D2228` | Hovered or pressed rows |
 | `ink.text` | `#EDE9E2` | Primary text |
 | `ink.text2` | `#B4ADA3` | Secondary text: descriptions, meta |
 | `ink.text3` | `#A39C92` | Tertiary text: placeholders, section labels |

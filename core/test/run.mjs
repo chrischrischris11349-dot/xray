@@ -34,6 +34,7 @@ await build({
 });
 
 try {
+  execFileSync(process.execPath, ["--test", "core/test/account-tabs.test.mjs", "core/test/save-as.test.mjs", "core/test/folders-compatibility.test.mjs", "core/test/clan-tags.test.mjs", "core/test/voice-indicator.test.mjs", "core/test/local-deafen-row.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/typing-performance.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/graphics.test.mjs", "core/test/performance-picker.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });
   execFileSync(process.execPath, ["--test", "core/test/output-routing.test.mjs"], { stdio: ["ignore", "inherit", "inherit"] });

@@ -30,6 +30,7 @@ import { installVoiceRecording } from "./voice/recorder";
 import { startMonitoring } from "./monitoring";
 import { installZoom } from "./shell/zoom";
 import {installLinkSafety,confirmExternalLink} from './ui/linkSafety';
+import {mountAccountTabs,refreshAccountTabs,prepareAccountRestart} from './ui/accountTabs';
 import {installOfflineBackups} from './shell/offlineStartup';
 import {installVoiceOutputRouting} from './voice/outputRouting';
 
@@ -67,6 +68,8 @@ function boot(): void {
     value: Object.freeze({
       version: __XRAY_VERSION__,
       confirmExternalLink,
+      refreshAccountTabs,
+      prepareAccountRestart,
       timeFormat: currentTimeFormat,
       setTimeFormat,
       taskbarVoice: (action: "mute" | "deafen" | "leave") => { if(action === "mute" || action === "deafen" || action === "leave") toggleVoiceControl(action); },
@@ -88,6 +91,7 @@ function boot(): void {
 
 function startUi(): void {
   mountUi();
+  mountAccountTabs();
   setPaletteCommands(() => [
     command("Open xray panel", "Plugins, hotkeys and settings", openPanel),
     command("Choose plugins", "Every xray and Equicord plugin, with a switch each", showPicker),

@@ -34,13 +34,14 @@ export function mountFrame(): void {
   const root = uiRoot();
   addStyle(`${TOP_BAR} { box-sizing:border-box!important; padding-inline-end:168px!important; align-items:center!important; }
     html[data-xray-vbar]:not([data-xray-presentation]) ${TOP_BAR} { padding-inline-end:288px!important; }
+    html[data-xray-fd-active]:not([data-xray-presentation]) ${TOP_BAR} { padding-inline-end:368px!important; }
     ${TOP_BAR} > [class*="trailing_"] { position:relative!important; inset:auto!important; transform:none!important; align-self:center!important; display:flex!important; align-items:center!important; }`);
   let barObserver: ResizeObserver | undefined;
   let measuredHeight = TOP_BAR_HEIGHT;
   watchElements(TOP_BAR, bar => {
     barObserver?.disconnect();
     const measure = () => {
-      const height = bar.getBoundingClientRect().height;
+      const height = document.documentElement.hasAttribute('data-xray-account-tabs')?TOP_BAR_HEIGHT:bar.getBoundingClientRect().height;
       if (height >= 24 && height <= 80) { measuredHeight = height; (root.host as HTMLElement).style.setProperty("--xr-titlebar-height", `${height}px`); }
     };
     barObserver = new ResizeObserver(measure); barObserver.observe(bar); measure();

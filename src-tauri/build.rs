@@ -16,6 +16,6 @@ fn main() {
     }
     // Listing the app's commands generates an `allow-<command>` permission for
     // each, so capabilities can grant them one at a time.
-    let manifest = tauri_build::AppManifest::new().commands(&["graphics_settings", "open_reviewed_link", "save_file_as", "notify", "set_notification_privacy", "get_hotkeys", "set_hotkeys", "report_events", "sync_config", "app_update", "document_store", "history_media", "message_archive", "translate", "web_fetch", "oathnet_lookup", "provider_keys", "open_provider_settings", "intel_request", "recording_transfer", "set_voice_controls", "change_zoom", "open_sandbox_preview"]);
+    let manifest = tauri_build::AppManifest::new().commands(&["account_sessions", "graphics_settings", "open_reviewed_link", "save_file_as", "notify", "set_notification_privacy", "get_hotkeys", "set_hotkeys", "report_events", "sync_config", "app_update", "document_store", "history_media", "message_archive", "translate", "web_fetch", "oathnet_lookup", "provider_keys", "open_provider_settings", "intel_request", "recording_transfer", "set_voice_controls", "change_zoom", "open_sandbox_preview"]);
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(manifest)).expect("tauri-build failed");
 }

@@ -1,41 +1,40 @@
 use tauri::AppHandle;
 #[tauri::command]
-pub fn set_voice_controls(app:AppHandle,muted:bool,deafened:bool,connected:bool) {
-    #[cfg(windows)] let _=app.run_on_main_thread(move||native::update(muted,deafened,connected));
+pub fn set_voice_controls(app:AppHandle,window:tauri::WebviewWindow,muted:bool,deafened:bool,connected:bool) {
+    #[cfg(windows)] let _={let label=window.label().to_string();app.run_on_main_thread(move||native::update(&label,muted,deafened,connected))};
     #[cfg(not(windows))] let _=(app,muted,deafened,connected);
 }
-pub fn install(app:&AppHandle) { #[cfg(windows)] {let app=app.clone();native::install(app);} #[cfg(not(windows))] let _=app; }
+pub fn install_window<R:tauri::Runtime>(window:&tauri::WebviewWindow<R>) { #[cfg(windows)] native::install(window.clone()); #[cfg(not(windows))] let _=window; }
 pub fn register_shortcut(app:&AppHandle) {#[cfg(windows)] {let _=native::shortcut(app);} #[cfg(not(windows))] let _=app;}
 
 #[cfg(windows)]
 mod native {
 use super::*;
-use std::cell::Cell;
-use tauri::Manager;
+use std::{cell::RefCell,collections::HashMap};
 use windows::{core::{Interface,PCWSTR,GUID},Win32::{Foundation::{HWND,LPARAM,LRESULT,WPARAM,PROPERTYKEY},System::{Com::{CoCreateInstance,CLSCTX_INPROC_SERVER,IPersistFile,StructuredStorage::PROPVARIANT},Variant::VT_LPWSTR},UI::{Shell::*,WindowsAndMessaging::*}}};
-thread_local! {static STATE:Cell<*mut Controls>=const{Cell::new(std::ptr::null_mut())};}
-struct Controls {app:AppHandle,hwnd:HWND,list:ITaskbarList3,icons:[HICON;5],created:u32,added:bool,muted:bool,deafened:bool,connected:bool}
+thread_local! {static STATE:RefCell<HashMap<String,*mut Controls>>=RefCell::new(HashMap::new());}
+struct Controls {label:String,dispatch:Box<dyn Fn(&str)>,hwnd:HWND,list:ITaskbarList3,icons:[HICON;5],created:u32,added:bool,muted:bool,deafened:bool,connected:bool}
 fn buttons(state:&Controls)->[THUMBBUTTON;3] {
     std::array::from_fn(|n|{let active=if n==0{state.muted}else{state.deafened};let text=if n==2{"Leave voice channel"}else if n==0{if active{"Unmute"}else{"Mute"}}else if active{"Undeafen"}else{"Deafen"};let mut button=THUMBBUTTON{dwMask:THB_ICON|THB_TOOLTIP|THB_FLAGS,iId:101+n as u32,hIcon:state.icons[if n==2{4}else{n*2+usize::from(active)}],dwFlags:if n==2&&!state.connected{THBF_DISABLED}else{THBF_ENABLED},..Default::default()};for(i,c)in text.encode_utf16().enumerate(){button.szTip[i]=c;}button})
 }
-pub fn update(muted:bool,deafened:bool,connected:bool){STATE.with(|slot|unsafe{if let Some(state)=slot.get().as_mut(){if state.muted==muted&&state.deafened==deafened&&state.connected==connected{return;}state.muted=muted;state.deafened=deafened;state.connected=connected;if state.added{let _=state.list.ThumbBarUpdateButtons(state.hwnd,&buttons(state));}}});}
+pub fn update(label:&str,muted:bool,deafened:bool,connected:bool){STATE.with(|slot|unsafe{if let Some(state)=slot.borrow().get(label).and_then(|pointer|pointer.as_mut()){if state.muted==muted&&state.deafened==deafened&&state.connected==connected{return;}state.muted=muted;state.deafened=deafened;state.connected=connected;if state.added{let _=state.list.ThumbBarUpdateButtons(state.hwnd,&buttons(state));}}});}
 unsafe extern "system" fn callback(hwnd:HWND,msg:u32,wparam:WPARAM,lparam:LPARAM,_id:usize,data:usize)->LRESULT {
     let state=&mut *(data as *mut Controls);
     if msg==state.created {state.added=state.list.ThumbBarUpdateButtons(hwnd,&buttons(state)).is_ok() || state.list.ThumbBarAddButtons(hwnd,&buttons(state)).is_ok();}
-    if msg==WM_COMMAND && ((wparam.0>>16)&0xffff)==0x1800 {let id=wparam.0&0xffff;if [101,102,103].contains(&id){let action=if id==101{"mute"}else if id==102{"deafen"}else{"leave"};crate::window::eval(&state.app,&format!("window.__xray?.taskbarVoice('{action}')"));return LRESULT(0);}}
-    if msg==WM_NCDESTROY {STATE.with(|slot|slot.set(std::ptr::null_mut()));let _=RemoveWindowSubclass(hwnd,Some(callback),0x5852);let state=Box::from_raw(data as *mut Controls);for icon in state.icons{let _=DestroyIcon(icon);}return DefSubclassProc(hwnd,msg,wparam,lparam);}
+    if msg==WM_COMMAND && ((wparam.0>>16)&0xffff)==0x1800 {let id=wparam.0&0xffff;if [101,102,103].contains(&id){let action=if id==101{"mute"}else if id==102{"deafen"}else{"leave"};(state.dispatch)(action);return LRESULT(0);}}
+    if msg==WM_NCDESTROY {STATE.with(|slot|{slot.borrow_mut().remove(&state.label);});let _=RemoveWindowSubclass(hwnd,Some(callback),0x5852);let state=Box::from_raw(data as *mut Controls);for icon in state.icons{let _=DestroyIcon(icon);}return DefSubclassProc(hwnd,msg,wparam,lparam);}
     DefSubclassProc(hwnd,msg,wparam,lparam)
 }
-pub fn install(app:AppHandle) {
+pub fn install<R:tauri::Runtime>(window:tauri::WebviewWindow<R>) {
     unsafe {
-        let Some(window)=app.get_webview_window("main")else{return;};let Ok(raw)=window.hwnd()else{return;};let hwnd=HWND(raw.0);
+        let label=window.label().to_string();if STATE.with(|slot|slot.borrow().contains_key(&label)){return;}let Ok(raw)=window.hwnd()else{return;};let hwnd=HWND(raw.0);
         let Ok(list)=CoCreateInstance::<_,ITaskbarList3>(&TaskbarList,None,CLSCTX_INPROC_SERVER)else{return;};if list.HrInit().is_err(){return;}
         let images:[&[u8];5]=[include_bytes!("../icons/taskbar-mic.png"),include_bytes!("../icons/taskbar-mic-off.png"),include_bytes!("../icons/taskbar-headphones.png"),include_bytes!("../icons/taskbar-headphone-off.png"),include_bytes!("../icons/taskbar-leave.png")];
         let mut icons=[HICON::default();5];for(i,image)in images.into_iter().enumerate(){let Ok(icon)=CreateIconFromResourceEx(image,true,0x30000,24,24,LR_DEFAULTCOLOR)else{for icon in icons{if !icon.is_invalid(){let _=DestroyIcon(icon);}}return;};icons[i]=icon;}
         let created=RegisterWindowMessageW(windows::core::w!("TaskbarButtonCreated"));
-        let mut state=Box::new(Controls{app,hwnd,list,icons,created,added:false,muted:false,deafened:false,connected:false});
+        let mut state=Box::new(Controls{label:label.clone(),dispatch:Box::new(move|action|{let _=window.eval(&format!("window.__xray?.taskbarVoice('{action}')"));}),hwnd,list,icons,created,added:false,muted:false,deafened:false,connected:false});
         state.added=state.list.ThumbBarAddButtons(hwnd,&buttons(&state)).is_ok();
-        let pointer=Box::into_raw(state);if SetWindowSubclass(hwnd,Some(callback),0x5852,pointer as usize).as_bool(){STATE.with(|slot|slot.set(pointer));}else{let state=Box::from_raw(pointer);for icon in state.icons{let _=DestroyIcon(icon);}}
+        let pointer=Box::into_raw(state);if SetWindowSubclass(hwnd,Some(callback),0x5852,pointer as usize).as_bool(){STATE.with(|slot|{slot.borrow_mut().insert(label,pointer);});}else{let state=Box::from_raw(pointer);for icon in state.icons{let _=DestroyIcon(icon);}}
     }
 }
 fn app_id_property(id:&str)->windows::core::Result<PROPVARIANT>{

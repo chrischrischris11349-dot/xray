@@ -7,6 +7,76 @@ static NEXT:AtomicU64=AtomicU64::new(1);
 const MAX:u64=250*1024*1024;
 struct Guard;
 impl Drop for Guard{fn drop(&mut self){BUSY.store(false,Ordering::SeqCst);}}
+
+// Keep WebView2 COM objects on their owning UI thread. Only the numeric request
+// id and selected path cross threads through the dialog completion callback.
+#[cfg(windows)]
+mod browser_downloads {
+ use super::*;
+ use std::{cell::RefCell,path::PathBuf};
+ use tauri::{Runtime,WebviewWindow};
+ use windows::core::{Interface,HSTRING,PWSTR};
+ use webview2_com::{DownloadStartingEventHandler,take_pwstr,Microsoft::Web::WebView2::Win32::{ICoreWebView2_4,ICoreWebView2DownloadStartingEventArgs,ICoreWebView2Deferral}};
+ struct Pending {id:u64,args:ICoreWebView2DownloadStartingEventArgs,deferral:ICoreWebView2Deferral,_guard:Guard}
+ impl Drop for Pending {fn drop(&mut self){unsafe{let _=self.deferral.Complete();}}}
+ thread_local!{static PENDING:RefCell<Option<Pending>>=const{RefCell::new(None)};static READY:RefCell<std::collections::HashSet<String>>=RefCell::new(std::collections::HashSet::new());}
+ pub fn ready(label:&str)->bool{READY.with(|labels|labels.borrow().contains(label))}
+ pub fn forget(label:&str){READY.with(|labels|{labels.borrow_mut().remove(label);});}
+ #[cfg(test)]mod lifecycle_tests{use super::*;#[test]fn reopened_sessions_wait_for_a_new_save_chooser(){READY.with(|labels|{labels.borrow_mut().insert("account-abcd".into());});assert!(ready("account-abcd"));forget("account-abcd");assert!(!ready("account-abcd"));}}
+
+ fn complete(id:u64,path:Option<PathBuf>){
+  PENDING.with(|slot|{
+   let mut slot=slot.borrow_mut();
+   if slot.as_ref().is_none_or(|pending|pending.id!=id){return;}
+   let pending=slot.take().unwrap();drop(slot);
+   // Cancel stays true on cancellation, an invalid path, or a failed path write.
+   if let Some(path)=path.filter(|path|path.is_absolute()) {unsafe{
+    if pending.args.SetResultFilePath(&HSTRING::from(path.as_os_str())).is_ok(){let _=pending.args.SetCancel(false);}
+   }}
+   drop(pending);
+  });
+ }
+
+ pub fn install<R:Runtime>(window:&WebviewWindow<R>)->tauri::Result<()>{
+  let app=window.app_handle().clone();let parent=window.clone();
+  window.with_webview(move|platform|{
+   let error_parent=parent.clone();
+   let label=parent.label().to_string();
+   let registered=(||->windows::core::Result<()>{unsafe{
+    let view:ICoreWebView2_4=platform.controller().CoreWebView2()?.cast()?;let mut token=0;
+    view.add_DownloadStarting(&DownloadStartingEventHandler::create(Box::new(move|_,args|{
+     let Some(args)=args else{return Ok(())};
+     #[cfg(debug_assertions)]eprintln!("XRay QA: native download request received");
+     args.SetCancel(true)?;args.SetHandled(true)?;
+     if BUSY.swap(true,Ordering::SeqCst){return Ok(())}
+     let guard=Guard;let deferral=args.GetDeferral()?;
+     let mut suggested=PWSTR::null();let name=if args.ResultFilePath(&mut suggested).is_ok(){
+      let path=PathBuf::from(take_pwstr(suggested));filename(&path.file_name().unwrap_or_default().to_string_lossy())
+     }else{"download".into()};
+     let id=NEXT.fetch_add(1,Ordering::SeqCst);
+     PENDING.with(|slot|*slot.borrow_mut()=Some(Pending{id,args,deferral,_guard:guard}));
+     // The plugin's asynchronous dialog returns before the WebView2 event ends.
+     // The native download retains its cookies/blob and streams directly to the
+     // chosen file; it is not fetched again or copied through JavaScript/IPC.
+     let owner=app.clone();
+     app.dialog().file().set_parent(&parent).set_title("Save file as").set_file_name(name).save_file(move|selected|{
+      #[cfg(debug_assertions)]eprintln!("XRay QA: save chooser completed, selected={}",selected.is_some());
+      let path=selected.and_then(|selected|selected.into_path().ok());
+      let _=owner.run_on_main_thread(move||complete(id,path));
+     });
+     Ok(())
+    })),&mut token)?;READY.with(|labels|{labels.borrow_mut().insert(label);});Ok(())
+   }})();
+   if registered.is_err(){error_parent.app_handle().dialog().message("Save As could not initialize. Downloads were kept closed; restart XRay and check the WebView2 runtime.").title("XRay · Save As unavailable").show(|_|{});}
+  })
+ }
+}
+#[cfg(windows)]pub use browser_downloads::install;
+#[cfg(windows)]pub use browser_downloads::ready;
+#[cfg(windows)]pub use browser_downloads::forget;
+#[cfg(not(windows))]pub fn install<R:tauri::Runtime>(_:&tauri::WebviewWindow<R>)->tauri::Result<()>{Ok(())}
+#[cfg(not(windows))]pub fn ready(_:&str)->bool{false}
+#[cfg(not(windows))]pub fn forget(_:&str){}
 pub(crate) fn filename(raw:&str)->String{
  let value:String=raw.chars().filter(|c|!c.is_control()&&!"<>:\"/\\|?*".contains(*c)).take(180).collect();
  let value=value.trim().trim_matches('.');
@@ -20,7 +90,7 @@ fn source(raw:&str)->Result<tauri::Url,String>{
  crate::webfetch::check_public(&url)?;Ok(url)
 }
 #[tauri::command]
-pub async fn save_file_as(app:AppHandle,name:String,url:Option<String>,text:Option<String>)->Result<bool,String>{
+pub async fn save_file_as(app:AppHandle,window:tauri::WebviewWindow,name:String,url:Option<String>,text:Option<String>)->Result<bool,String>{
  if url.is_some()==text.is_some(){return Err("Choose a file URL or report text".into());}
  if text.as_ref().is_some_and(|value|value.len()>10*1024*1024){return Err("Report export is limited to 10 MB".into());}
  let remote=url.as_deref().map(source).transpose()?;
@@ -28,7 +98,7 @@ pub async fn save_file_as(app:AppHandle,name:String,url:Option<String>,text:Opti
  tauri::async_runtime::spawn_blocking(move||{
   let _guard=Guard;
   let mut dialog=app.dialog().file().set_title("Save copy as").set_file_name(filename(&name));
-  if let Some(window)=app.get_webview_window(crate::window::MAIN){dialog=dialog.set_parent(&window);}
+  dialog=dialog.set_parent(&window);
   let Some(selected)=dialog.blocking_save_file()else{return Ok(false)};
   let path=selected.into_path().map_err(|_|"Select a local file destination")?;
   let parent=path.parent().ok_or("Select a destination folder")?;

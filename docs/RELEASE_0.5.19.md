@@ -52,7 +52,31 @@ promises a specific game FPS or forces a hardware encoder. Fresh capture default
 are 720p/30 instead of 1080p/60; existing explicit preferences are preserved. The
 local preview reports actual capture size/FPS, distinct from encoded stream FPS.
 
-Validation: 162 core TAP tests and 36 native tests pass (one separate live Tor
+External links now use the Windows registered HTTP(S) handler (normally your
+default browser), retaining destination/masked-link review. The old link-only
+Tor preference is retired, including saved settings from older builds. Explicit
+strict Tor mode remains fail-closed and is not silently weakened.
+
+Native Discord downloads, blob attachments and loaded recording downloads now
+ask for a destination through Windows Save As. Cancellation keeps the download
+closed. WebView2 streams authenticated/blob downloads to the selected file; no
+second native HTTP fetch or full-buffer JavaScript/IPC copy is needed. Its async
+deferral avoids opening a blocking modal inside a WebView2 event callback. The
+direct COM binding is already part of Tauri's dependency graph.
+
+Discord's HTML5 drag/drop handler now receives server/folder reorder and file
+drops. The pinned BetterFolders dedicated sidebar was incompatible with current
+Discord and duplicated the whole server rail while hiding expanded contents.
+XRay uses Discord's native folders and retains the plugin's other folder actions.
+No server membership, ordering or hidden-server choices are changed by this fix.
+
+Adds isolated, retained **Account tabs**; sign in normally in each tab and keep
+opened sessions connected while switching. Tabs use independent browser stores
+and restore on restart. Notification/voice/hotkey routing stays with the intended
+account, and restarts wait for every session's recording guard and data flush.
+See [account tabs](ACCOUNT_TABS.md) for storage, limits and memory tradeoffs.
+
+Validation: 177 core TAP tests and 42 native tests pass (one separate live Tor
 test is ignored by default). UI tests cover saved versus active state, failed
 save rollback, recording/unsaved-data restart guards, the plugin filter and
 cancelled queued rendering. Native tests cover migration defaults, persistence
@@ -63,3 +87,13 @@ Public Team updates use the existing signed GitHub feed. Personal updates stay
 on the configured private feed. Existing installs can check/download and restart
 to apply; an old build without the updater needs the new installer once.
 No private settings, tokens or collected history are distributed.
+
+The dark palettes use deeper near-black surfaces with softer neutral tabs;
+light themes and existing theme choices remain selectable. **What’s new** in
+the update controls opens the bundled patch log offline. Layout, typography
+and icon families stay consistent with the existing design tokens.
+
+Clan tags are restored through a one-time Declutter settings migration before
+patch predicates run, and new defaults preserve them. Later deliberate hide
+choices are respected. Personal builds have an explicit **FD active** label
+and a local button icon/accessible state; audio and gateway behavior are unchanged.

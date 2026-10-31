@@ -18,15 +18,15 @@
 /** Surfaces, darkest to lightest. */
 export const mist = {
   /** The backdrop behind the panes. */
-  m0: "#0B0C0D",
+  m0: "#040506",
   /** Server dock, channel list, account bar. */
-  m1: "#15181A",
+  m1: "#090B0D",
   /** Chat and other content. */
-  m2: "#1A1D20",
+  m2: "#0E1114",
   /** Raised: menus, popouts, modals, cards. */
-  m3: "#22262A",
+  m3: "#14181C",
   /** Hovered or pressed rows on any surface. */
-  m4: "#2B3034",
+  m4: "#1D2228",
 } as const;
 
 export const ink = {

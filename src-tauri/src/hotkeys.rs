@@ -192,9 +192,14 @@ pub fn start<R: Runtime>(app: &AppHandle<R>, hotkeys: Hotkeys) {
     let (events, received) = std::sync::mpsc::channel::<(Action, bool)>();
     let app = app.clone();
     let forward = move || {
+        let mut talk_window:Option<String>=None;
         for (action, pressed) in received {
             let call = format!("window.__xray && window.__xray.hotkey({:?}, {pressed})", action.name());
-            crate::window::eval(&app, &call);
+            let target=if action==Action::PushToTalk {
+                if pressed {talk_window=Some(crate::accounts::active(&app));talk_window.clone()}
+                else {talk_window.take()}
+            }else{Some(crate::accounts::active(&app))};
+            if let Some(window)=target.and_then(|label|app.get_webview_window(&label)){let _=window.eval(&call);}
         }
     };
     if let Err(err) = std::thread::Builder::new().name("xray-hotkey-events".into()).spawn(forward) {

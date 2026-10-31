@@ -37,6 +37,7 @@ async fn operate(app:&AppHandle,action:&str)->Result<(),String>{
   if bytes.len()>100*1024*1024{return Err("Update exceeds the 100 MB installer limit".into());}
   let state=app.state::<Updates>();let mut state=state.0.lock().map_err(|_|"Update state unavailable")?;state.bytes=Some(bytes);state.phase="ready".into();return Ok(());
  }
+ crate::accounts::prepare(app,None).await?;
  let bytes={let state=app.state::<Updates>();let mut state=state.0.lock().map_err(|_|"Update state unavailable")?;state.bytes.take().ok_or("Download and verify the update before applying it")?};
  update.install(bytes).map_err(|_|"Could not launch the signed update installer")?;
  #[cfg(not(windows))] app.restart();

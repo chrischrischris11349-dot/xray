@@ -6,6 +6,7 @@
 import { reportEvent } from "../shell/report";
 import { icon } from "../ui/icons";
 import { definePlugin } from "./types";
+import {installLocalDeafenIndicator} from '../voice/localDeafenIndicator';
 
 interface VoiceState {
   channel_id: string | null;
@@ -97,7 +98,9 @@ function installVoicePanelButton(ctx: { css(c: string): void; watch(sel: string,
   const update = (button: HTMLElement) => {
     const on = faking;
     button.setAttribute("aria-pressed", String(on));
-    button.title = on ? "Fake Deafen is on — others see you deafened" : "Enable Fake Deafen";
+    button.setAttribute('aria-label',on?'Fake Deafen on':'Fake Deafen off');
+    button.innerHTML=on?icon('headphoneOff',20):MASK_ICON;
+    button.title = on ? "Fake Deafen active · local audio unchanged" : "Enable Fake Deafen";
   };
   // Read from the page each time: Discord rebuilds the panel, and old buttons go with it.
   const unsub = fakeVoice.subscribe(() => document.querySelectorAll<HTMLElement>(".xray-fd").forEach(update));
@@ -141,6 +144,7 @@ export default definePlugin({
     ctx.patch(WebSocket.prototype, "send", { before: rewrite });
     if (typeof ctx.css === "function" && typeof ctx.watch === "function") {
       installVoicePanelButton(ctx);
+      installLocalDeafenIndicator(ctx,()=>faking,fakeVoice.subscribe);
       ctx.onKey((event) => {
         if (!ctx.options.shortcut || event.repeat || !event.ctrlKey || !event.shiftKey || event.altKey || event.code !== "KeyQ") return false;
         fakeVoice.set(!faking);

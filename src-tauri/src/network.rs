@@ -2,11 +2,9 @@
 use std::{path::PathBuf,sync::{Mutex,atomic::{AtomicBool,Ordering}}};
 static BROWSER:Mutex<Option<PathBuf>>=Mutex::new(None);
 static TOR:AtomicBool=AtomicBool::new(false);
-static TOR_LINKS:AtomicBool=AtomicBool::new(false);
 pub const SOCKS:&str="socks5://127.0.0.1:9050";
-pub fn configure(enabled:bool,browser:&str,links:bool){TOR.store(enabled,Ordering::SeqCst);TOR_LINKS.store(links,Ordering::SeqCst);if let Ok(mut path)=BROWSER.lock(){*path=if browser.is_empty(){None}else{Some(PathBuf::from(browser))};}}
+pub fn configure(enabled:bool,browser:&str){TOR.store(enabled,Ordering::SeqCst);if let Ok(mut path)=BROWSER.lock(){*path=if browser.is_empty(){None}else{Some(PathBuf::from(browser))};}}
 pub fn tor_enabled()->bool{TOR.load(Ordering::SeqCst)}
-pub fn tor_links_enabled()->bool{tor_enabled()||TOR_LINKS.load(Ordering::SeqCst)}
 pub fn agent_builder()->ureq::AgentBuilder{builder_for(tor_enabled(),SOCKS)}
 pub fn public_resolver(host:&str)->std::io::Result<Vec<std::net::SocketAddr>>{
  if tor_enabled(){let address=host.parse::<std::net::SocketAddr>().map_err(|_|std::io::Error::new(std::io::ErrorKind::PermissionDenied,"Local DNS is disabled in Tor mode"))?;if address.to_string()!="127.0.0.1:9050"{return Err(std::io::Error::new(std::io::ErrorKind::PermissionDenied,"Only the local Tor transport may connect directly"));}return Ok(vec![address]);}

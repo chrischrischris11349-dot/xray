@@ -2,6 +2,7 @@ import {h} from './dom';
 import {invoke} from '../shell/bridge';
 import {myId} from '../discord';
 import {formatDateTime} from '../time';
+import {saveAsButton} from './saveAs';
 /** One in-memory player per view; no audio download or playback occurs until clicked. */
 export function recordingLibrary(target?:string):{element:HTMLElement;refresh():Promise<void>;close():void}{
  const owner=myId(),element=h('section',{class:'pf-block wide'}),status=h('p',{class:'pf-note',attrs:{role:'status'}}),list=h('div'),player=h('div');let active=true,busy=false,url:string|undefined;
@@ -15,7 +16,7 @@ export function recordingLibrary(target?:string):{element:HTMLElement;refresh():
   while(offset<row.bytes){if(!current())return;status.textContent=`Loading recording · ${Math.round(offset/row.bytes*100)}%`;const file:any=await invoke('recording_transfer',{payload:{action:'read',id:row.id,offset}});if(!current())return;
    if(file.offset!==offset||file.bytes!==row.bytes||typeof file.data!=='string'||file.data.length>700000)throw Error('Recording chunk was invalid. Update the server if it does not support paged playback.');const bytes=Uint8Array.from(atob(file.data),c=>c.charCodeAt(0));if(!bytes.length||bytes.length>512*1024||file.next!==offset+bytes.length)throw Error('Recording chunk was incomplete.');parts.push(bytes);offset=file.next;
   }
-  url=URL.createObjectURL(new Blob(parts,{type:'audio/webm'}));const audio=h('audio',{attrs:{controls:'',src:url,preload:'metadata','aria-label':'Saved VC recording'}});audio.addEventListener('error',()=>{status.textContent='This recording could not decode. Download the clip or retry loading the saved copy.';});player.append(audio,h("a",{class:"btn ghost",attrs:{href:url,download:`xray-vc-${row.id}.webm`},text:"Download recording"}));status.textContent='Recording loaded from your server · press Play.';
+  url=URL.createObjectURL(new Blob(parts,{type:'audio/webm'}));const audio=h('audio',{attrs:{controls:'',src:url,preload:'metadata','aria-label':'Saved VC recording'}});audio.addEventListener('error',()=>{status.textContent='This recording could not decode. Download the clip or retry loading the saved copy.';});player.append(audio,saveAsButton(url,`xray-vc-${row.id}.webm`));status.textContent='Recording loaded from your server · press Play.';
  }catch(error){if(current())status.textContent=String((error as Error)?.message??error);}finally{busy=false;}}
  element.append(h('h3',{class:'pf-title',text:target?'Recordings involving this profile':'Saved recording playback'}),h('button',{class:'btn ghost',text:'Refresh saved clips',on:{click:()=>void refresh()}}),status,player,list);void refresh();
  return {element,refresh,close(){active=false;player.querySelector('audio')?.pause();if(url)URL.revokeObjectURL(url);}};

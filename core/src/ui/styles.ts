@@ -87,6 +87,32 @@ a[data-xray-masked-link]::after { content:" → " attr(data-xray-link-host);font
 .settings-detail-card,.app-update-card { display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:10px; }
 .settings-detail-card>.card-title,.app-update-card>.card-title { display:flex;align-items:center;gap:8px;min-width:0; }
 .settings-detail-card>select { width:100%; }
+.card.account-tabs-card { display:grid;grid-template-columns:minmax(0,1fr);gap:10px; }
+.account-tabs { position:fixed;top:46px;left:12px;right:12px;height:34px;z-index:2147482998;display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:thin; }
+.account-tabs[hidden] { display:none; }
+.account-tab,.account-tab-add { appearance:none;display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:13px;min-height:30px;max-width:200px;white-space:nowrap;overflow:hidden;flex:none;border:1px solid transparent;border-radius:${radius.l};background:transparent;color:var(--muted);padding:3px 12px 3px 6px;cursor:pointer;transition:background-color ${motion.fast} ${motion.ease},border-color ${motion.fast} ${motion.ease}; }
+.account-tab-add { justify-content:center;width:30px;padding:3px;font-size:18px; }
+.account-tab-label { overflow:hidden;text-overflow:ellipsis; }
+.account-initial { display:grid;place-items:center;flex:none;width:22px;height:22px;border-radius:50%;background:var(--seg);color:var(--muted);font-size:11px;font-weight:600;box-shadow:inset 0 0 0 1px var(--line); }
+.account-tab[aria-selected="true"] { background:linear-gradient(var(--seg),var(--inset)),var(--raised);border-color:var(--line);box-shadow:0 2px 6px rgba(0,0,0,.16),inset 0 1px var(--line);color:var(--text);font-weight:600; }
+.account-tab[aria-selected="true"] .account-initial { background:var(--text);color:${mist.m1};box-shadow:none; }
+.account-tab:hover,.account-tab-add:hover { background:var(--hover); }
+.account-tab:focus-visible,.account-tab-add:focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+.account-tab-row { display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line); }
+.account-tabs-card .account-tab-row:last-child { border-bottom:0; }
+.account-tab-name { flex:1;min-width:120px;overflow-wrap:anywhere; }
+.account-tab-name strong { display:block;font-weight:600; }
+.account-session-state { display:block;color:var(--muted);font-size:12px;margin-top:3px; }
+.account-session-initial { display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--inset);font-weight:600;color:var(--text); }
+.account-tabs-card .btn { border-radius:${radius.round};padding:6px 12px; }
+.patch-log { width:min(620px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:auto; }
+.patch-log-head { display:flex;align-items:center;justify-content:space-between;gap:16px; }
+.patch-log-kicker { margin:0 0 8px;color:var(--muted);font-size:11px;letter-spacing:.08em;font-weight:600; }
+.patch-log-title { margin:24px 0 16px;font-size:20px;letter-spacing:-.02em; }
+.patch-log-section { margin:20px 0 8px;font-size:13px; }
+.patch-log ul { padding-left:18px;margin:0;color:var(--muted); }
+.patch-log li { margin:8px 0;line-height:1.55; }
+@media(prefers-reduced-motion:reduce){.account-tab,.account-tab-add{transition:none;}}
 .settings-detail-card>.btn { justify-self:start; }
 .app-update-card>.dialog-actions { justify-content:flex-start;flex-wrap:wrap;gap:8px; }
 .update-dialog { width:min(540px,calc(100vw - 32px)); }
@@ -357,6 +383,7 @@ select.opt-input option { background: var(--raised); color: var(--text); }
 .xray-vbar button[aria-pressed="true"] { background: rgba(255,90,90,.16); color: #ff6b5b; }
 .xray-vbar button.cam[aria-pressed="true"] { background: rgba(61,214,140,.16); color: #3dd68c; }
 .xray-vbar button[disabled] { opacity: .35; pointer-events: none; }
+.xray-fd-state { position:absolute;right:100%;margin-right:8px;white-space:nowrap;border:1px solid var(--line2);border-radius:${radius.round};padding:3px 8px;background:var(--raised);color:var(--text);font-size:11px;font-weight:600; }
 :host-context(html:not(.xray-obsidian)) .xray-vbar { display: none; }
 /* Plugin picker (picker.ts): a tall glass sheet with one scrolling list. */
 .pk-scrim { align-items: center; padding: 24px; }

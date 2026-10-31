@@ -27,12 +27,12 @@ static AVATAR_CACHE: Mutex<()> = Mutex::new(());
 pub fn set_notification_privacy(active: bool) { PRIVATE.store(active, Ordering::SeqCst); }
 
 #[tauri::command]
-pub async fn notify<R: Runtime>(app: AppHandle<R>, id: u32, title: String, body: String, icon: Option<String>, context: Option<String>) {
+pub async fn notify<R: Runtime>(app: AppHandle<R>, window:tauri::WebviewWindow<R>, id: u32, title: String, body: String, icon: Option<String>, context: Option<String>) {
     if within_burst_limit() {
         let _ = tauri::async_runtime::spawn_blocking(move || {
             let avatar = if PRIVATE.load(Ordering::SeqCst) { None } else { icon.as_deref().and_then(|url| cached_avatar(&app, url)) };
-            if PRIVATE.load(Ordering::SeqCst) { show(app, id, "XRay", "New message · preview hidden", None, None); }
-            else { show(app, id, &clip(&title, MAX_TITLE), &clip(&body, MAX_BODY), avatar, context); }
+            if PRIVATE.load(Ordering::SeqCst) { show(app, window.label().into(), id, "XRay", "New message · preview hidden", None, None); }
+            else { show(app, window.label().into(), id, &clip(&title, MAX_TITLE), &clip(&body, MAX_BODY), avatar, context); }
         }).await;
     }
 }
@@ -110,7 +110,7 @@ fn clip(text: &str, max_chars: usize) -> String {
 }
 
 #[cfg(windows)]
-fn show<R: Runtime>(app: AppHandle<R>, id: u32, title: &str, body: &str, avatar: Option<PathBuf>, context: Option<String>) {
+fn show<R: Runtime>(app: AppHandle<R>, account:String, id: u32, title: &str, body: &str, avatar: Option<PathBuf>, context: Option<String>) {
     use tauri_winrt_notification::{Duration as Shown, IconCrop, Toast};
     use tauri::Manager;
 
@@ -125,8 +125,7 @@ fn show<R: Runtime>(app: AppHandle<R>, id: u32, title: &str, body: &str, avatar:
         .sound(None)
         .duration(Shown::Short)
         .on_activated(move |_| {
-            crate::window::show(&app);
-            crate::window::eval(&app, &format!("window.__xray && window.__xray.notificationClicked({id})"));
+            if crate::accounts::activate(&app,&account).is_ok(){if let Some(window)=app.get_webview_window(&account){let _=window.eval(&format!("window.__xray && window.__xray.notificationClicked({id})"));}}
             Ok(())
         });
     if let Some(path) = icon_path { toast = toast.icon(&path, IconCrop::Circular, "Sender"); }
@@ -136,7 +135,7 @@ fn show<R: Runtime>(app: AppHandle<R>, id: u32, title: &str, body: &str, avatar:
 }
 
 #[cfg(not(windows))]
-fn show<R: Runtime>(_app: AppHandle<R>, _id: u32, _title: &str, _body: &str, _avatar: Option<PathBuf>, _context: Option<String>) {}
+fn show<R: Runtime>(_app: AppHandle<R>, _account:String, _id: u32, _title: &str, _body: &str, _avatar: Option<PathBuf>, _context: Option<String>) {}
 
 /// Windows only shows toasts from apps it knows about. An installed app gets
 /// that from its Start menu shortcut. This registers xray directly, under its

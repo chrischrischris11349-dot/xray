@@ -3,6 +3,7 @@
 //! badge, the tray, single-instance handling and launch at login.
 
 mod badge;
+mod accounts;
 mod downloads;
 mod graphics;
 mod updates;
@@ -50,14 +51,14 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         // Every command Discord's page may call (see capabilities/main.json).
-        .invoke_handler(tauri::generate_handler![graphics::graphics_settings, window::open_reviewed_link, downloads::save_file_as, updates::app_update, notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, documents::history_media, documents::message_archive, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
+        .invoke_handler(tauri::generate_handler![accounts::account_sessions, graphics::graphics_settings, window::open_reviewed_link, downloads::save_file_as, updates::app_update, notify::notify, notify::set_notification_privacy, hotkeys::get_hotkeys, hotkeys::set_hotkeys, report::report_events, sync::sync_config, documents::document_store, documents::history_media, documents::message_archive, translate::translate, webfetch::web_fetch, oathnet::oathnet_lookup, intelligence::provider_keys, intelligence::open_provider_settings, intelligence::intel_request, recordings::recording_transfer, taskbar::set_voice_controls, window::change_zoom, sandbox::open_sandbox_preview])
         .setup(|app| {
             let handle = app.handle();
             let mut shell = settings::load(handle);
             // The separate local marker keeps routing fail-closed if shell.json is
             // unreadable or an older executable rewrites unknown settings fields.
             let required=handle.path().app_config_dir().map(|path|path.join("tor-required.flag").try_exists().unwrap_or(true)).unwrap_or(true);
-            network::configure(shell.tor_proxy||required,&shell.tor_browser_path,shell.tor_browser_links);
+            network::configure(shell.tor_proxy||required,&shell.tor_browser_path);
             sync_autostart(handle, &mut shell);
             notify::register(handle);
             let at_login = std::env::args().any(|arg| arg == window::AUTOSTART_ARG);
@@ -68,23 +69,28 @@ pub fn run() {
             app.manage(graphics::Graphics{active:shell.hardware_acceleration});
             app.manage(Shell(Mutex::new(shell)));
             app.manage(updates::Updates::default());
-            window::create(handle, visible)?;
-            taskbar::register_shortcut(handle);
-            taskbar::install(handle);
+            accounts::initialize(handle);
+            window::create(handle, false)?;
+            if !cfg!(debug_assertions){taskbar::register_shortcut(handle);}
+            accounts::restore(handle,visible);
             hotkeys::start(handle, bindings);
             tray::build(handle)?;
             Ok(())
         })
         .on_window_event(|win, event| {
+            if matches!(event,WindowEvent::Destroyed)&&accounts::is_account(win.label()){badge::forget(win.app_handle(),win.label());downloads::forget(win.label());}
             if let WindowEvent::CloseRequested { api, .. } = event {
                 // Auxiliary windows must actually close: hidden sandboxes retain
                 // their WebView and consume the bounded preview-window allowance.
-                if win.label() != window::MAIN { return; }
+                if !accounts::is_account(win.label()) { return; }
                 let shell = win.app_handle().state::<Shell>();
                 let to_tray = shell.0.lock().map(|s| s.close_to_tray).unwrap_or(true);
                 if to_tray {
                     api.prevent_close();
                     let _ = win.hide();
+                } else {
+                    api.prevent_close();
+                    accounts::quit(win.app_handle());
                 }
             }
         })

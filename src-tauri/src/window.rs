@@ -24,12 +24,17 @@ const EQUICORD: &str = include_str!("../inject/equicord.js");
 const BROWSER_ARGS: &str = "--autoplay-policy=no-user-gesture-required --disable-features=msWebOOUI,msPdfOOUI";
 
 pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()> {
+    create_account(app,MAIN,None,visible)
+}
+pub fn create_account<R:Runtime>(app:&AppHandle<R>,label:&str,data:Option<std::path::PathBuf>,visible:bool)->tauri::Result<()> {
     crate::network::validate_environment().map_err(|message|tauri::Error::Io(std::io::Error::new(std::io::ErrorKind::PermissionDenied,message)))?;
-    let url = WebviewUrl::External(Url::parse(DISCORD_APP).expect("DISCORD_APP is a valid URL"));
+    // The isolated native test fixture is unavailable in release builds.
+    let fixture=cfg!(debug_assertions)&&std::env::var("XRAY_TEST_WINDOW").as_deref()==Ok("accounts");
+    let url = if fixture{WebviewUrl::App("xray-account-test.html".into())}else{WebviewUrl::External(Url::parse(DISCORD_APP).expect("DISCORD_APP is a valid URL"))};
     let nav_app = app.clone();
     let popup_app = app.clone();
-    let mut builder = WebviewWindowBuilder::new(app, MAIN, url)
-        .title("xray")
+    let mut builder = WebviewWindowBuilder::new(app, label, url)
+        .title(crate::accounts::title(app,label))
         .inner_size(1280.0, 820.0)
         .min_inner_size(940.0, 600.0)
         .visible(visible)
@@ -39,10 +44,14 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
         // resize borders and drop shadow on an undecorated window.
         .decorations(false)
         .shadow(true)
+        // Let Discord handle HTML5 server/folder ordering and file drops.
+        // Tauri's default native drop target replaces WebView2's HTML handler.
+        .disable_drag_drop_handler()
         .background_color(Color(6, 6, 7, 255));
     // Debug builds only: XRAY_TEST_WINDOW=offscreen opens the window off-screen
     // and unfocused, so automated tests never pop up over whatever you're doing.
     let offscreen = is_offscreen_test();
+    if let Some(data)=data { builder=builder.data_directory(data); }
     builder = if offscreen {
         builder.position(OFFSCREEN.0, OFFSCREEN.1).focused(false).skip_taskbar(true)
     } else {
@@ -51,17 +60,20 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
     if let Some(script) = crate::installer::script(app) { builder = builder.initialization_script(script); }
     let window = builder
         .initialization_script(crate::network::privacy_script())
-        .initialization_script(EQUICORD)
-        .initialization_script(CORE)
+        .initialization_script(if fixture{""}else{EQUICORD})
+        .initialization_script(if fixture{""}else{CORE})
         .additional_browser_args(&crate::graphics::configured_args(app,BROWSER_ARGS))
         .on_navigation(move |url| {
-            if is_discord(url) {
+            if is_discord(url)||fixture&&url.host_str()==Some("tauri.localhost") {
                 return true;
             }
             open_in_browser(&nav_app, url);
             false
         })
         .on_document_title_changed(|window, title| crate::badge::update(&window, &title))
+        // Fail closed until the asynchronous Windows chooser is registered.
+        // Do not cancel an already registered request before its deferral runs.
+        .on_download(|webview,_|crate::downloads::ready(webview.label()))
         .on_new_window(move |url, _features| {
             // Discord's pop-out windows start as about:blank and the page writes into them.
             if url.as_str() == "about:blank" {
@@ -71,6 +83,8 @@ pub fn create<R: Runtime>(app: &AppHandle<R>, visible: bool) -> tauri::Result<()
             NewWindowResponse::Deny
         })
         .build()?;
+    crate::downloads::install(&window)?;
+    crate::taskbar::install_window(&window);
     let zoom = app.state::<crate::Shell>().0.lock().map(|s| s.zoom).unwrap_or(1.0);
     let _ = window.set_zoom(if zoom.is_finite() { zoom.clamp(0.5,2.0) } else { 1.0 });
     if offscreen {
@@ -92,7 +106,7 @@ pub fn is_offscreen_test() -> bool {
 }
 
 pub fn show<R: Runtime>(app: &AppHandle<R>) {
-    if let Some(window) = app.get_webview_window(MAIN) {
+    if let Some(window) = crate::accounts::current(app) {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
@@ -101,7 +115,7 @@ pub fn show<R: Runtime>(app: &AppHandle<R>) {
 
 /// Hides the window when it's on screen, otherwise shows it.
 pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
-    let Some(window) = app.get_webview_window(MAIN) else { return };
+    let Some(window) = crate::accounts::current(app) else { return };
     let on_screen = window.is_visible().unwrap_or(false) && !window.is_minimized().unwrap_or(false);
     if on_screen {
         let _ = window.hide();
@@ -112,7 +126,7 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
 
 /// Runs a snippet in Discord's page, for tray actions like opening the xray panel.
 pub fn eval<R: Runtime>(app: &AppHandle<R>, js: &str) {
-    if let Some(window) = app.get_webview_window(MAIN) {
+    if let Some(window) = crate::accounts::current(app) {
         let _ = window.eval(js);
     }
 }
@@ -135,7 +149,9 @@ fn external_url(value:&str)->Result<Url,String>{
  if value.len()>8192||!matches!(url.scheme(),"https"|"http")||url.host_str().is_none()||!url.username().is_empty()||url.password().is_some(){return Err("Only HTTP(S) links without embedded credentials may open".into());}Ok(url)
 }
 fn launch_reviewed<R:Runtime>(app:&AppHandle<R>,url:&Url)->Result<(),String>{
- if crate::network::tor_links_enabled(){return crate::network::open_browser(url.as_str());}
+ // Strict Tor remains fail-closed. The retired link-only preference cannot
+ // redirect normally routed clients away from their Windows default handler.
+ if crate::network::tor_enabled(){return crate::network::open_browser(url.as_str());}
  app.opener().open_url(url.as_str(),None::<&str>).map_err(|_|"The browser could not be opened".into())
 }
 /// A web-only opener after the core's sheet. Not an authorization boundary
@@ -147,9 +163,8 @@ pub async fn open_reviewed_link(app:AppHandle,url:String)->Result<(),String>{
 
 /// Native page zoom scales Discord and the closed-shadow UI together.
 #[tauri::command]
-pub fn change_zoom(app: AppHandle, step: i32) -> Result<f64,String> {
+pub fn change_zoom(app: AppHandle, window:tauri::WebviewWindow, step: i32) -> Result<f64,String> {
     if ![-1,0,1].contains(&step) { return Err("Invalid zoom step".into()); }
-    let window=app.get_webview_window(MAIN).ok_or("Main window unavailable")?;
     let state=app.state::<crate::Shell>();
     let mut settings=state.0.lock().map_err(|_|"Settings unavailable")?;
     let value=next_zoom(settings.zoom,step);

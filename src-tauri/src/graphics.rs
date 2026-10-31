@@ -15,8 +15,8 @@ fn snapshot(enabled:bool,active:bool,external:&str)->Value {
     json!({"enabled":enabled,"active":active,"restartRequired":enabled!=active,"externalOverride":external_override})
 }
 #[tauri::command]
-pub fn graphics_settings(app:AppHandle,action:String,enabled:Option<bool>)->Result<Value,String> {
-    if action=="restart" {app.restart();}
+pub async fn graphics_settings(app:AppHandle,action:String,enabled:Option<bool>)->Result<Value,String> {
+    if action=="restart" {crate::accounts::prepare(&app,None).await?;app.restart();}
     if !["get","set"].contains(&action.as_str()){return Err("Invalid graphics action".into());}
     let shared=app.state::<crate::Shell>();let mut settings=shared.0.lock().map_err(|_|"Graphics settings are unavailable")?;
     if action=="set" {

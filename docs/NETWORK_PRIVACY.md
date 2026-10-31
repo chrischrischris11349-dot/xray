@@ -1,5 +1,12 @@
 # Local Tor routing and link review
 
+**Current behavior (0.5.19):** normal XRay sessions open reviewed HTTP(S) links
+with the Windows registered handler, usually the default browser. The old
+`tor_browser_links` setting is ignored and removed on settings saves. Existing
+internal Discord navigation stays in XRay. Explicit strict Tor mode still uses
+the verified Tor Browser and never falls back to direct networking. The legacy
+link-only setup described below applies to 0.5.15–0.5.18, not current builds.
+
 XRay 0.5.15 can opt into the local Tor SOCKS5 listener at `127.0.0.1:9050`.
 This is a local setting, disabled by default in Team installers. It does not
 change the Windows proxy, ordinary Firefox, other apps or other users' settings.
@@ -57,8 +64,7 @@ setup. This is not a system VPN or a claim of browser fingerprint anonymity.
 
 To deliberately opt out, quit XRay, remove its local config-directory
 `tor-required.flag`, set `tor_proxy` to `false` in `shell.json`, and restart.
-Keep `tor_browser_links=true` to retain the Tor-only external-link launcher,
-or explicitly set it false to restore the default browser.
+Normal routing also restores the Windows default link handler in 0.5.19.
 To undo browser policy changes, restore the saved policy from
 `%APPDATA%/XRay-network/tor-browser-policies-before-*.json` while that browser is
 closed. The helper does not stop or reconfigure the user's Tor daemon.

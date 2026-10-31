@@ -1,7 +1,7 @@
 """Configure the existing Tor Browser and local XRay opt-in; no admin or Firefox-profile access."""
 import argparse,datetime,json,os,socket
 from pathlib import Path
-parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');parser.add_argument('--browser-only',action='store_true');parser.add_argument('--links-only',action='store_true',help='Explicitly restore normal XRay networking/voice; route only opened links to Tor Browser');parser.add_argument('--xray',action='store_true',help='Compatibility alias; strict configuration is the default action');args=parser.parse_args()
+parser=argparse.ArgumentParser();parser.add_argument('--check',action='store_true');parser.add_argument('--browser-only',action='store_true');parser.add_argument('--links-only',action='store_true',help='Restore normal XRay networking/voice (0.5.19 also restores the Windows default link handler)');parser.add_argument('--xray',action='store_true',help='Compatibility alias; strict configuration is the default action');args=parser.parse_args()
 browser=Path.home()/'Desktop/Tor Browser/Browser/firefox.exe'
 metadata=(browser.parent/'application.ini').read_text(encoding='utf8') if browser.is_file() else ''
 if 'Vendor=Tor Project' not in metadata or 'RemotingName=Tor Browser' not in metadata:raise SystemExit('Existing Tor Browser could not be verified. No ordinary Firefox configuration was changed.')
@@ -31,8 +31,9 @@ backup_path=directory/('tor-before-'+datetime.datetime.now().strftime('%Y%m%d-%H
 backup_path.write_text(json.dumps(backup,indent=2)+'\n',encoding='utf8')
 if args.links_only:(directory/'tor-required.flag').unlink(missing_ok=True)
 else:(directory/'tor-required.flag').write_text('Tor routing is required. Removing this file and setting tor_proxy=false is an explicit opt-out.\n',encoding='utf8')
-data.update(tor_proxy=not args.links_only,tor_browser_links=True,tor_browser_path=str(browser))
+data.pop('tor_browser_links',None)
+data.update(tor_proxy=not args.links_only,tor_browser_path=str(browser))
 temporary=settings.with_suffix('.tor-tmp');temporary.write_text(json.dumps(data,indent=2)+'\n',encoding='utf8');temporary.replace(settings)
-print('XRay '+('normal networking/VC with Tor Browser links' if args.links_only else 'strict Tor mode')+' configured for the next full process startup. Use XRay 0.5.15 or newer.')
-print('Links use the existing Tor Browser on 127.0.0.1:9050. Ordinary Firefox was not modified.')
+print('XRay '+('normal networking/VC with Windows default links' if args.links_only else 'strict Tor mode')+' configured for the next full process startup. Use XRay 0.5.15 or newer.')
+print('Reviewed links use '+('the Windows default handler.' if args.links_only else 'the existing Tor Browser on 127.0.0.1:9050.')+' Ordinary Firefox was not modified.')
 print('Previous Tor-only settings saved:',backup_path.name)

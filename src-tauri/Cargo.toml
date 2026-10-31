@@ -32,6 +32,9 @@ strip = true
 panic = "abort"
 
 [target."cfg(windows)".dependencies]
+# Already linked by Tauri; direct access is needed for an asynchronous download
+# deferral so a native save dialog never blocks a WebView2 event callback.
+webview2-com = "=0.39.1"
 tauri-winrt-notification = "0.7.3"
 winreg = "0.56.0"
 # Hotkey hooks (hotkeys.rs). Same version Tauri's windowing already links, so no second copy is compiled.

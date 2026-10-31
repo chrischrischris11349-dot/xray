@@ -16,8 +16,6 @@ pub struct ShellSettings {
     pub hardware_acceleration: bool,
     /// Local-only strict SOCKS routing; changing this requires a full restart.
     pub tor_proxy: bool,
-    /// External links may use Tor Browser while Discord/voice use normal routing.
-    pub tor_browser_links: bool,
     pub tor_browser_path: String,
     pub zoom: f64,
     /// Closing the window hides it to the tray instead of quitting.
@@ -44,7 +42,6 @@ impl Default for ShellSettings {
         Self {
             hardware_acceleration: true,
             tor_proxy: false,
-            tor_browser_links: false,
             tor_browser_path: String::new(),
             zoom: 1.0,
             close_to_tray: true,
@@ -92,19 +89,20 @@ fn write_settings(destination:&std::path::Path,settings:&ShellSettings)->std::io
     use super::*;
     #[test] fn graphics_defaults_and_saved_preferences_survive_restart() {
         let mut value:ShellSettings=serde_json::from_str("{}").unwrap();assert!(value.hardware_acceleration);
-        value.hardware_acceleration=false;value.zoom=1.25;value.tor_browser_links=true;
+        value.hardware_acceleration=false;value.zoom=1.25;
         let directory=std::env::temp_dir().join(format!("xray-settings-{}-{}",std::process::id(),std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
         let destination=directory.join("shell.json");write_settings(&destination,&value).unwrap();
-        let restored:ShellSettings=serde_json::from_slice(&fs::read(&destination).unwrap()).unwrap();assert!(!restored.hardware_acceleration);assert_eq!(restored.zoom,1.25);assert!(restored.tor_browser_links);
+        let restored:ShellSettings=serde_json::from_slice(&fs::read(&destination).unwrap()).unwrap();assert!(!restored.hardware_acceleration);assert_eq!(restored.zoom,1.25);
         value.hardware_acceleration=true;write_settings(&destination,&value).unwrap();let restored:ShellSettings=serde_json::from_slice(&fs::read(&destination).unwrap()).unwrap();assert!(restored.hardware_acceleration);
         fs::remove_file(destination).unwrap();fs::remove_dir(directory).unwrap();
     }
-    #[test] fn tor_links_can_survive_restart_without_disabling_voice() {
+    #[test] fn legacy_link_only_tor_is_retired_without_changing_strict_routing_or_other_settings() {
         let normal:ShellSettings=serde_json::from_str("{}").unwrap();
-        assert!(!normal.tor_proxy&&!normal.tor_browser_links);
+        assert!(!normal.tor_proxy);
         let links:ShellSettings=serde_json::from_value(serde_json::json!({"tor_proxy":false,"tor_browser_links":true,"tor_browser_path":"existing-tor-browser","zoom":1.2})).unwrap();
         let restored:ShellSettings=serde_json::from_str(&serde_json::to_string(&links).unwrap()).unwrap();
-        assert!(!restored.tor_proxy&&restored.tor_browser_links);
+        assert!(!restored.tor_proxy);assert!(serde_json::to_value(&restored).unwrap().get("tor_browser_links").is_none());
         assert_eq!(restored.tor_browser_path,"existing-tor-browser");assert_eq!(restored.zoom,1.2);
+        let strict:ShellSettings=serde_json::from_value(serde_json::json!({"tor_proxy":true,"tor_browser_links":false})).unwrap();assert!(strict.tor_proxy);
     }
 }

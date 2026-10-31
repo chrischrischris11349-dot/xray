@@ -7,6 +7,7 @@ import { uiRoot } from "./root";
 import { icon } from "./icons";
 import { closeDialog, showSheet } from "./dialog";
 import { recordingNeedsAttention } from "../voice/recorder";
+import {showPatchNotes} from './patchNotes';
 type UpdateState={phase:string;version?:string;downloaded?:number;total?:number};
 let state:UpdateState={phase:"idle"},error="",busy=false,started=false,lastCheck=0,notice:HTMLButtonElement|undefined;
 const cards:Array<WeakRef<HTMLElement>>=[];
@@ -22,7 +23,7 @@ async function run(action:"check"|"download"|"apply"){
  }catch(failure){state={...state,phase:"failed"};error=String((failure as Error)?.message??failure);}finally{polling=false;clearInterval(timer);busy=false;redraw();}
 }
 function draw(card:HTMLElement){card.replaceChildren(h("div",{class:"card-title"},h("span",{trustedHtml:icon("download",17)}),` XRay updates · ${__XRAY_VERSION__}${personalBuild?" Personal":" Team"}`),h("div",{class:"card-sub",attrs:{role:"status"},text:error||updateLabel(state)}),
- h("div",{class:"dialog-actions"},h("button",{class:"btn ghost",attrs:busy||state.phase==="ready"?{disabled:""}:{},text:"Check for updates",on:{click:()=>void run("check")}}),
+ h("div",{class:"dialog-actions"},h("button",{class:"btn ghost",text:"What’s new",on:{click:showPatchNotes}}),h("button",{class:"btn ghost",attrs:busy||state.phase==="ready"?{disabled:""}:{},text:"Check for updates",on:{click:()=>void run("check")}}),
  ...(["available","failed"].includes(state.phase)&&state.version?[h("button",{class:"btn",attrs:busy?{disabled:""}:{},text:"Download update",on:{click:()=>void run("download")}})]:[]),
  ...(state.phase==="ready"?[h("button",{class:"btn",attrs:busy?{disabled:""}:{},text:"Restart and apply",on:{click:()=>void run("apply")}})]:[])),
  h("p",{class:"card-sub",text:"Applying an update restarts XRay and disconnects voice. Unsaved history must finish saving first. Media files already saved on the server remain there."}));}
