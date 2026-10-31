@@ -64,7 +64,9 @@ pub fn activate<R:Runtime>(app:&AppHandle<R>,id:&str)->Result<(),String>{
  let old=current(app);
  if let Some(old)=old.filter(|old|old.label()!=id){let maxed=old.is_maximized().unwrap_or(false);if let Ok(position)=old.outer_position(){let _=next.set_position(position);}if let Ok(size)=old.inner_size(){let _=next.set_size(size);}if maxed{let _=next.maximize();}else{let _=next.unmaximize();}}
  {let state=app.state::<Accounts>();let mut state=state.0.lock().map_err(|_|"Account tabs unavailable")?;let mut config=state.clone();config.active=id.into();if let Some(tab)=config.tabs.iter_mut().find(|tab|tab.id==id){tab.open=true;}persist(app,&config)?;*state=config;}
- next.show().map_err(|_|"Could not show this account")?;let _=next.unminimize();let _=next.set_focus();
+ next.show().map_err(|_|"Could not show this account")?;let _=next.unminimize();
+ // Off-screen test copies must never take keyboard focus from whatever you are doing.
+ if !crate::window::is_offscreen_test(){let _=next.set_focus();}
  for(label,window)in app.webview_windows(){if is_account(&label)&&label!=id{let _=window.hide();}}
  changed(app);Ok(())
 }
