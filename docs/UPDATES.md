@@ -46,8 +46,14 @@ The updater signing key is outside the repository at `%APPDATA%/XRay-build/updat
 Its directory is restricted to the current Windows user and SYSTEM. Keep a private
 backup. Do not add it or its generation log to Git, source ZIPs or installers.
 Only its public key is in `tauri.conf.json`. Forks need their own key and feed.
-The key was replaced in 0.5.21 after the original was lost: 0.5.20 and older
-installs cannot verify newer updates and need the 0.5.21 installer once.
+The key changed in 0.5.21: 0.5.20 and older installs cannot verify the signatures
+on the new feeds and need a 0.5.21-or-newer installer once.
+Packaged Windows tools can see separate AppData copies. A different old key was
+found in Codex's copy while Claude's copy held the new key. Both were backed up
+privately and the active build copies were aligned with the shipped public key.
+Verify the actual installer signature against `tauri.conf.json`, including a
+modified-payload rejection check; a successful build alone does not prove that
+its signing key matches. Never resolve a mismatch by weakening verification.
 Build tooling now requires stable Rust 1.90 or newer for the updater plugin.
 
 Example key generation for a fork, followed by configuring that key's public value:

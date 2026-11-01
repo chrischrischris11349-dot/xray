@@ -27,9 +27,10 @@ This release packages the settings and screen-share improvements made after the
   which sources can provide audio; the preview cannot manufacture a missing track.
 - Screen-share status now distinguishes absent audio, enabled tracks, and tracks
   muted by the capture source. An enabled track is not proof that it contains
-  audible game sound or reaches the receiver. The current report is missing
-  game/video sound while microphone voice remains audible; receiver playback
-  still needs a live check after installing this build.
+  audible game sound or reaches the receiver. After the Personal 0.5.22 update
+  was installed, the user confirmed that both the pre-share live preview and
+  game/video audio work. This is a user-confirmed check on that setup, not a
+  guarantee for every output device, capture source or receiving client.
 - Full Personal builds retain local editing and FakeDM. `XRAY_NO_EDIT_TOOLS=1`
   remains an explicit build choice; the Team build excludes these controls.
   Local message edits affect only your display, not Discord or archived history.
@@ -46,8 +47,11 @@ Validation: TypeScript passes; 209 core tests pass; native checks report 48
 passed and one live Tor check ignored. The server suite passes its existing
 HTTP/storage checks and 24 tests, including the authenticated clean/full update
 routes. Release installers are signature-checked separately from these tests.
-These automated checks do not replace the pending signed-in preview, audio,
-Save Image and hardware checks.
+The Personal installer was applied and its installed executable matched the
+verified build, allowing only Tauri's NSIS marker change. The user confirmed the
+live preview and viewer audio. Save Image, settings focus/scroll and hardware-FPS
+comparisons still need their own live checks; automated tests cover their changed
+code paths but do not replace those checks.
 
 The remaining hardware check is the reported RTX 3070 whole-screen 720p30
 game-FPS drop (about 70 versus 144
