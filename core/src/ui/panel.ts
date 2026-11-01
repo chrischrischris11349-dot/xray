@@ -113,7 +113,7 @@ export function isPanelOpen(): boolean {
 
 export function openPanel(): void {
   if (!root || panel) return;
-  panel = h("div", { class: "panel", attrs: { role: "dialog", "aria-label": "xray" } });
+  panel = h("div", { class: "panel", attrs: { role: "dialog", "aria-label": "XRay settings" } });
   root.append(panel);
   render();
   stopFloating = makeFloatingPanel(panel);
@@ -242,33 +242,57 @@ function assign(action: HotkeyAction, binding: Binding | null): void {
   });
 }
 
+const section = (text: string): HTMLElement => h("div", { class: "section" }, h("span", { class: "label", text }));
+
 function render(): void {
+  if (!panel) return;
+  // Every redraw replaces the controls, so keep the person's place: scroll, focus and caret.
+  const active = root?.activeElement instanceof HTMLElement && panel.contains(root.activeElement) ? root.activeElement : null;
+  const label = active?.getAttribute("aria-label");
+  const matching = () => label ? [...panel!.querySelectorAll<HTMLElement>(`[aria-label="${CSS.escape(label)}"]`)] : [];
+  const index = active ? matching().indexOf(active) : -1;
+  const caret = active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] as const : null;
+  const scroll = panel.scrollTop;
+  draw();
+  panel.scrollTop = scroll;
+  const next = matching()[Math.max(0, index)];
+  if (!next) return;
+  next.focus({ preventScroll: true });
+  if (caret && next instanceof HTMLInputElement) next.setSelectionRange(caret[0], caret[1]);
+}
+
+function draw(): void {
   if (!panel) return;
   const enabled = plugins.filter(isEnabled);
   const pending = pendingReload();
   const parts = [
     header(),
+    // Grouped the way people look for them: voice, look, the app itself, then data.
+    section("Voice"),
     fakeVoice.available ? fakeDeafenCard() : null,
+    voiceOutputControl(),
+    h("div", { class: "utility-actions" },
+      h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Check voice audio", on: { click: openVoiceDiagnostics } }),
+      h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Screen-share status", on: { click: showScreenShareStatus } })),
+    section("Appearance"),
     themeCard(),
     appearanceControl(),
     timeFormatControl(),
-    voiceOutputControl(),
+    bubblePositionControl(),
+    section("App"),
     accountTabsControl(),
     graphicsControl(),
+    appUpdatesControl(),
+    section("Sync & storage"),
     loggingCard(),
     syncCard(),
     cleanBuild ? null : serverStorageCard(),
     offlineStorageControl(),
-    bubblePositionControl(),
-    appUpdatesControl(),
     collectorStatusControl(),
-    features().length ? h("div", { class: "section" }, h("span", { class: "label", text: "Features" })) : null,
+    features().length ? section("Features") : null,
     features().length ? h("div", { class: "list" }, ...features().map(featureRow)) : null,
     isFeatureOn(intelligence) ? h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Open intelligence workspace", on: { click: () => openIntelligence() } }) : null,
-    h("div", { class: "utility-actions" },
-      h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Check voice audio", on: { click: openVoiceDiagnostics } }),
-      h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Screen-share status", on: { click: showScreenShareStatus } })),
-    h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
+    section("Hotkeys · work in games"),
     hotkeyList(),
     h("div", {
       class: "note",
