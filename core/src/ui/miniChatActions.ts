@@ -5,8 +5,8 @@ import { miniMenu, type MiniAction } from "./miniMenu";
 import { photoAttachment, showPhotoMetadata } from "./photoMetadata";
 import { showProfile } from "./profile";
 import { isDeletedMessage } from "./deletedMessages";
-import { personalBuild } from "../personalBuild";
-const localEditing = personalBuild;
+import { editTools } from "../personalBuild";
+const localEditing = editTools;
 import { editMessageLocally,hideMessageLocally,localEditAvailable,hasLocalEdit,resetMessageLocally } from "../plugins/localMessageEdit";
 
 export function mayPin(channel: any, can: (permission: bigint, channel: any) => boolean): boolean {

@@ -15,6 +15,12 @@ build uses `/updates/personal.json` on your configured private HTTPS storage ser
 with its existing token held only in Rust. Personal update files are authenticated
 and never uploaded to the public team release. There is no cross-channel fallback.
 
+Clean builds (`XRAY_CLEAN_BUILD=1`) read only clean feeds, so they never update to
+a full build. A public clean build reads `clean.json` on the fixed `clean-channel`
+release (replace that asset with each clean release); a clean Personal build reads
+`/updates/personal-clean.json` on private storage. Both carry the same signed
+manifest format as the team feed.
+
 Use `scripts/build-release.ps1` for Team or add `-Personal` for your own installer.
 `XRAY_PERSONAL_BUILD=1` gates local editing, Fake Deafen and the FakeDM port during
 core/plugin/installer generation. These controls are absent from the team catalog.
@@ -35,6 +41,8 @@ The updater signing key is outside the repository at `%APPDATA%/XRay-build/updat
 Its directory is restricted to the current Windows user and SYSTEM. Keep a private
 backup. Do not add it or its generation log to Git, source ZIPs or installers.
 Only its public key is in `tauri.conf.json`. Forks need their own key and feed.
+The key was replaced in 0.5.21 after the original was lost: 0.5.20 and older
+installs cannot verify newer updates and need the 0.5.21 installer once.
 Build tooling now requires stable Rust 1.90 or newer for the updater plugin.
 
 Example key generation for a fork, followed by configuring that key's public value:

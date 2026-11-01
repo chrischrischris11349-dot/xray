@@ -18,7 +18,7 @@ const mocks = {
   "@utils/Logger": "export class Logger{error(){}}",
   "@utils/types": "export default plugin=>plugin;export const OptionType={SELECT:1,BOOLEAN:2};",
   "@webpack/common": "export const Checkbox=props=>props,Text=props=>props,Modal=props=>(globalThis.captureFixture.modal=props);export const openModal=render=>{render({onClose(){}});return 'fixture';},closeModal=()=>{};",
-  "./sharePreview": "export const confirmSharePreview=stream=>Promise.resolve(stream);",
+  "./sharePreview": "export const confirmSharePreview=(stream,choose,settings)=>(globalThis.captureFixture.preview={choose,settings},Promise.resolve(stream));",
   "./styles.css?managed": "export default '';",
 };
 await build({ entryPoints: ["equicord/patches/WebScreenShare.tsx"], outfile: out, bundle: true, platform: "node", format: "cjs", jsx: "transform", jsxFactory: "React.createElement",
@@ -135,4 +135,20 @@ test("disabling capture preferences while the native picker is open leaves the s
   corePlugin.showScreenShareStatus();
   assert.equal(globalThis.captureFixture.dialog.body[0][1], "Discord default");
   assert.match(globalThis.captureFixture.dialog.body[1][1], /No active capture/);
+});
+
+test('preview quality changes re-apply the bounded budget, keep stricter caller limits and carry into a re-pick',async()=>{
+ const previous={...globalThis.captureFixture.options};let applied,actual;
+ const track={readyState:'live',getSettings:()=>({}),getConstraints:()=>({deviceId:'kept'}),async applyConstraints(c){applied=c;}};
+ try{Object.assign(globalThis.captureFixture.options,{frameRate:'30',resolution:'720'});globalThis.captureFixture.native=async()=>({getVideoTracks:()=>[track]});
+ const pending=navigator.mediaDevices.getDisplayMedia({video:{frameRate:{max:30}},audio:false});await globalThis.captureFixture.modal.actions[0].onClick();await pending;
+ const {settings,choose}=globalThis.captureFixture.preview;
+ assert.deepEqual([...settings.frameRates],['15','30','60','120']);assert.deepEqual([...settings.resolutions],['480','720','1080','1440','2160']);assert.equal(settings.frameRate,'30');assert.equal(settings.resolution,'720');
+ await settings.configure({getVideoTracks:()=>[track]},{frameRate:'60',resolution:'1080'});
+ assert.equal(globalThis.captureFixture.options.frameRate,'60');assert.equal(globalThis.captureFixture.options.resolution,'1080');
+ assert.deepEqual(applied.frameRate,{ideal:30,max:30},"Discord's stricter 30 FPS request survives a 60 FPS choice");
+ assert.deepEqual(applied.height,{ideal:1080,max:1080});assert.deepEqual(applied.width,{ideal:1920,max:1920});assert.equal(applied.deviceId,'kept');
+ globalThis.captureFixture.native=async options=>{actual=options;return{getVideoTracks:()=>[]};};await choose();
+ assert.deepEqual(actual.video.height,{ideal:1080,max:1080});assert.deepEqual(actual.video.frameRate,{ideal:30,max:30});assert.equal(actual.audio,false);
+ }finally{Object.assign(globalThis.captureFixture.options,previous);}
 });

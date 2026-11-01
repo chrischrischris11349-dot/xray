@@ -11,6 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--signature', type=Path, required=True)
 parser.add_argument('--url', required=True)
 parser.add_argument('--output', type=Path, required=True)
+parser.add_argument('--notes', default='See the release notes.')
 args = parser.parse_args()
 root = Path(__file__).resolve().parent.parent
 version = json.loads((root/'package.json').read_text(encoding='utf8'))['version']
@@ -21,7 +22,7 @@ signature = args.signature.read_text(encoding='utf8').strip()
 comment = base64.b64decode(signature, validate=True).decode('utf8')
 if not re.search(r'(?:^|\s)version:'+re.escape(version)+r'(?=\s|$)', comment):
     raise SystemExit('Signature does not name this release version')
-manifest = {'version': version, 'notes': 'Archived media, duplicate prevention and interface polish.',
+manifest = {'version': version, 'notes': args.notes,
             'pub_date': datetime.datetime.now(datetime.timezone.utc).isoformat(),
             'platforms': {'windows-x86_64': {'url': args.url, 'signature': signature}}}
 args.output.write_text(json.dumps(manifest, indent=2)+'\n', encoding='utf8')

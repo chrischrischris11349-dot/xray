@@ -313,7 +313,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .qr-context button.danger { color:var(--bad); }
 .qr-msg-actions { display:flex; justify-content:flex-end; gap:4px; margin-top:3px; }
 .qr-msg-actions button { min-width:28px; height:24px; display:grid; place-items:center; border:0; border-radius:6px; background:transparent; color:inherit; cursor:pointer; opacity:.65; }
-.qr-msg-actions button:hover, .qr-msg-actions button:focus-visible { background:#8883; opacity:1; outline:1px solid currentColor; }
+.qr-msg-actions button:hover, .qr-msg-actions button:focus-visible { background:var(--hover); opacity:1; outline:1px solid currentColor; }
 .qr-typing { flex:none; padding:3px 14px 7px; color:var(--muted); font-size:12px; }
 .qr-typing[hidden], .qr-reply-target[hidden] { display:none; }
 .qr-reply-target { margin-bottom:8px; padding:8px 10px; border:1px solid var(--line2); border-left:2px solid var(--accent); border-radius:8px; background:var(--inset); font-size:12px; }
@@ -353,7 +353,7 @@ select.opt-input option { background: var(--raised); color: var(--text); }
 .switch.small span { width: 18px; height: 18px; }
 
 /* Call Timer (plugins/appearance.ts) */
-.calltimer { position: fixed; top: 4px; right: 96px; z-index: 2147482980; height: 24px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border-radius: ${radius.m}; background: rgba(61,214,140,.1); box-shadow: inset 0 0 0 1px rgba(61,214,140,.28); color: #8cf0c0; font-size: 12px; pointer-events: none; }
+.calltimer { position: fixed; top: 4px; right: 96px; z-index: 2147482980; height: 24px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border-radius: ${radius.m}; background: color-mix(in srgb, var(--ok) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 28%, transparent); color: var(--ok); font-size: 12px; pointer-events: none; }
 :host-context(html.xray-obsidian) .calltimer { top: 10px; height: 26px; }
 .calltimer-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 6px var(--ok); }
 
@@ -378,14 +378,17 @@ select.opt-input option { background: var(--raised); color: var(--text); }
 .win-btns { position: fixed; top: 0; right: 0; height: var(--xr-titlebar-height, 46px); z-index: 2147482992; display: flex; align-items: center; padding-right: 4px; gap: 2px; }
 .win-btn { width: 38px; height: 30px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: ${radius.m}; background: transparent; color: var(--muted); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
 .win-btn:hover { background: rgba(237,233,226,.07); color: var(--text); }
+.win-btn:active { background: rgba(237,233,226,.12); }
 .win-btn.close:hover { background: #c42b1c; color: #fff; }
+.win-btn.close:active { background: #a52417; }
 
 /* Title-bar voice controls (plugins/voiceBar.ts), left of the window buttons. */
 .xray-vbar { position: fixed; top: 0; right: 172px; height: var(--xr-titlebar-height, 46px); z-index: 2147482991; display: flex; align-items: center; gap: 2px; }
 .xray-vbar button { width: 36px; height: 30px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: ${radius.m}; background: transparent; color: var(--muted); cursor: pointer; transition: background-color 120ms ease, color 120ms ease; }
 .xray-vbar button:hover { background: rgba(237,233,226,.07); color: var(--text); }
-.xray-vbar button[aria-pressed="true"] { background: rgba(255,90,90,.16); color: #ff6b5b; }
-.xray-vbar button.cam[aria-pressed="true"] { background: rgba(61,214,140,.16); color: #3dd68c; }
+.xray-vbar button:active { background: rgba(237,233,226,.12); }
+.xray-vbar button[aria-pressed="true"] { background: color-mix(in srgb, var(--bad) 16%, transparent); color: var(--bad); }
+.xray-vbar button.cam[aria-pressed="true"] { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
 .xray-vbar button[disabled] { opacity: .35; pointer-events: none; }
 .xray-fd-state { position:absolute;right:100%;margin-right:8px;white-space:nowrap;border:1px solid var(--line2);border-radius:${radius.round};padding:3px 8px;background:var(--raised);color:var(--text);font-size:11px;font-weight:600; }
 :host([data-fake-deafen-active]) .xray-update-notice { right:390px!important; }

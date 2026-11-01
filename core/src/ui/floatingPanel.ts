@@ -3,10 +3,12 @@ import { onKey } from "./root";
 import { clampPanel, type PanelGeometry } from "./panelGeometry";
 
 /** Stable panel listeners survive renders that replace the header and controls. */
-export function makeFloatingPanel(panel: HTMLElement, options: { key?: string; header?: string; initial?: Partial<PanelGeometry> } = {}): () => void {
+export type FloatingPanelControl = (() => void) & { moveBy(dx:number,dy:number,preview?:boolean):void };
+export function makeFloatingPanel(panel: HTMLElement, options: { key?: string; header?: string; initial?: Partial<PanelGeometry> } = {}): FloatingPanelControl {
   const key = options.key ?? "settingsPanel", header = options.header ?? ".head";
   let geometry = clampPanel(pluginState(key).data ?? options.initial ?? {}, innerWidth, innerHeight);
   let drag: { pointer: number; x: number; y: number; start: PanelGeometry; resize: boolean } | undefined;
+  let anchorStart: PanelGeometry | undefined;
   let frame = 0, next: Partial<PanelGeometry> | undefined;
   const flushFrame = () => { cancelAnimationFrame(frame); frame = 0; if (next) { const value = next; next = undefined; apply(value); } };
   const queue = (value: Partial<PanelGeometry>) => { next = value; if (!frame) frame = requestAnimationFrame(flushFrame); };
@@ -19,10 +21,11 @@ export function makeFloatingPanel(panel: HTMLElement, options: { key?: string; h
   const schedule = () => { pending = true; clearTimeout(timer); timer = setTimeout(persist, 250); };
   const apply = (next: Partial<PanelGeometry>) => {
     geometry = clampPanel(next, innerWidth, innerHeight);
-    if (drag && !drag.resize) {
+    if (drag && !drag.resize || anchorStart) {
       // Moving a fixed-size glass surface needs a compositor translation, not a
       // layout of the conversation on every pointer sample.
-      panel.style.transform = `translate3d(${geometry.x-drag.start.x}px,${geometry.y-drag.start.y}px,0)`;
+      const origin=anchorStart??drag!.start;
+      panel.style.transform = `translate3d(${geometry.x-origin.x}px,${geometry.y-origin.y}px,0)`;
       return;
     }
     panel.style.transform = "";
@@ -70,11 +73,20 @@ export function makeFloatingPanel(panel: HTMLElement, options: { key?: string; h
     apply(event.shiftKey || target.matches(".panel-resize") ? { ...geometry, width: geometry.width + dx, height: geometry.height + dy } : { ...geometry, x: geometry.x + dx, y: geometry.y + dy });
     schedule(); return true;
   });
-  return () => {
-    flushFrame(); if (pending || drag) persist();
+  const stop = () => {
+    flushFrame(); if (pending || drag || anchorStart) persist();
     clearTimeout(timer); observer.disconnect(); removeKey();
     window.removeEventListener("resize", resize);
     panel.removeEventListener("pointerdown", down); panel.removeEventListener("pointermove", move);
     panel.removeEventListener("pointerup", up); panel.removeEventListener("pointercancel", up); panel.removeEventListener("lostpointercapture", up);
   };
+  return Object.assign(stop,{moveBy(dx:number,dy:number,preview=false){
+    if(drag||!Number.isFinite(dx)||!Number.isFinite(dy))return;
+    flushFrame();
+    const origin=anchorStart??{...geometry};
+    if(preview){anchorStart=origin;panel.style.animation="none";panel.classList.add("dragging");}
+    else anchorStart=undefined;
+    apply({...origin,x:origin.x+dx,y:origin.y+dy});
+    if(!preview){panel.classList.remove("dragging");persist();}
+  }});
 }

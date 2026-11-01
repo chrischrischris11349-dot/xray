@@ -50,9 +50,16 @@ mod browser_downloads {
      args.SetCancel(true)?;args.SetHandled(true)?;
      if BUSY.swap(true,Ordering::SeqCst){return Ok(())}
      let guard=Guard;let deferral=args.GetDeferral()?;
-     let mut suggested=PWSTR::null();let name=if args.ResultFilePath(&mut suggested).is_ok(){
-      let path=PathBuf::from(take_pwstr(suggested));filename(&path.file_name().unwrap_or_default().to_string_lossy())
-     }else{"download".into()};
+     let mut suggested=PWSTR::null();let suggested=if args.ResultFilePath(&mut suggested).is_ok(){
+      PathBuf::from(take_pwstr(suggested)).file_name().unwrap_or_default().to_string_lossy().into_owned()
+     }else{String::new()};
+     // A generic suggestion ("file") falls back to the source's own name and type.
+     let (mut uri,mut mime)=(PWSTR::null(),PWSTR::null());
+     let (uri,mime)=match args.DownloadOperation(){
+      Ok(operation)=>(if operation.Uri(&mut uri).is_ok(){take_pwstr(uri)}else{String::new()},if operation.MimeType(&mut mime).is_ok(){take_pwstr(mime)}else{String::new()}),
+      Err(_)=>(String::new(),String::new()),
+     };
+     let name=download_name(&suggested,&uri,&mime);
      let id=NEXT.fetch_add(1,Ordering::SeqCst);
      PENDING.with(|slot|*slot.borrow_mut()=Some(Pending{id,args,deferral,_guard:guard}));
      // The plugin's asynchronous dialog returns before the WebView2 event ends.
@@ -83,6 +90,35 @@ pub(crate) fn filename(raw:&str)->String{
  let stem=value.split('.').next().unwrap_or("").to_ascii_uppercase();
  if value.is_empty()||["CON","PRN","AUX","NUL","COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9","LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"].contains(&stem.as_str()){return "download".into();}
  value.into()
+}
+/// The Save As suggestion: WebView2's name unless it is generic or has no extension,
+/// then the source URL's last path segment, then an extension from the MIME type.
+pub(crate) fn download_name(suggested:&str,uri:&str,mime:&str)->String{
+ let has_extension=|name:&str|name.rsplit_once('.').is_some_and(|(stem,ext)|!stem.is_empty()&&(1..=5).contains(&ext.len())&&ext.chars().all(|c|c.is_ascii_alphanumeric()));
+ let generic=|name:&str|{let stem=name.rsplit_once('.').map_or(name,|(stem,_)|stem).to_ascii_lowercase();name.is_empty()||name=="download"||["file","download","image","unknown","untitled"].contains(&stem.as_str())};
+ let suggested=if suggested.trim().is_empty(){String::new()}else{filename(suggested)};
+ if !suggested.is_empty()&&!generic(&suggested)&&has_extension(&suggested){return suggested;}
+ // Discord's CDN keeps the uploaded name in the path (…/attachments/…/IMG_1234.png?ex=…).
+ let from_url=tauri::Url::parse(uri).ok().filter(|url|matches!(url.scheme(),"https"|"http"))
+  .and_then(|url|url.path_segments().and_then(|mut parts|parts.next_back().map(str::to_owned)))
+  .map(|part|filename(&percent_decode(&part))).filter(|name|!generic(name)&&has_extension(name));
+ if let Some(name)=from_url{return name;}
+ let extension=match mime.split(';').next().unwrap_or("").trim().to_ascii_lowercase().as_str(){
+  "image/png"=>"png","image/jpeg"|"image/jpg"=>"jpg","image/gif"=>"gif","image/webp"=>"webp","image/avif"=>"avif","image/bmp"=>"bmp","image/svg+xml"=>"svg",
+  "video/mp4"=>"mp4","video/webm"=>"webm","video/quicktime"=>"mov","audio/ogg"=>"ogg","audio/mpeg"=>"mp3","audio/wav"|"audio/x-wav"=>"wav",
+  _=>"",
+ };
+ let kind=mime.split('/').next().unwrap_or("");
+ let base=if !suggested.is_empty()&&!generic(&suggested){suggested}else if ["image","video","audio"].contains(&kind){kind.into()}else{"download".into()};
+ if extension.is_empty()||has_extension(&base){base}else{format!("{base}.{extension}")}
+}
+fn percent_decode(value:&str)->String{
+ let bytes=value.as_bytes();let mut out=Vec::with_capacity(bytes.len());let mut i=0;
+ while i<bytes.len(){
+  let byte=(bytes[i]==b'%'&&i+2<bytes.len()).then(||std::str::from_utf8(&bytes[i+1..i+3]).ok().and_then(|hex|u8::from_str_radix(hex,16).ok())).flatten();
+  if let Some(byte)=byte{out.push(byte);i+=3;}else{out.push(bytes[i]);i+=1;}
+ }
+ String::from_utf8_lossy(&out).into_owned()
 }
 fn source(raw:&str)->Result<tauri::Url,String>{
  let url=tauri::Url::parse(raw).map_err(|_|"Invalid download URL")?;
@@ -129,5 +165,16 @@ pub async fn save_file_as(app:AppHandle,window:tauri::WebviewWindow,name:String,
 }
 #[cfg(test)]mod tests{use super::*;
  #[test]fn filenames_are_suggestions_without_paths(){assert_eq!(filename("../clip.mp4"),"clip.mp4");assert_eq!(filename("CON.txt"),"download");assert_eq!(filename("photo.png"),"photo.png");assert!(!filename("a\n:b.jpg").contains(':'));}
+ #[test]fn saved_photos_keep_their_real_name(){
+  let cdn="https://media.discordapp.net/attachments/1/2/IMG_1234.png?ex=67&format=webp&width=800";
+  assert_eq!(download_name("file",cdn,"image/webp"),"IMG_1234.png","a generic suggestion uses the CDN name");
+  assert_eq!(download_name("",cdn,""),"IMG_1234.png");
+  assert_eq!(download_name("holiday.jpg",cdn,"image/jpeg"),"holiday.jpg","a real suggestion wins");
+  assert_eq!(download_name("file","https://cdn.discordapp.com/attachments/1/2/my%20cat.gif","image/gif"),"my cat.gif");
+  assert_eq!(download_name("file","blob:https://discord.com/0d2c","image/png"),"image.png","blobs fall back to the MIME type");
+  assert_eq!(download_name("IMG_77","blob:https://discord.com/0d2c","image/jpeg"),"IMG_77.jpg","a missing extension is added");
+  assert_eq!(download_name("file","https://example.com/download","application/octet-stream"),"download");
+  assert_eq!(download_name("file","https://example.com/a/..%2F..%2FCON.png","image/png"),"image.png","decoded paths are still sanitized");
+ }
  #[test]fn restricts_download_sources(){for url in ["file:///C:/secret","http://example.com/a","https://localhost/a","https://127.0.0.1/a","https://user:password@example.com/a","https://example.com:3000/a"]{assert!(source(url).is_err(),"{url}");}}
 }

@@ -15,7 +15,7 @@ import { reconcileChildren, StableRows } from "./reconcile";
 import { ImageDrafts } from "./imageDrafts";
 import { sendMiniChatMessage } from "./imageUpload";
 import { pluginState, save } from "../settings";
-import { makeFloatingPanel } from "./floatingPanel";
+import { makeFloatingPanel, type FloatingPanelControl } from "./floatingPanel";
 import { clampBubble } from "./bubblePosition";
 import { icon } from "./icons";
 import type { Feature } from "./features";
@@ -68,7 +68,7 @@ let refreshTimer: number | undefined;
 let drag: { id: number; x: number; y: number; left: number; top: number; moved: boolean } | undefined;
 let suppressClick = false;
 let bubbleFrame = 0, bubbleNext: { x: number; y: number } | undefined;
-let stopFloating: (() => void) | undefined;
+let stopFloating: FloatingPanelControl | undefined;
 function flushBubble(): void { cancelAnimationFrame(bubbleFrame); bubbleFrame = 0; if (bubbleNext) { moveBubble(bubbleNext.x, bubbleNext.y); bubbleNext = undefined; } }
 const fetched = new Set<string>();
 const messageRows = new StableRows();
@@ -138,6 +138,7 @@ function start(): void {
     if (!drag || event.pointerId !== drag.id) return;
     flushBubble();
     const moved = drag.moved;
+    if(moved){const rect=bubble!.getBoundingClientRect();stopFloating?.moveBy(rect.left-drag.left,rect.top-drag.top);}
     drag = undefined; bubble!.classList.remove("dragging");
     if (moved) { const rect = bubble!.getBoundingClientRect(); moveBubble(rect.left, rect.top, true); suppressClick = true; window.setTimeout(() => { suppressClick = false; }, 0); }
     if (bubble!.hasPointerCapture(event.pointerId)) bubble!.releasePointerCapture(event.pointerId);
@@ -228,12 +229,15 @@ function moveBubble(x: number, y: number, persist = false): void {
   if (drag?.moved && !persist) {
     // Keep pointer movement on the compositor; commit layout once on release.
     bubble.style.transform = `translate3d(${point.x - drag.left}px,${point.y - drag.top}px,0)`;
+    stopFloating?.moveBy(point.x-drag.left,point.y-drag.top,true);
     return;
   }
+  const previous=bubble.getBoundingClientRect();
   bubble.style.transform = "";
   Object.assign(bubble.style, { left: `${point.x}px`, top: `${point.y}px`, right: "auto", bottom: "auto" });
   if (persist) { pluginState("quickReplyBubble").data = point; save(); }
-  positionPopover();
+  if(stopFloating){const dx=point.x-previous.left,dy=point.y-previous.top;if(dx||dy)stopFloating.moveBy(dx,dy);}
+  else positionPopover();
 }
 function constrainBubble(): void {
   if (!bubble) return;

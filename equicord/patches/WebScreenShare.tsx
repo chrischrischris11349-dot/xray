@@ -97,8 +97,6 @@ function ModalComponent({ modalProps, submit, close, options }: {
 
     async function stream() {
         try {
-            const frameRate = Number(liveSettings.frameRate);
-            const height = Number(liveSettings.resolution);
 
             // const conn = [...MediaEngineStore.getMediaEngine().connections].find(
             //     connection => connection.userId === UserStore.getCurrentUser().id
@@ -108,7 +106,7 @@ function ModalComponent({ modalProps, submit, close, options }: {
             const audioOptions = typeof options?.audio !== "boolean" && !!options.audio ? options.audio : {};
             // Limit capture work to the selected budget, while preserving stricter
             // caller constraints. Discord retains its negotiated encoding/bitrate limits.
-            const captureOptions = boundedCaptureOptions(captureAudioOptions({
+            const captureOptions = () => boundedCaptureOptions(captureAudioOptions({
                     ...options,
                     video: options.video === false ? false : { ...videoOptions },
                     audio: options.audio === false ? false : {
@@ -117,16 +115,28 @@ function ModalComponent({ modalProps, submit, close, options }: {
                     },
                     surfaceSwitching: "include",
                     systemAudio: liveSettings.systemAudio ? "exclude" : "include"
-                }, liveSettings.systemAudio?"off":liveSettings.audioMode??"default"), frameRate, height);
-            const capture = () => getDisplayMedia(captureOptions).then(t=>enforceCaptureBudget(t,captureOptions)).then(t => {
+                }, liveSettings.systemAudio?"off":liveSettings.audioMode??"default"), Number(liveSettings.frameRate), Number(liveSettings.resolution));
+            const capture = () => {const selected=captureOptions();return getDisplayMedia(selected).then(t=>enforceCaptureBudget(t,selected)).then(t => {
                     // w3c says this can fail, they don't say why, so just to be safe
                     try {
                         const video = t.getVideoTracks()?.[0];
                         if (video) video.contentHint = liveSettings.contentHint;
                     } catch { }
                     return t;
-                });
-            submit(capture().then(media => confirmSharePreview(media, capture)));
+                });};
+            submit(capture().then(media => confirmSharePreview(media, capture,{
+                frameRate:liveSettings.frameRate,resolution:liveSettings.resolution,frameRates:StreamFps,resolutions:StreamResolution,
+                async configure(stream,selected){
+                    liveSettings.frameRate=selected.frameRate as typeof liveSettings.frameRate;
+                    liveSettings.resolution=selected.resolution as typeof liveSettings.resolution;
+                    const options=captureOptions();const limits=typeof options.video==="object"?options.video:{};
+                    for(const track of stream.getVideoTracks()){
+                        const constraints=track.getConstraints?.()??{};
+                        for(const key of ["width","height","frameRate"] as const)if(limits[key]!==undefined)constraints[key]=limits[key];
+                        await track.applyConstraints(constraints);
+                    }
+                }
+            })));
         } catch (error) {
             logger.error("Error while submitting stream.", error);
             submit(Promise.reject(error));

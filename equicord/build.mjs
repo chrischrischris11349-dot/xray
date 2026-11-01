@@ -34,7 +34,8 @@ const bundledPluginsDir = join(root, "equicord", "plugins");
 const personal = process.env.XRAY_PERSONAL_BUILD === "1";
 // Personal local previews remain available independently of server/intel modules.
 const clean = process.env.XRAY_CLEAN_BUILD === "1";
-const bundledPlugins = readdirSync(bundledPluginsDir).filter(name => statSync(join(bundledPluginsDir, name)).isDirectory() && (personal || name !== "fakeDM")).sort();
+const editTools = personal && process.env.XRAY_NO_EDIT_TOOLS !== "1";
+const bundledPlugins = readdirSync(bundledPluginsDir).filter(name => statSync(join(bundledPluginsDir, name)).isDirectory() && (editTools || name !== "fakeDM")).sort();
 
 /** A fingerprint of every file in the listed userplugins, so editing one triggers a rebuild. */
 function userpluginsHash() {
@@ -51,7 +52,7 @@ function userpluginsHash() {
   return hash.digest("hex");
 }
 
-const stamp = createHash("sha256").update(COMMIT).update(readFileSync(join(root,"equicord","patches","clanTagCompatibility.mjs"))).update(readFileSync(join(root,"equicord","patches","foldersCompatibility.mjs"))).update(String(personal)).update(String(clean)).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).update(readFileSync(join(root,"equicord","patches","PluginCard.tsx"))).update(readFileSync(join(root,"equicord","patches","WebScreenShare.tsx"))).update(readFileSync(join(root,"equicord","patches","HiddenServersStore.ts"))).update(readFileSync(join(root,"core","src","voice","captureConstraints.ts"))).update(readFileSync(join(root,"core","src","voice","sharePreview.ts"))).digest("hex").slice(0, 16);
+const stamp = createHash("sha256").update(COMMIT).update(readFileSync(join(root,"equicord","patches","clanTagCompatibility.mjs"))).update(readFileSync(join(root,"equicord","patches","foldersCompatibility.mjs"))).update(String(personal)).update(String(clean)).update(String(editTools)).update(JSON.stringify(excluded)).update(shim).update(readFileSync(fileURLToPath(import.meta.url))).update(JSON.stringify(userplugins)).update(userpluginsHash()).update(readFileSync(join(root,"equicord","patches","PluginCard.tsx"))).update(readFileSync(join(root,"equicord","patches","WebScreenShare.tsx"))).update(readFileSync(join(root,"equicord","patches","HiddenServersStore.ts"))).update(readFileSync(join(root,"core","src","voice","captureConstraints.ts"))).update(readFileSync(join(root,"core","src","voice","sharePreview.ts"))).digest("hex").slice(0, 16);
 if (!process.argv.includes("--force") && existsSync(out) && readFileSync(out, "utf8").includes(`xray-build:${stamp}`)) {
   console.log("equicord.js is up to date");
   process.exit(0);

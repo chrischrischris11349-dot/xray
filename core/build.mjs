@@ -16,6 +16,7 @@ const release = process.argv.includes("--release");
 const watch = process.argv.includes("--watch");
 const clean = process.env.XRAY_CLEAN_BUILD === "1";
 const personal = process.env.XRAY_PERSONAL_BUILD === "1";
+const editTools = personal && process.env.XRAY_NO_EDIT_TOOLS !== "1";
 const { version } = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 const src = join(dirname(fileURLToPath(import.meta.url)), "src");
@@ -34,7 +35,7 @@ const CLEAN_STUBS = {
   "ui/reportCache": "profileExtras",
   "plugins/messageLogger": "plugins",
   "plugins/voiceRecordingMenu": "plugins",
-  ...(!personal ? {"plugins/localMessageEdit":"plugins","plugins/personalLocalEdit":"plugins"} : {}),
+  ...(!editTools ? {"plugins/localMessageEdit":"plugins","plugins/personalLocalEdit":"plugins"} : {}),
   "ui/deletedMessages": "deletedMessages",
   "shell/offlineStartup": "offline",
   "shell/offlineRecordings": "offline",
@@ -67,6 +68,7 @@ const options = {
     __XRAY_DEV__: String(!release),
     __XRAY_PERSONAL_BUILD__: String(process.env.XRAY_PERSONAL_BUILD === "1"),
     __XRAY_CLEAN_BUILD__: String(clean),
+    __XRAY_EDIT_TOOLS__: String(editTools),
   },
   plugins: clean ? [cleanStubs] : [],
   logLevel: "info",

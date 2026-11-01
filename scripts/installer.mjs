@@ -8,7 +8,7 @@ import { resolve } from "node:path";
 const cache = "node_modules/.cache/xray";
 const out = "src-tauri/windows/generated";
 mkdirSync(cache, { recursive: true }); mkdirSync(out, { recursive: true });
-await build({ entryPoints: ["core/src/plugins/builtins.ts"], outfile: `${cache}/installer-core.cjs`, bundle: true, platform: "node", format: "cjs", loader: { ".svg": "text" }, define: { __XRAY_VERSION__: '"build"', __XRAY_DEV__: "false", __XRAY_PERSONAL_BUILD__:String(process.env.XRAY_PERSONAL_BUILD==="1") }, banner: { js: 'globalThis.window=globalThis;globalThis.document={};globalThis.addEventListener=()=>{};globalThis.WebSocket=class {};globalThis.location={hostname:"build.invalid"};' } });
+await build({ entryPoints: ["core/src/plugins/builtins.ts"], outfile: `${cache}/installer-core.cjs`, bundle: true, platform: "node", format: "cjs", loader: { ".svg": "text" }, define: { __XRAY_VERSION__: '"build"', __XRAY_DEV__: "false", __XRAY_PERSONAL_BUILD__:String(process.env.XRAY_PERSONAL_BUILD==="1"), __XRAY_EDIT_TOOLS__:String(process.env.XRAY_PERSONAL_BUILD==="1"&&process.env.XRAY_NO_EDIT_TOOLS!=="1") }, banner: { js: 'globalThis.window=globalThis;globalThis.document={};globalThis.addEventListener=()=>{};globalThis.WebSocket=class {};globalThis.location={hostname:"build.invalid"};' } });
 const require = createRequire(import.meta.url);
 const { builtins } = require(resolve(`${cache}/installer-core.cjs`));
 function sourceFile(path) { return ts.createSourceFile(path, readFileSync(path, "utf8"), ts.ScriptTarget.Latest, true); }

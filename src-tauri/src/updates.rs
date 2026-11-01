@@ -19,16 +19,24 @@ pub async fn app_update(app:AppHandle,action:String)->Result<Value,String>{
  let mut state=shared.0.lock().map_err(|_|"Update state unavailable")?;state.busy=false;
  if result.is_err(){state.phase="failed".into();}result?;Ok(snapshot(&state))
 }
+/// Public clean builds: a fixed release whose `clean.json` names only clean installers.
+const CLEAN_FEED:&str="https://github.com/chrischrischris11349-dot/xray/releases/download/clean-channel/clean.json";
+/// Each build variant reads only its own feed, so a clean build never updates to a full one.
+fn feed(personal:bool,clean:bool)->Option<&'static str>{match(personal,clean){(true,true)=>Some("personal-clean.json"),(true,false)=>Some("personal.json"),(false,true)=>Some(CLEAN_FEED),(false,false)=>None}}
 async fn operate(app:&AppHandle,action:&str)->Result<(),String>{
- // Every update feed carries full builds, so a clean build is only replaced by hand.
- if cfg!(xray_clean){return Err("Clean build: install the next clean build by hand".into());}
  if action=="check"{
   let mut builder=app.updater_builder().timeout(Duration::from_secs(60));
-  if option_env!("XRAY_PERSONAL_BUILD")==Some("1"){
-   let settings=crate::settings::load(app);let mut endpoint=tauri::Url::parse(&settings.sync_endpoint).map_err(|_|"Set up your private server for personal-build updates")?;
-   if endpoint.scheme()!="https"||!endpoint.username().is_empty()||endpoint.password().is_some()||endpoint.query().is_some()||endpoint.fragment().is_some()||settings.sync_token.is_empty(){return Err("Set up private HTTPS storage for personal-build updates".into());}
-   endpoint.set_path(&format!("{}/updates/personal.json",endpoint.path().trim_end_matches('/')));
-   builder=builder.endpoints(vec![endpoint]).map_err(|_|"Invalid private update endpoint")?.header("Authorization",format!("Bearer {}",settings.sync_token)).map_err(|_|"Invalid private update configuration")?;
+  let personal=option_env!("XRAY_PERSONAL_BUILD")==Some("1");
+  match feed(personal,cfg!(xray_clean)){
+   Some(file) if personal=>{
+    let settings=crate::settings::load(app);let mut endpoint=tauri::Url::parse(&settings.sync_endpoint).map_err(|_|"Set up your private server for personal-build updates")?;
+    if endpoint.scheme()!="https"||!endpoint.username().is_empty()||endpoint.password().is_some()||endpoint.query().is_some()||endpoint.fragment().is_some()||settings.sync_token.is_empty(){return Err("Set up private HTTPS storage for personal-build updates".into());}
+    endpoint.set_path(&format!("{}/updates/{file}",endpoint.path().trim_end_matches('/')));
+    builder=builder.endpoints(vec![endpoint]).map_err(|_|"Invalid private update endpoint")?.header("Authorization",format!("Bearer {}",settings.sync_token)).map_err(|_|"Invalid private update configuration")?;
+   }
+   Some(public)=>{builder=builder.endpoints(vec![tauri::Url::parse(public).map_err(|_|"Invalid clean update endpoint")?]).map_err(|_|"Invalid clean update endpoint")?;}
+   // Team builds keep the configured public feed.
+   None=>{}
   }
   let update=builder.build().map_err(|_|"Updater configuration is unavailable")?.check().await.map_err(|_|"Update feed unavailable. Retry later or use the matching installer")?;
   let state=app.state::<Updates>();let mut state=state.0.lock().map_err(|_|"Update state unavailable")?;state.phase=if update.is_some(){"available"}else{"current"}.into();state.update=update;state.bytes=None;state.downloaded=0;state.total=None;return Ok(());
@@ -47,6 +55,12 @@ async fn operate(app:&AppHandle,action:&str)->Result<(),String>{
 }
 #[cfg(test)]
 mod tests{
+ #[test]
+ fn every_build_variant_reads_only_its_own_feed(){
+  assert_eq!(super::feed(true,true),Some("personal-clean.json"));assert_eq!(super::feed(true,false),Some("personal.json"));
+  assert_eq!(super::feed(false,true),Some(super::CLEAN_FEED));assert_eq!(super::feed(false,false),None);
+  let url=tauri::Url::parse(super::CLEAN_FEED).unwrap();assert_eq!(url.scheme(),"https");assert!(url.path().ends_with("/clean-channel/clean.json"));assert!(!super::CLEAN_FEED.contains("latest"),"the clean feed must not follow the team release");
+ }
  #[test]
  fn status_never_exposes_installer_bytes(){let state=super::State{phase:"ready".into(),bytes:Some(b"private installer contents".to_vec()),downloaded:25,total:Some(100),..Default::default()};let result=super::snapshot(&state);assert_eq!(result["phase"],"ready");assert_eq!(result["downloaded"],25);assert!(!result.to_string().contains("private installer"));assert!(result.get("bytes").is_none());}
 }
