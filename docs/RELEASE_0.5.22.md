@@ -17,6 +17,19 @@ This release packages the settings and screen-share improvements made after the
 - Preview quality/audio controls, bubble following and real attachment names
   from 0.5.21 remain included. Changing the audio source requires choosing it
   again in the system picker. Preview playback remains muted.
+- Audio: the old application-only default excluded system sound even when a
+  whole screen was selected. Automatic mode offers screen/system audio and
+  window-only audio. An explicit caller mute remains respected; Choose source
+  with audio is an explicit user action that retries capture with audio requested.
+  Cancelling restores the previous audio choice and preserves the old capture.
+  The live preview remains local until Share this source, and its playback stays
+  muted. No microphone capture or mixing is introduced. Windows still controls
+  which sources can provide audio; the preview cannot manufacture a missing track.
+- Screen-share status now distinguishes absent audio, enabled tracks, and tracks
+  muted by the capture source. An enabled track is not proof that it contains
+  audible game sound or reaches the receiver. The current report is missing
+  game/video sound while microphone voice remains audible; receiver playback
+  still needs a live check after installing this build.
 - Full Personal builds retain local editing and FakeDM. `XRAY_NO_EDIT_TOOLS=1`
   remains an explicit build choice; the Team build excludes these controls.
   Local message edits affect only your display, not Discord or archived history.
@@ -29,7 +42,7 @@ Personal installers have their own private feeds; no clean feed offers a full
 build. The signing key changed in 0.5.21, so 0.5.20 and older installations need
 one manual installation. No signature check has been weakened.
 
-Validation: TypeScript passes; 204 core tests pass; native checks report 48
+Validation: TypeScript passes; 209 core tests pass; native checks report 48
 passed and one live Tor check ignored. The server suite passes its existing
 HTTP/storage checks and 24 tests, including the authenticated clean/full update
 routes. Release installers are signature-checked separately from these tests.

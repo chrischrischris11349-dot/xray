@@ -152,3 +152,30 @@ test('preview quality changes re-apply the bounded budget, keep stricter caller 
  assert.deepEqual(actual.video.height,{ideal:1080,max:1080});assert.deepEqual(actual.video.frameRate,{ideal:30,max:30});assert.equal(actual.audio,false);
  }finally{Object.assign(globalThis.captureFixture.options,previous);}
 });
+
+test('automatic audio offers screen sound and window sound while preserving an explicit initial mute',async()=>{
+ const previous={...globalThis.captureFixture.options};let actual;
+ try{
+  assert.equal(globalThis.captureFixture.definitions.audioMode.options.find(o=>o.default).value,'auto');
+  Object.assign(globalThis.captureFixture.options,{audioMode:'auto',systemAudio:false});
+  globalThis.captureFixture.native=async options=>{actual=options;return{getVideoTracks:()=>[]};};
+  let pending=navigator.mediaDevices.getDisplayMedia({video:true,audio:true});await globalThis.captureFixture.modal.actions[0].onClick();await pending;
+  assert.equal(actual.systemAudio,'include');assert.equal(actual.windowAudio,'window');assert.equal(actual.audio.restrictOwnAudio,true);
+  pending=navigator.mediaDevices.getDisplayMedia({video:true,audio:false});await globalThis.captureFixture.modal.actions[0].onClick();await pending;
+  assert.equal(actual.audio,false,'an initial caller mute is preserved');
+  await globalThis.captureFixture.preview.settings.chooseWithAudio();
+  assert.equal(actual.systemAudio,'include');assert.equal(actual.windowAudio,'window');assert.equal(actual.audio.restrictOwnAudio,true,'explicit retry requests output audio, never microphone input');
+ }finally{Object.assign(globalThis.captureFixture.options,previous);}
+});
+
+test('cancelling audio recovery restores the previous audio selection',async()=>{
+ const previous={...globalThis.captureFixture.options};
+ try{
+  Object.assign(globalThis.captureFixture.options,{audioMode:'application',systemAudio:true});
+  globalThis.captureFixture.native=async()=>({getVideoTracks:()=>[]});
+  const pending=navigator.mediaDevices.getDisplayMedia({video:true,audio:false});await globalThis.captureFixture.modal.actions[0].onClick();await pending;
+  globalThis.captureFixture.native=async()=>{throw new DOMException('Cancelled','NotAllowedError');};
+  await assert.rejects(globalThis.captureFixture.preview.settings.chooseWithAudio(),{name:'NotAllowedError'});
+  assert.equal(globalThis.captureFixture.options.audioMode,'application');assert.equal(globalThis.captureFixture.options.systemAudio,true);
+ }finally{Object.assign(globalThis.captureFixture.options,previous);}
+});

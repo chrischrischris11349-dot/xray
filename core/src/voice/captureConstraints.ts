@@ -58,8 +58,11 @@ export async function enforceCaptureBudget(stream: MediaStream, options: Display
   return stream;
 }
 /** Explicit picker choice. No microphone track is ever requested or mixed in. */
-export function captureAudioOptions(input:DisplayMediaStreamOptions,mode:"default"|"application"|"system"|"off"):DisplayMediaStreamOptions{
+export function captureAudioOptions(input:DisplayMediaStreamOptions,mode:"auto"|"default"|"application"|"system"|"off"):DisplayMediaStreamOptions{
   if(mode==="default")return input;
-  if(mode==="off")return {...input,audio:false,systemAudio:"exclude",windowAudio:"exclude"} as DisplayMediaStreamOptions;
-  return {...input,audio:{...(typeof input.audio==="object"?input.audio:{}),restrictOwnAudio:true,suppressLocalAudioPlayback:false},systemAudio:mode==="system"?"include":"exclude",windowAudio:mode==="system"?"system":"window"} as DisplayMediaStreamOptions;
+  if(mode==="off"||(mode==="auto"&&input.audio===false))return {...input,audio:false,systemAudio:"exclude",windowAudio:"exclude"} as DisplayMediaStreamOptions;
+  // Automatic offers system audio for a screen and window-only audio for a window.
+  // Application-only must remain explicit: excluding system audio also suppresses
+  // the whole-screen audio checkbox in Chromium's picker.
+  return {...input,audio:{...(typeof input.audio==="object"?input.audio:{}),restrictOwnAudio:true,suppressLocalAudioPlayback:false},systemAudio:mode==="application"?"exclude":"include",windowAudio:mode==="system"?"system":"window"} as DisplayMediaStreamOptions;
 }

@@ -22,3 +22,21 @@ test('the preview offers exactly the picker choices and never adds a microphone 
 test('live quality changes apply to the held capture and block sharing until they finish',async()=>{const click=setup(),source=stream();let applied,finish;const result=confirmSharePreview(source,async()=>source,{...quality,configure:(s,v)=>{applied=[s,v];return new Promise(r=>{finish=r;});}});let released=false;void result.then(()=>{released=true;});const [res,fps]=document.querySelectorAll('select');change(fps,'60');assert.deepEqual(applied,[source,{frameRate:'60',resolution:'720'}]);assert.equal(res.disabled,true);assert.equal(fps.disabled,true);assert.equal(fps.style.opacity,'.5','busy controls look disabled, not just behave so');click('Share this source');await settle();assert.equal(released,false,'Share is ignored while the change is applying');finish();await settle();assert.equal(fps.disabled,false);assert.equal(fps.style.opacity,'');click('Share this source');assert.equal(await result,source);assert.equal(source.track.stopped,false);});
 test('a quality change the source rejects keeps the current capture shareable and says so',async()=>{const click=setup(),source=stream();const result=confirmSharePreview(source,async()=>source,{...quality,configure:async()=>{throw new Error('OverconstrainedError');}});change(document.querySelectorAll('select')[0],'1080');await settle();assert.match(document.querySelector('[role=status]').textContent,/could not apply the quality change/);assert.equal(source.track.stopped,false);click('Share this source');assert.equal(await result,source);});
 test('a cancelled re-pick keeps its explanation visible',async()=>{const click=setup(),source=stream();const result=confirmSharePreview(source,async()=>{throw new Error('cancel');});click('Choose another source…');await settle();assert.match(document.querySelector('[role=status]').textContent,/previous source is still selected/);click('Share this source');await result;});
+
+test('silent capture offers an explicit audio retry and holds its live preview until confirmation',async()=>{
+ const click=setup(),source=stream(),replacement=audible();let requests=0;
+ const result=confirmSharePreview(source,async()=>source,{...quality,configure:async()=>{},chooseWithAudio:async()=>{requests++;return replacement;}});
+ const recovery=[...document.querySelectorAll('button')].find(b=>b.textContent==='Choose source with audio…');
+ assert.equal(requests,0);assert.equal(recovery.hidden,false);assert.equal(document.querySelector('video').srcObject,source);
+ click('Choose source with audio…');await settle();
+ assert.equal(requests,1);assert.equal(source.track.stopped,true);assert.equal(document.querySelector('video').srcObject,replacement);assert.equal(document.querySelector('video').muted,true,'local preview stays silent');
+ assert.equal(replacement.audio.enabled,true);assert.equal(recovery.hidden,true);
+ click('Share this source');assert.equal(await result,replacement);assert.equal(replacement.audio.stopped,false);
+});
+
+test('cancelled audio retry leaves the current source available without claiming audio was granted',async()=>{
+ const click=setup(),source=stream();
+ const result=confirmSharePreview(source,async()=>source,{...quality,configure:async()=>{},chooseWithAudio:async()=>{throw new DOMException('Cancelled','NotAllowedError');}});
+ click('Choose source with audio…');await settle();assert.equal(source.track.stopped,false);assert.match(document.querySelector('[role=status]').textContent,/previous source is still selected/);
+ assert.equal(document.querySelector('input[type=checkbox]').disabled,true);click('Share this source');assert.equal(await result,source);
+});

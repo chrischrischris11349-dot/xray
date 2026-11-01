@@ -6,6 +6,8 @@ export interface SharePreviewSettings {
   frameRates: readonly string[];
   resolutions: readonly string[];
   configure(stream: MediaStream, settings: { frameRate: string; resolution: string }): Promise<void>;
+  /** Explicit retry through the system picker; never adds a microphone or silently broadens capture. */
+  chooseWithAudio?(): Promise<MediaStream>;
 }
 export function confirmSharePreview(initial: MediaStream, choose: () => Promise<MediaStream>, settings?: SharePreviewSettings): Promise<MediaStream> {
   return new Promise((resolve, reject) => {
@@ -29,6 +31,7 @@ export function confirmSharePreview(initial: MediaStream, choose: () => Promise<
     const frameRate=settings?select("Capture FPS",settings.frameRates,settings.frameRate," FPS"):undefined;
     const audioLabel=document.createElement("label");audioLabel.style.cssText="display:flex;align-items:center;gap:8px;min-height:32px";
     const audioToggle=document.createElement("input");audioToggle.type="checkbox";audioToggle.setAttribute("aria-label","Share captured audio");
+    let audioRecovery:HTMLButtonElement|undefined;
     // Undefined until the person toggles it: audio granted in the system picker is shared by default,
     // including on a replacement source picked to get audio after a silent first choice.
     let shareAudio:boolean|undefined;
@@ -59,7 +62,8 @@ export function confirmSharePreview(initial: MediaStream, choose: () => Promise<
       status.textContent = `${track?.label || "Selected source"}${size?.width ? ` · ${size.width} × ${size.height}` : ""}${rate}. ${sound} Preview only — choose Share this source to go live.`;
       const idle=!choosing&&!configuring;
       setEnabled(audioToggle,idle&&audio>0,audioLabel);
-      for(const control of [share,change,resolution,frameRate])setEnabled(control,idle);
+      if(audioRecovery)audioRecovery.hidden=audio>0;
+      for(const control of [share,change,audioRecovery,resolution,frameRate])setEnabled(control,idle);
     };
     const applyAudio=()=>{const tracks=current.getAudioTracks?.()??[];audioToggle.checked=tracks.length>0&&(shareAudio??true);for(const track of tracks)track.enabled=audioToggle.checked;};
     const bind = () => {
@@ -79,20 +83,25 @@ export function confirmSharePreview(initial: MediaStream, choose: () => Promise<
     resolution?.addEventListener("change",()=>void configure());frameRate?.addEventListener("change",()=>void configure());
     button("Cancel", cancel);
     // The ellipsis says this opens the system picker.
-    const change = button("Choose another source…", () => {
+    const rechoose = (chooseSource:()=>Promise<MediaStream>,withAudio=false) => {
       if (choosing || configuring || closed) return;
-      choosing = true; for (const control of [share, change, resolution, frameRate]) setEnabled(control, false);
+      choosing = true; for (const control of [share, change, audioRecovery, resolution, frameRate]) setEnabled(control, false);
       // Call directly from this click to preserve native user activation.
       let pending: Promise<MediaStream>;
-      try { pending = choose(); } catch (error) { pending = Promise.reject(error); }
+      try { pending = chooseSource(); } catch (error) { pending = Promise.reject(error); }
       void pending.then(next => {
         if (closed) { stop(next); return; }
-        current.getVideoTracks().forEach(t => t.removeEventListener("ended", ended)); stop(current); current = next; choosing = false; bind();
+        current.getVideoTracks().forEach(t => t.removeEventListener("ended", ended)); stop(current); current = next; choosing = false;if(withAudio)shareAudio=true;bind();
       }, () => {
         // Re-enable the controls first, so the status keeps this message instead of the summary.
         choosing = false; if (!closed) { updateStatus(); status.textContent = "Source selection cancelled or unavailable. Your previous source is still selected."; }
       });
-    });
+    };
+    const change = button("Choose another source…", () => rechoose(choose));
+    if(settings?.chooseWithAudio){
+      audioRecovery=button("Choose source with audio…",()=>rechoose(()=>settings.chooseWithAudio!(),true));
+      audioRecovery.title="Choose the source again and enable Share audio in Windows. Window audio depends on your WebView2 version; a screen can offer system audio. Your microphone is not added.";
+    }
     const share = button("Share this source", () => {
       if (closed || choosing || configuring) return;
       if (!current.getVideoTracks().some(track => track.readyState === "live")) { cancel(); return; }
