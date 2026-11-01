@@ -62,7 +62,6 @@ a[data-xray-masked-link]::after { content:" → " attr(data-xray-link-host);font
   position: fixed; top: 52px; right: 16px; z-index: 2147483000;
   width: 420px; min-width: min(340px,calc(100vw - 16px)); min-height: min(240px,calc(100vh - 60px)); max-width: calc(100vw - 16px); max-height: calc(100vh - 60px); overflow: auto; resize: both; padding: 8px;
   border-radius: ${radius.l}; background: var(--raised);
-  backdrop-filter: saturate(180%) blur(24px);
   box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(237,233,226,.09), inset 0 1px 0 rgba(237,233,226,.07);
   scrollbar-width: thin; scrollbar-color: var(--line2) transparent;
   animation: pop ${motion.rise} var(--ease);
@@ -164,17 +163,17 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .toast {
   position: fixed; left: 50%; bottom: 28px; z-index: 2147483000; transform: translateX(-50%);
   display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: ${radius.m};
-  background: var(--raised); backdrop-filter: saturate(180%) blur(24px);
+  background: var(--raised);
   box-shadow: 0 20px 50px rgba(0,0,0,.5), 0 0 0 1px rgba(237,233,226,.09);
   font-size: 13.5px; animation: toast-rise ${motion.rise} var(--ease);
 }
 @keyframes toast-rise { from { opacity:0; transform:translate(-50%,4px); } to { opacity:1; transform:translate(-50%,0); } }
 .kbd { padding: 1px 6px; border-radius: ${radius.s}; border: 1px solid var(--line2); font-family: "Cascadia Mono", Consolas, monospace; font-size: 11px; color: var(--muted); }
 
-/* Shared glass for floating surfaces */
+/* Shared floating surfaces. The bubble and quick reply stay on screen over live video, so they are
+   solid: a backdrop blur there is recomputed on every video frame (game FPS while sharing). */
 .bubble, .qr, .palette {
   background: var(--raised);
-  backdrop-filter: saturate(180%) blur(24px);
   box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(237,233,226,.09), inset 0 1px 0 rgba(237,233,226,.07);
 }
 
@@ -182,7 +181,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bubble {
   position: fixed; right: 20px; bottom: 92px; z-index: 2147482990;
   width: 56px; height: 56px; padding: 0; border: 1px solid var(--line2); border-radius: 18px;
-  color: var(--text); display: flex; align-items: center; justify-content: center; cursor: grab; touch-action: none; user-select: none; background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.025)), color-mix(in srgb, var(--raised) 62%, transparent); backdrop-filter: blur(28px) saturate(135%); box-shadow: 0 12px 32px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.2), inset 0 -1px 0 rgba(255,255,255,.04);
+  color: var(--text); display: flex; align-items: center; justify-content: center; cursor: grab; touch-action: none; user-select: none; background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.025)), var(--raised); box-shadow: 0 12px 32px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.2), inset 0 -1px 0 rgba(255,255,255,.04);
 }
 .bubble:active { border-color: var(--accent); }
 .bubble.dragging { cursor: grabbing; transition:none; will-change:transform; }
@@ -277,7 +276,6 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* Dialogs (dialog.ts) */
 .dialog-scrim { align-items: center; padding: 24px; }
 .dialog { width: min(500px, 100%); max-height: 80vh; overflow: auto; display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: ${radius.l}; background: var(--raised); box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(237,233,226,.09), inset 0 1px 0 rgba(237,233,226,.07); animation: pop ${motion.rise} var(--ease); scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
-.panel,.palette { backdrop-filter:none; } /* Opaque surfaces cannot reveal the blurred backdrop. */
 .dialog-title { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
 .dialog-text { font-size: 13.5px; color: var(--muted); white-space: pre-wrap; }
 .dialog-facts { display: grid; grid-template-columns: auto 1fr; gap: 9px 18px; margin: 0; }

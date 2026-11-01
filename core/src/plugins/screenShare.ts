@@ -2,6 +2,7 @@ import { definePlugin } from "./types";
 import { showDialog } from "../ui/dialog";
 import { boundedCaptureOptions, enforceCaptureBudget } from "../voice/captureConstraints";
 import { observeScreenCapture, screenCaptureStatus } from "../voice/captureStatus";
+import { describeOutbound, outboundVideo } from "../voice/encoderStats";
 
 let latest: MediaStreamTrack | undefined;
 let requested = "Discord default";
@@ -13,15 +14,17 @@ export function capturePreferences(input: DisplayMediaStreamOptions = {}, fps: s
   return options;
 }
 
-export function showScreenShareStatus(): void {
+export async function showScreenShareStatus(): Promise<void> {
   const observed=screenCaptureStatus();
   const settings = observed?.settings ?? (latest?.readyState === "live" ? latest.getSettings() : null);
+  const encoding = describeOutbound(await outboundVideo().catch(() => []));
   showDialog({ title: "Screen-share capture", body: [
     ["Requested capture", requested],
     ["Actual capture", settings ? `${settings.width ?? "?"} × ${settings.height ?? "?"} · ${settings.frameRate ? `${Math.round(settings.frameRate)} FPS` : "frame rate unavailable"}` : "No active capture observed by this feature"],
     ["Source", settings?.displaySurface ?? "Use Discord's Share screen button, then select a screen or application window in the system picker."],
     ["Content", observed?.content ?? (latest?.readyState === "live" ? latest.contentHint || "Browser default" : "No active capture")],
     ["Streaming rate", "Capture rate is not the encoded stream rate. Discord's quality selection, session limits, hardware and bandwidth still apply."],
+    ...encoding,
   ] });
 }
 

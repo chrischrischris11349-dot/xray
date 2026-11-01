@@ -132,7 +132,7 @@ test("disabling capture preferences while the native picker is open leaves the s
   assert.equal(listeners, 0);
   assert.equal(stopped, false);
   assert.equal(track.contentHint, "detail");
-  corePlugin.showScreenShareStatus();
+  await corePlugin.showScreenShareStatus();
   assert.equal(globalThis.captureFixture.dialog.body[0][1], "Discord default");
   assert.match(globalThis.captureFixture.dialog.body[1][1], /No active capture/);
 });

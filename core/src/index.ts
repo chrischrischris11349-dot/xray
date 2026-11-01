@@ -34,6 +34,7 @@ import {mountAccountTabs,refreshAccountTabs,prepareAccountRestart} from './ui/ac
 import {installOfflineBackups} from './shell/offlineStartup';
 import {installVoiceOutputRouting} from './voice/outputRouting';
 import {observeScreenCapture} from './voice/captureStatus';
+import { installEncoderStats } from "./voice/encoderStats";
 import { cleanBuild } from "./cleanBuild";
 
 const DISCORD_HOSTS = new Set(["discord.com", "ptb.discord.com", "canary.discord.com"]);
@@ -48,6 +49,7 @@ function boot(): void {
   installZoom();
   installNotifications();
   installVoiceRecording();
+  installEncoderStats();
   installReporting();
   hookWebpack();
   startProfileHistory();
