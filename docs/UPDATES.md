@@ -20,6 +20,11 @@ a full build. A public clean build reads `clean.json` on the fixed `clean-channe
 release (replace that asset with each clean release); a clean Personal build reads
 `/updates/personal-clean.json` on private storage. Both carry the same signed
 manifest format as the team feed.
+The storage server must include the 0.5.22 update route: older deployments accept
+only `personal.json`. Clean private installers use
+`XRay-Personal-Clean-<version>.exe`, full private installers use
+`XRay-Personal-<version>.exe`; both and their `.sig` files require authentication.
+Feeds are replaced only after the matching signed installer is in place.
 
 Use `scripts/build-release.ps1` for Team or add `-Personal` for your own installer.
 `XRAY_PERSONAL_BUILD=1` gates local editing, Fake Deafen and the FakeDM port during

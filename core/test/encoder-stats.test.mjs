@@ -13,7 +13,7 @@ stats.installEncoderStats();
 test("no outgoing video says so instead of guessing", async () => {
   assert.deepEqual(stats.describeOutbound(await stats.outboundVideo()), [["Video encoder", "No outgoing video right now. Open this while you're sharing."]]);
 });
-test("a software encoder short of CPU is named plainly; audio and inbound media are ignored", async () => {
+test("the encoder and CPU limitation are named; audio and inbound media are ignored", async () => {
   const peer = new window.RTCPeerConnection();
   assert.ok(peer instanceof Peer, "Discord still gets a real peer connection");
   peer.reports.set("c1", { type: "codec", mimeType: "video/VP8" });
@@ -21,14 +21,25 @@ test("a software encoder short of CPU is named plainly; audio and inbound media 
   peer.reports.set("o2", { type: "outbound-rtp", kind: "audio", framesEncoded: 1 });
   peer.reports.set("i1", { type: "inbound-rtp", kind: "video", framesDecoded: 50 });
   const rows = stats.describeOutbound(await stats.outboundVideo());
-  assert.deepEqual(rows, [["Video encoder", "libvpx (software, on your CPU)"], ["Sending", "VP8 · 1280 × 720 · 30 FPS"], ["Limited by", "CPU: the encoder is short of processor time"]]);
+  assert.deepEqual(rows, [["Video encoder", "libvpx (not power-efficient; hardware use unconfirmed)"], ["Sending", "VP8 · 1280 × 720 · 30 FPS"], ["Limited by", "CPU: the encoder is short of processor time"]]);
   peer.connectionState = "closed"; peer.dispatchEvent(new Event("connectionstatechange"));
   assert.equal((await stats.outboundVideo()).length, 0, "closed connections are forgotten");
 });
-test("a hardware encoder is reported as GPU work", async () => {
+test("power efficiency suggests acceleration without claiming a definitive GPU measurement", async () => {
   const peer = new window.RTCPeerConnection();
   peer.reports.set("o1", { type: "outbound-rtp", kind: "video", framesEncoded: 10, encoderImplementation: "MediaFoundationVideoEncodeAccelerator", powerEfficientEncoder: true, qualityLimitationReason: "none" });
   const [encoder, , limit] = stats.describeOutbound(await stats.outboundVideo());
-  assert.equal(encoder[1], "MediaFoundationVideoEncodeAccelerator (hardware, on your GPU)");
+  assert.equal(encoder[1], "MediaFoundationVideoEncodeAccelerator (power-efficient; hardware acceleration likely)");
   assert.equal(limit[1], "Nothing");
+  peer.connectionState = "closed"; peer.dispatchEvent(new Event("connectionstatechange"));
+});
+
+test("missing optional stats stay unknown and disabled outgoing streams are excluded", async () => {
+  const peer = new window.RTCPeerConnection();
+  peer.reports.set("stopped", { type: "outbound-rtp", kind: "video", framesEncoded: 100, active: false, encoderImplementation: "old encoder" });
+  peer.reports.set("live", { type: "outbound-rtp", kind: "video", framesEncoded: 1, frameWidth: 1280, framesPerSecond: NaN });
+  const reports = await stats.outboundVideo();
+  assert.equal(reports.length, 1);
+  assert.deepEqual(stats.describeOutbound(reports), [["Video encoder", "not reported (hardware use not reported)"], ["Sending", "unknown codec · unknown size · frame rate not reported"], ["Limited by", "not reported"]]);
+  peer.connectionState = "closed"; peer.dispatchEvent(new Event("connectionstatechange"));
 });

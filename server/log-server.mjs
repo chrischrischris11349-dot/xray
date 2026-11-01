@@ -243,7 +243,7 @@ export function createApp(data,recordings,media,archive) {
         try{const payload=JSON.parse(await readBody(req,800000));if(!['status','configure','ingest','checkpoint','deleted','page'].includes(payload?.action))throw Error('Invalid archive action');return json(res,200,archive[payload.action](payload));}
         catch(error){return json(res,error.message==='too large'?413:400,{error:error.message});}
       }
-      if(req.method==="GET" && /^\/updates\/(personal\.json|XRay-Personal-\d+\.\d+\.\d+\.exe)$/.test(url.pathname)){
+      if(req.method==="GET" && /^\/updates\/(personal(?:-clean)?\.json|XRay-Personal(?:-Clean)?-\d+\.\d+\.\d+\.exe(?:\.sig)?)$/.test(url.pathname)){
         const file=join(process.env.XRAY_UPDATES_DIR??join(dirname(DB_PATH),"updates"),url.pathname.split("/").pop());
         if(!existsSync(file))return json(res,404,{error:"No personal update published"});
         res.writeHead(200,{"content-type":file.endsWith(".json")?"application/json":"application/octet-stream","content-length":statSync(file).size,"cache-control":"no-store","x-content-type-options":"nosniff"});const stream=createReadStream(file);stream.on("error",()=>res.destroy());res.on("close",()=>stream.destroy());stream.pipe(res);return;

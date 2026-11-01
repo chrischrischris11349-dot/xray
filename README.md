@@ -11,7 +11,8 @@ Licensed under GPL-3.0-or-later; see [LICENSE](LICENSE). See
 rules it follows, and [docs/DESIGN.md](docs/DESIGN.md) for the look (design
 tokens) and the extended profile view.
 
-See [0.5.20 fixes and sharing](docs/RELEASE_0.5.20.md) for current changes, and
+See [0.5.22 settings and sharing](docs/RELEASE_0.5.22.md) for current changes,
+[0.5.21 preview controls](docs/RELEASE_0.5.21.md) for the preview and clean update feeds, and
 [0.5.19 graphics and performance](docs/RELEASE_0.5.19.md) for the hardware
 acceleration option, performance-plugin filter and faster plugin search.
 
