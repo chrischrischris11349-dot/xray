@@ -1,8 +1,5 @@
 {
   "coreIds": [
-    "fakeDeafen",
-    "personalLocalEditControls",
-    "localMessageEdit",
     "messageLogger",
     "messageModeration",
     "cleanLinks",
@@ -197,15 +194,6 @@
       "minimal": true
     },
     {
-      "key": "xray:fakeDeafen",
-      "id": "fakeDeafen",
-      "source": "XRay",
-      "name": "Fake Deafen",
-      "description": "A standalone toggle: appear self-deafened while keeping local audio unchanged. Never server-mutes or server-deafens you. Starts off each launch.",
-      "recommended": true,
-      "minimal": false
-    },
-    {
       "key": "xray:focusMode",
       "id": "focusMode",
       "source": "XRay",
@@ -233,15 +221,6 @@
       "minimal": false
     },
     {
-      "key": "xray:localMessageEdit",
-      "id": "localMessageEdit",
-      "source": "XRay",
-      "name": "Local Message Edit",
-      "description": "Edit messages only in your own view. Saved per account until you right-click Reset Local Edit, including after reloads and restarts. Session-only deletion stays temporary.",
-      "recommended": true,
-      "minimal": false
-    },
-    {
       "key": "xray:messageModeration",
       "id": "messageModeration",
       "source": "XRay",
@@ -265,15 +244,6 @@
       "source": "XRay",
       "name": "Passcode Lock",
       "description": "Locks xray behind a passcode when it starts, after you've been away, or on Ctrl+Shift+L. Set the passcode from Ctrl+K.",
-      "recommended": false,
-      "minimal": false
-    },
-    {
-      "key": "xray:personalLocalEditControls",
-      "id": "personalLocalEditControls",
-      "source": "XRay",
-      "name": "Personal local editing",
-      "description": "Your view only, across every conversation. Saved edits and this account's switch survive reloads. Right-click Reset Local Edit to remove an override; Discord and archives keep their originals.",
       "recommended": false,
       "minimal": false
     },
