@@ -33,6 +33,8 @@ import {installLinkSafety,confirmExternalLink} from './ui/linkSafety';
 import {mountAccountTabs,refreshAccountTabs,prepareAccountRestart} from './ui/accountTabs';
 import {installOfflineBackups} from './shell/offlineStartup';
 import {installVoiceOutputRouting} from './voice/outputRouting';
+import {observeScreenCapture} from './voice/captureStatus';
+import { cleanBuild } from "./cleanBuild";
 
 const DISCORD_HOSTS = new Set(["discord.com", "ptb.discord.com", "canary.discord.com"]);
 
@@ -68,6 +70,7 @@ function boot(): void {
     value: Object.freeze({
       version: __XRAY_VERSION__,
       confirmExternalLink,
+      screenShareObserved:observeScreenCapture,
       refreshAccountTabs,
       prepareAccountRestart,
       timeFormat: currentTimeFormat,
@@ -109,7 +112,7 @@ function startUi(): void {
   ]);
   registerFeature(quickReply);
   registerFeature(palette);
-  registerFeature(intelligence);
+  if (!cleanBuild) registerFeature(intelligence);
   offerPickerOnFirstRun();
 }
 

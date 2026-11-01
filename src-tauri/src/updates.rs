@@ -20,6 +20,8 @@ pub async fn app_update(app:AppHandle,action:String)->Result<Value,String>{
  if result.is_err(){state.phase="failed".into();}result?;Ok(snapshot(&state))
 }
 async fn operate(app:&AppHandle,action:&str)->Result<(),String>{
+ // Every update feed carries full builds, so a clean build is only replaced by hand.
+ if cfg!(xray_clean){return Err("Clean build: install the next clean build by hand".into());}
  if action=="check"{
   let mut builder=app.updater_builder().timeout(Duration::from_secs(60));
   if option_env!("XRAY_PERSONAL_BUILD")==Some("1"){

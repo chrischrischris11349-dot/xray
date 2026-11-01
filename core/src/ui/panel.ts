@@ -31,6 +31,7 @@ import { appUpdatesControl, installAppUpdates } from "./appUpdates";
 import { collectorStatusControl } from "./collectorStatus";
 import { personalBuild } from "../personalBuild";
 import {offlineStorageControl} from './offlineStorage';
+import { cleanBuild } from "../cleanBuild";
 import {voiceOutputControl} from '../voice/outputRouting';
 import {graphicsControl} from './graphics';
 import {accountTabsControl} from './accountTabs';
@@ -256,7 +257,7 @@ function render(): void {
     graphicsControl(),
     loggingCard(),
     syncCard(),
-    serverStorageCard(),
+    cleanBuild ? null : serverStorageCard(),
     offlineStorageControl(),
     bubblePositionControl(),
     appUpdatesControl(),
@@ -264,8 +265,9 @@ function render(): void {
     features().length ? h("div", { class: "section" }, h("span", { class: "label", text: "Features" })) : null,
     features().length ? h("div", { class: "list" }, ...features().map(featureRow)) : null,
     isFeatureOn(intelligence) ? h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Open intelligence workspace", on: { click: () => openIntelligence() } }) : null,
-    h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Check voice audio", on: { click: openVoiceDiagnostics } }),
-    h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Screen-share status", on: { click: showScreenShareStatus } }),
+    h("div", { class: "utility-actions" },
+      h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Check voice audio", on: { click: openVoiceDiagnostics } }),
+      h("button", { class: "btn ghost", attrs: { type: "button" }, text: "Screen-share status", on: { click: showScreenShareStatus } })),
     h("div", { class: "section" }, h("span", { class: "label", text: "Hotkeys · work in games" })),
     hotkeyList(),
     h("div", {

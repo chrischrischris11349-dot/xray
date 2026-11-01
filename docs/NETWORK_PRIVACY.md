@@ -1,11 +1,21 @@
 # Local Tor routing and link review
 
-**Current behavior (0.5.19):** normal XRay sessions open reviewed HTTP(S) links
+**Current behavior (0.5.20):** normal XRay sessions open reviewed HTTP(S) links
 with the Windows registered handler, usually the default browser. The old
 `tor_browser_links` setting is ignored and removed on settings saves. Existing
 internal Discord navigation stays in XRay. Explicit strict Tor mode still uses
 the verified Tor Browser and never falls back to direct networking. The legacy
 link-only setup described below applies to 0.5.15–0.5.18, not current builds.
+
+Reviewed links on `soundcloud.com`, `www.soundcloud.com`, `m.soundcloud.com`
+and `on.soundcloud.com` open through `ghostcloud://open?url=...` when GhostCloud
+is registered. The original URL is encoded as one parameter. Lookalike hosts,
+embedded credentials and nonstandard ports are excluded. If GhostCloud is not
+installed or launching its handler fails, the usual web handler remains available.
+Strict Tor mode takes precedence and never hands the link to GhostCloud.
+The matching GhostCloud build uses Tauri's [deep-link plugin](https://v2.tauri.app/plugin/deep-linking/)
+to receive cold and running-instance opens, then reuses its existing SoundCloud
+resolver. No SoundCloud or browser-wide HTTP association is replaced.
 
 XRay 0.5.15 can opt into the local Tor SOCKS5 listener at `127.0.0.1:9050`.
 This is a local setting, disabled by default in Team installers. It does not

@@ -546,20 +546,22 @@ function FakeDMPanel({ onClose, btnRect }: { onClose(): void; btnRect: DOMRect; 
             <div
                 ref={panelRef}
                 className="fdm-panel"
-                style={{ ...pos, backgroundColor: "#2b2d31", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "12px", boxShadow: "0 16px 48px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4)", overflow: "hidden" }}
+                role="dialog"
+                aria-label="Local conversation preview"
+                style={pos}
                 onClick={e => e.stopPropagation()}
                 onMouseDown={e => e.stopPropagation()}
                 onMouseUp={e => e.stopPropagation()}
             >
                 <div className="fdm-header">
-                    <span className="fdm-title">{mode === "message" ? t("✏ Fake DM") : t("📞 Fake Call")}{isGroup ? t(" (Group)") : ""}</span>
-                    <button className="fdm-close" onClick={onClose}>✕</button>
+                    <span className="fdm-title">{mode === "message" ? t("Local message preview") : t("Local call preview")}{isGroup ? t(" · Group") : ""}</span>
+                    <button className="fdm-close" aria-label="Close local preview" onClick={onClose}>✕</button>
                 </div>
 
                 {/* Mode tabs */}
                 <div style={{ display: "flex", gap: 6, padding: "0 12px 10px" }}>
-                    <button onClick={() => setMode("message")} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: mode === "message" ? "#5865f2" : "rgba(255,255,255,0.07)", color: mode === "message" ? "#fff" : "rgba(255,255,255,0.5)" }}>{t("💬 Message")}</button>
-                    <button onClick={() => setMode("call")} style={{ flex: 1, padding: "5px 0", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: mode === "call" ? "#5865f2" : "rgba(255,255,255,0.07)", color: mode === "call" ? "#fff" : "rgba(255,255,255,0.5)" }}>{t("📞 Call")}</button>
+                    <button className="fdm-mode" aria-pressed={mode === "message"} onClick={() => setMode("message")}>{t("Message")}</button>
+                    <button className="fdm-mode" aria-pressed={mode === "call"} onClick={() => setMode("call")}>{t("Call")}</button>
                 </div>
 
                 {!isInDMOrGroup ? (

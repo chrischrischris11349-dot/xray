@@ -17,7 +17,7 @@ import definePlugin, { OptionType } from "@utils/types";
 import { Checkbox, closeModal, Modal, openModal, Text, } from "@webpack/common";
 
 import managedStyle from "./styles.css?managed";
-import { boundedCaptureOptions,captureAudioOptions,gamingSharePreset } from "./captureConstraints";
+import { boundedCaptureOptions,captureAudioOptions,gamingSharePreset,enforceCaptureBudget } from "./captureConstraints";
 import { confirmSharePreview } from "./sharePreview";
 
 const cl = classNameFactory("vc-screen-picker-");
@@ -108,7 +108,7 @@ function ModalComponent({ modalProps, submit, close, options }: {
             const audioOptions = typeof options?.audio !== "boolean" && !!options.audio ? options.audio : {};
             // Limit capture work to the selected budget, while preserving stricter
             // caller constraints. Discord retains its negotiated encoding/bitrate limits.
-            const capture = () => getDisplayMedia(boundedCaptureOptions(captureAudioOptions({
+            const captureOptions = boundedCaptureOptions(captureAudioOptions({
                     ...options,
                     video: options.video === false ? false : { ...videoOptions },
                     audio: options.audio === false ? false : {
@@ -117,7 +117,8 @@ function ModalComponent({ modalProps, submit, close, options }: {
                     },
                     surfaceSwitching: "include",
                     systemAudio: liveSettings.systemAudio ? "exclude" : "include"
-                }, liveSettings.systemAudio?"off":liveSettings.audioMode??"default"), frameRate, height)).then(t => {
+                }, liveSettings.systemAudio?"off":liveSettings.audioMode??"default"), frameRate, height);
+            const capture = () => getDisplayMedia(captureOptions).then(t=>enforceCaptureBudget(t,captureOptions)).then(t => {
                     // w3c says this can fail, they don't say why, so just to be safe
                     try {
                         const video = t.getVideoTracks()?.[0];

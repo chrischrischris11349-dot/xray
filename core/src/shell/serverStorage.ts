@@ -2,6 +2,7 @@ import { myId } from "../discord";
 import { storage } from "../env";
 import { invoke } from "./bridge";
 import { DocumentSession, type DocumentReply } from "./documentSession";
+import { cleanBuild } from "../cleanBuild";
 
 type Kind = "profile-history" | "moderation-audit" | "server-monitors" | "local-message-edits";
 const key = (account: string) => `xray.serverData.v1:${account}`;
@@ -19,7 +20,7 @@ export const storageSwitching = () => switching;
 export function accountDocument(kind: Kind, account: string): DocumentSession {
   if (activeAccount !== account) { activeAccount = account; documents = new Map(); }
   let document = documents.get(kind);
-  if (!document) { document = new DocumentSession(`${kind}.${account}`, localKey(kind, account), storage, serverDataEnabled(account), transport); documents.set(kind, document); }
+  if (!document) { document = new DocumentSession(`${kind}.${account}`, localKey(kind, account), storage, serverDataEnabled(account) && !(cleanBuild && kind === "local-message-edits"), transport); documents.set(kind, document); }
   return document;
 }
 export function onStorageModeChanged(listener: () => void): () => void { listeners.add(listener); return () => listeners.delete(listener); }

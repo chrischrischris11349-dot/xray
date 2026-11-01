@@ -18,15 +18,18 @@
     position: fixed;
     /* left et top injectés inline par React */
     z-index: 9998;
-    background: #2b2d31;
+    background: var(--xr-raised, var(--background-floating, #14181e));
+    color: var(--xr-text, var(--text-normal, #fafafc));
+    --brand-500: var(--xr-accent, #fafafc);
     border: 1px solid rgba(255,255,255,0.1);
     border-radius: 12px;
     box-shadow: 0 16px 48px rgba(0,0,0,0.65), 0 2px 8px rgba(0,0,0,0.4);
     width: 430px;
-    max-width: 95vw;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 24px);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: auto;
     animation: fdm-up .15s cubic-bezier(.2,.8,.4,1);
 }
 @keyframes fdm-up {
@@ -43,14 +46,15 @@
     border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .fdm-title {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.45) !important;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    color: var(--xr-text, var(--text-normal, #fafafc)) !important;
     margin: 0;
 }
 .fdm-close {
+    min-width: 28px;
+    min-height: 28px;
     background: none;
     border: none;
     color: rgba(255,255,255,0.4);
@@ -61,6 +65,12 @@
     border-radius: 4px;
     transition: color .1s;
 }
+.fdm-mode { flex:1;min-height:32px;padding:6px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;font:600 13px var(--font-primary,Segoe UI);color:var(--xr-muted,var(--text-muted));background:transparent; }
+.fdm-mode:hover { background:var(--xr-hover,rgba(255,255,255,.07)); }
+.fdm-mode[aria-pressed="true"] { background:var(--xr-selected,rgba(255,255,255,.1));color:var(--xr-text,var(--text-normal));border-color:var(--xr-line,rgba(255,255,255,.1)); }
+.fdm-panel :focus-visible { outline:2px solid var(--xr-accent,#fafafc);outline-offset:2px; }
+.fdm-panel .fdm-send-btn { color:var(--xr-on-accent,#090b0e); }
+@media (prefers-reduced-motion:reduce) { .fdm-panel,.fdm-backdrop { animation:none; }.fdm-panel * { transition:none!important; } }
 .fdm-close:hover { color: #fff; }
 
 /* Sélecteur expéditeur */

@@ -26,6 +26,37 @@ export function boundedCaptureOptions(
   }
   return { ...input, video };
 }
+
+/** One post-picker check, not a frame loop. Some sources negotiate native size
+ * first. Apply the chosen upper bounds before preview/encoding if necessary.
+ * Unsupported constraints leave the approved share usable and settings honest.
+ */
+export async function enforceCaptureBudget(stream: MediaStream, options: DisplayMediaStreamOptions): Promise<MediaStream> {
+  if (options.video === false) return stream;
+  const video = typeof options.video === "object" ? options.video : {};
+  for (const track of stream.getVideoTracks()) {
+    if (track.readyState !== "live" || typeof track.applyConstraints !== "function") continue;
+    try {
+      const actual = track.getSettings();
+      const constraints = track.getConstraints?.() ?? {};
+      let over = false;
+      for (const key of ["width", "height", "frameRate"] as const) {
+        const value = video[key];
+        const limit = typeof value === "object" ? value?.max : undefined;
+        if (typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0) continue;
+        // Retain all three chosen bounds in one operation so resizing cannot
+        // increase the other dimension or drop a stricter frame-rate limit.
+        constraints[key] = capped(constraints[key] ?? value, limit);
+        if (typeof actual[key] === "number" && actual[key]! > limit + 0.01) over = true;
+      }
+      if (over) await track.applyConstraints(constraints);
+    } catch { /* The live source remains valid; preview/status show its actual settings. */ }
+  }
+  // Equicord and XRay have separate bundles. The narrow integration handle
+  // makes the status button work even when the optional preference plugin is off.
+  try { if (typeof window !== "undefined") (window as any).__xray?.screenShareObserved?.(stream); } catch { /* Status never interrupts capture. */ }
+  return stream;
+}
 /** Explicit picker choice. No microphone track is ever requested or mixed in. */
 export function captureAudioOptions(input:DisplayMediaStreamOptions,mode:"default"|"application"|"system"|"off"):DisplayMediaStreamOptions{
   if(mode==="default")return input;

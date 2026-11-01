@@ -1,6 +1,6 @@
 //! The main window: Discord's web app with xray's core injected before any of
 //! Discord's scripts run. The window stays on Discord; every other link opens
-//! in your default browser.
+//! in your default browser or the reviewed music link's registered app.
 
 use tauri::webview::NewWindowResponse;
 use tauri::window::Color;
@@ -152,6 +152,9 @@ fn launch_reviewed<R:Runtime>(app:&AppHandle<R>,url:&Url)->Result<(),String>{
  // Strict Tor remains fail-closed. The retired link-only preference cannot
  // redirect normally routed clients away from their Windows default handler.
  if crate::network::tor_enabled(){return crate::network::open_browser(url.as_str());}
+ if let Some(target)=crate::music_links::ghostcloud_url(url){
+  if crate::music_links::registered()&&app.opener().open_url(target.as_str(),None::<&str>).is_ok(){return Ok(());}
+ }
  app.opener().open_url(url.as_str(),None::<&str>).map_err(|_|"The browser could not be opened".into())
 }
 /// A web-only opener after the core's sheet. Not an authorization boundary

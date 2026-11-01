@@ -31,6 +31,7 @@ import { discordDate, memberJoinedAt } from "./memberDates";
 import { profileJournal } from "./profileJournal";
 import { dmArchivePanel } from "./dmArchive";
 import {recordingLibrary} from './recordingLibrary';
+import { cleanBuild } from "../cleanBuild";
 import { observeProfileResponse } from "../history";
 import { onAction } from "../api/flux";
 import { linkedText, connectionUrl } from "./reportText";
@@ -523,15 +524,25 @@ export function showProfile(user: any, guildId?: string | null): void {
     const active = (sheet?.getRootNode() as ShadowRoot | undefined)?.activeElement;
     const keepFocus = active instanceof HTMLElement && journal.element.contains(active) ? active : null;
     const next = renderProfile(data, actions);
-    journal.update(data);
-    next.querySelector('.pf-names')?.append(journal.changes);
-    next.querySelector(".pf-body")?.prepend(journal.element,dmArchive.element,oathnet.element);
+    if (!cleanBuild) {
+      journal.update(data);
+      next.querySelector('.pf-names')?.append(journal.changes);
+      next.querySelector(".pf-body")?.prepend(journal.element,dmArchive.element,oathnet.element);
+    }
     if (data.mutualServers.state === "ready" && data.mutualServers.value.length) {
       const select = h("select",{class:"dialog-input",attrs:{"aria-label":"Profile server context"}},h("option",{attrs:{value:""},text:"Choose a shared server"}),...data.mutualServers.value.map(server=>h("option",{attrs:{value:server.id},text:server.name})));
       select.value=guildId ?? "";
       select.addEventListener("change",()=>{if(select.value) showProfile(user,select.value);});
       next.querySelector(".pf-body")?.prepend(h("section",{class:"pf-block wide pf-server-context"},h("span",{class:"pf-title",text:"Server context"}),select,h("span",{class:"pf-note",text:"Join dates, roles and nicknames belong to this server."})));
     }
+    if (!cleanBuild) addReportViews(next);
+    if (sheet) sheet.replaceWith(next);
+    sheet = next;
+    applyView();
+    if (keepFocus) keepFocus.focus({preventScroll:true});
+  };
+  // Message counts, saved reports and the history tabs. Clean builds leave them out.
+  const addReportViews = (next: HTMLElement) => {
     next.querySelector(".pf-body")?.append(counts);
     next.querySelector('.pf-body')?.prepend(tabs);
     if(recordings)next.querySelector('.pf-body')?.append(recordings.element);
@@ -544,10 +555,6 @@ export function showProfile(user: any, guildId?: string | null): void {
       oathnet.element.querySelector<HTMLButtonElement>("button")?.focus();
     } } });
     next.querySelector(".pf-foot .pf-spacer")?.after(reportButton);
-    if (sheet) sheet.replaceWith(next);
-    sheet = next;
-    applyView();
-    if (keepFocus) keepFocus.focus({preventScroll:true});
   };
   draw();
   let stopMembers = () => {};

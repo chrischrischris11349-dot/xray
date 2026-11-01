@@ -1,6 +1,7 @@
 import { definePlugin } from "./types";
 import { showDialog } from "../ui/dialog";
-import { boundedCaptureOptions } from "../voice/captureConstraints";
+import { boundedCaptureOptions, enforceCaptureBudget } from "../voice/captureConstraints";
+import { observeScreenCapture, screenCaptureStatus } from "../voice/captureStatus";
 
 let latest: MediaStreamTrack | undefined;
 let requested = "Discord default";
@@ -13,12 +14,13 @@ export function capturePreferences(input: DisplayMediaStreamOptions = {}, fps: s
 }
 
 export function showScreenShareStatus(): void {
-  const settings = latest?.readyState === "live" ? latest.getSettings() : null;
+  const observed=screenCaptureStatus();
+  const settings = observed?.settings ?? (latest?.readyState === "live" ? latest.getSettings() : null);
   showDialog({ title: "Screen-share capture", body: [
     ["Requested capture", requested],
     ["Actual capture", settings ? `${settings.width ?? "?"} × ${settings.height ?? "?"} · ${settings.frameRate ? `${Math.round(settings.frameRate)} FPS` : "frame rate unavailable"}` : "No active capture observed by this feature"],
     ["Source", settings?.displaySurface ?? "Use Discord's Share screen button, then select a screen or application window in the system picker."],
-    ["Content", latest?.readyState === "live" ? latest.contentHint || "Browser default" : "No active capture"],
+    ["Content", observed?.content ?? (latest?.readyState === "live" ? latest.contentHint || "Browser default" : "No active capture")],
     ["Streaming rate", "Capture rate is not the encoded stream rate. Discord's quality selection, session limits, hardware and bandwidth still apply."],
   ] });
 }
@@ -41,11 +43,13 @@ export default definePlugin({
     const listeners = new Map<MediaStreamTrack, () => void>();
     ctx.patch(devices, "getDisplayMedia", { instead(_self, args, original) {
       requested = `${ctx.options.fps === "native" ? "Discord frame rate" : `Up to ${ctx.options.fps} FPS`} · ${ctx.options.resolution === "native" ? "Discord resolution" : `up to ${ctx.options.resolution}p`}`;
-      return Promise.resolve(original(capturePreferences(args[0], ctx.options.fps, ctx.options.source, ctx.options.resolution))).then((stream: MediaStream) => {
+      const options=capturePreferences(args[0], ctx.options.fps, ctx.options.source, ctx.options.resolution);
+      return Promise.resolve(original(options)).then((stream:MediaStream)=>active?enforceCaptureBudget(stream,options):stream).then((stream: MediaStream) => {
         // Disabling while the native picker is open must not revive this plugin
         // or stop a share the user subsequently approves in Discord.
         if (!active) return stream;
         latest = stream.getVideoTracks()[0];
+        observeScreenCapture(stream);
         const track = latest;
         if (track) {
           if (ctx.options.content !== "native") { try { track.contentHint = ctx.options.content; } catch { /* Older WebView2 runtimes may not support content hints. */ } }

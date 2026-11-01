@@ -47,6 +47,10 @@ a[data-xray-masked-link]::after { content:" → " attr(data-xray-link-host);font
 .notification-dismiss { margin: 8px 8px 0 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 .mono { font-family: "Cascadia Mono", Consolas, ui-monospace, monospace; }
+.utility-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:4px 8px; }
+.utility-actions .btn { min-height:32px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35;padding:7px 10px;white-space:normal; }
+.personal-edit-indicator { border:1px solid var(--line2);background:var(--raised);color:var(--muted);font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.2);transition:background-color 120ms ease,color 120ms ease; }
+.personal-edit-indicator[aria-pressed="true"] { color:var(--text);background:var(--hover);border-color:var(--text); }
 .card.graphics-card { display:grid;grid-template-columns:minmax(0,1fr);gap:10px; }
 .graphics-card .graphics-row { display:flex;align-items:center;gap:16px; }
 .graphics-card .card-text { flex:1;min-width:0; }

@@ -1,5 +1,11 @@
 fn main() {
     println!("cargo:rerun-if-env-changed=XRAY_PERSONAL_BUILD");
+    // XRAY_CLEAN_BUILD=1 swaps the lookup, intelligence and recording commands for stand-ins (src/clean).
+    println!("cargo:rerun-if-env-changed=XRAY_CLEAN_BUILD");
+    println!("cargo:rustc-check-cfg=cfg(xray_clean)");
+    if std::env::var("XRAY_CLEAN_BUILD").as_deref() == Ok("1") {
+        println!("cargo:rustc-cfg=xray_clean");
+    }
     println!("cargo:rerun-if-changed=windows/plugin-catalog.json");
     println!("cargo:rerun-if-changed=../core/installer-bootstrap.js");
     // window.rs embeds the mod core, which `npm run core:build` generates.

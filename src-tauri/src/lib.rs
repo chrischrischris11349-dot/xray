@@ -10,12 +10,15 @@ mod updates;
 mod documents;
 mod hotkeys;
 mod installer;
+#[cfg_attr(xray_clean, path = "clean/intelligence.rs")]
 mod intelligence;
+#[cfg_attr(xray_clean, path = "clean/recordings.rs")]
 mod recordings;
 mod taskbar;
 mod sandbox;
 mod notify;
 mod network;
+#[cfg_attr(xray_clean, path = "clean/oathnet.rs")]
 mod oathnet;
 mod report;
 mod settings;
@@ -24,6 +27,7 @@ mod translate;
 mod tray;
 mod webfetch;
 mod window;
+mod music_links;
 
 use std::sync::Mutex;
 
